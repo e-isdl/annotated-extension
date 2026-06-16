@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 function formatTime(s) {
   const m = Math.floor(s / 60);
@@ -22,7 +22,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const [startInput, setStartInput] = useState('0:00');
   const [endInput, setEndInput] = useState('0:30');
   const [previewMode, setPreviewMode] = useState(false);
-  const playerRef = useRef(null);
 
   useEffect(() => {
     if (data.duration && data.duration > 0) {
@@ -63,17 +62,13 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const handleStartInput = (val) => {
     setStartInput(val);
     const sec = parseTime(val);
-    if (!isNaN(sec) && sec >= 0 && sec < endSec) {
-      setStartSec(sec);
-    }
+    if (!isNaN(sec) && sec >= 0 && sec < endSec) setStartSec(sec);
   };
 
   const handleEndInput = (val) => {
     setEndInput(val);
     const sec = parseTime(val);
-    if (!isNaN(sec) && sec > startSec && sec <= duration) {
-      setEndSec(sec);
-    }
+    if (!isNaN(sec) && sec > startSec && sec <= duration) setEndSec(sec);
   };
 
   const jumpTo = (sec) => {
@@ -101,7 +96,8 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
     });
   };
 
-  const quickClips = [10, 15, 30, 60, 90];
+  const startPct = (startSec / duration) * 100;
+  const endPct = (endSec / duration) * 100;
 
   return (
     <div className="p-4 flex flex-col gap-4">
@@ -110,8 +106,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         <span className="text-xs text-text-secondary truncate">{data.title}</span>
       </div>
 
-      {/* Live preview */}
-      {previewMode && (
+      {previewMode ? (
         <div className="rounded-lg overflow-hidden border border-border aspect-video bg-black">
           <iframe
             src={`https://www.youtube.com/embed/${data.videoId}?start=${startSec}&end=${endSec}&autoplay=1&mute=1&rel=0`}
@@ -120,9 +115,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             allowFullScreen
           />
         </div>
-      )}
-
-      {!previewMode && (
+      ) : (
         <div className="rounded-lg overflow-hidden border border-border aspect-video bg-bg-raised relative">
           <img
             src={`https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`}
@@ -146,11 +139,117 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         {previewMode ? 'Hide preview' : 'Preview clip'}
       </button>
 
-      {/* Quick clip presets */}
+      {/* SLIDERS — main control */}
+      <div className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between text-xs font-mono text-text-muted">
+          <span>{formatTime(startSec)}</span>
+          <span className={`font-medium ${clipLen > 90 ? 'text-red-400' : 'text-accent-text'}`}>{clipLen}s</span>
+          <span>{formatTime(endSec)}</span>
+        </div>
+
+        <div className="relative h-10 flex items-center">
+          <div className="absolute w-full h-1.5 bg-bg-raised rounded-full">
+            <div
+              className="absolute h-full bg-accent rounded-full"
+              style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
+            />
+          </div>
+          <input
+            type="range"
+            min="0"
+            max={duration}
+            value={startSec}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              if (v < endSec - 1 && endSec - v <= 90) {
+                setStartSec(v);
+                setStartInput(formatTime(v));
+              }
+            }}
+            className="absolute w-full h-5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-bg-base [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-grab z-10"
+          />
+          <input
+            type="range"
+            min="0"
+            max={duration}
+            value={endSec}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              if (v > startSec + 1 && v - startSec <= 90) {
+                setEndSec(v);
+                setEndInput(formatTime(v));
+              }
+            }}
+            className="absolute w-full h-5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-bg-base [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-grab z-20"
+          />
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-text-muted">
+          <span>0:00</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+
+      {/* TIME INPUTS */}
+      <div className="bg-bg-surface border border-border rounded-lg p-3 flex items-center gap-2">
+        <div className="flex-1">
+          <label className="text-[10px] text-text-muted block mb-1">Start</label>
+          <input
+            type="text"
+            value={startInput}
+            onChange={(e) => handleStartInput(e.target.value)}
+            onBlur={() => setStartInput(formatTime(startSec))}
+            className="input text-sm font-mono w-full text-center"
+            placeholder="0:00"
+          />
+        </div>
+        <span className="text-text-muted mt-4">→</span>
+        <div className="flex-1">
+          <label className="text-[10px] text-text-muted block mb-1">End</label>
+          <input
+            type="text"
+            value={endInput}
+            onChange={(e) => handleEndInput(e.target.value)}
+            onBlur={() => setEndInput(formatTime(endSec))}
+            className="input text-sm font-mono w-full text-center"
+            placeholder="0:30"
+          />
+        </div>
+      </div>
+
+      {/* FINE-TUNE BUTTONS */}
+      <div className="bg-bg-surface border border-border rounded-lg p-3">
+        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2">Fine-tune start</p>
+        <div className="flex gap-1.5">
+          {[-30, -10, -5, -1, 1, 5, 10, 30].map((offset) => (
+            <button
+              key={`s${offset}`}
+              onClick={() => updateStart(startSec + offset)}
+              className="flex-1 px-1 py-1.5 text-[10px] rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors font-mono"
+            >
+              {offset > 0 ? '+' : ''}{offset}s
+            </button>
+          ))}
+        </div>
+        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2 mt-3">Fine-tune end</p>
+        <div className="flex gap-1.5">
+          {[-30, -10, -5, -1, 1, 5, 10, 30].map((offset) => (
+            <button
+              key={`e${offset}`}
+              onClick={() => updateEnd(endSec + offset)}
+              className="flex-1 px-1 py-1.5 text-[10px] rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors font-mono"
+            >
+              {offset > 0 ? '+' : ''}{offset}s
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* QUICK PRESETS + JUMP TO */}
       <div className="bg-bg-surface border border-border rounded-lg p-3">
         <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2">Quick clip length</p>
-        <div className="flex gap-2">
-          {quickClips.map((sec) => (
+        <div className="flex gap-2 mb-3">
+          {[10, 15, 30, 60, 90].map((sec) => (
             <button
               key={sec}
               onClick={() => {
@@ -168,77 +267,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Manual time inputs */}
-      <div className="bg-bg-surface border border-border rounded-lg p-3 flex flex-col gap-3">
-        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide">Time range</p>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <label className="text-[10px] text-text-muted block mb-1">Start</label>
-            <input
-              type="text"
-              value={startInput}
-              onChange={(e) => handleStartInput(e.target.value)}
-              onBlur={() => setStartInput(formatTime(startSec))}
-              className="input text-sm font-mono w-full text-center"
-              placeholder="0:00"
-            />
-          </div>
-          <span className="text-text-muted mt-4">→</span>
-          <div className="flex-1">
-            <label className="text-[10px] text-text-muted block mb-1">End</label>
-            <input
-              type="text"
-              value={endInput}
-              onChange={(e) => handleEndInput(e.target.value)}
-              onBlur={() => setEndInput(formatTime(endSec))}
-              className="input text-sm font-mono w-full text-center"
-              placeholder="0:30"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Fine-tune buttons */}
-      <div className="bg-bg-surface border border-border rounded-lg p-3">
-        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2">Fine-tune start</p>
-        <div className="flex gap-1.5">
-          {[-30, -10, -5, -1, 1, 5, 10, 30].map((offset) => (
-            <button
-              key={offset}
-              onClick={() => updateStart(startSec + offset)}
-              className="flex-1 px-1 py-1.5 text-[10px] rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors font-mono"
-            >
-              {offset > 0 ? '+' : ''}{offset}s
-            </button>
-          ))}
-        </div>
-        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2 mt-3">Fine-tune end</p>
-        <div className="flex gap-1.5">
-          {[-30, -10, -5, -1, 1, 5, 10, 30].map((offset) => (
-            <button
-              key={offset}
-              onClick={() => updateEnd(endSec + offset)}
-              className="flex-1 px-1 py-1.5 text-[10px] rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors font-mono"
-            >
-              {offset > 0 ? '+' : ''}{offset}s
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Duration display */}
-      <div className="flex items-center justify-between text-xs px-1">
-        <span className="text-text-muted">Duration</span>
-        <span className={`font-mono font-medium ${clipLen > 90 ? 'text-red-400' : clipLen > 60 ? 'text-yellow-400' : 'text-accent-text'}`}>
-          {formatTime(clipLen)} / 1:30
-        </span>
-      </div>
-
-      {/* Quick jump */}
-      <div className="bg-bg-surface border border-border rounded-lg p-3">
-        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2">Jump to time</p>
+        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2">Jump to</p>
         <div className="flex gap-1.5 flex-wrap">
           {[0, 30, 60, 120, 180, 300, 600, 900, 1800].filter(t => t < duration).map((sec) => (
             <button
