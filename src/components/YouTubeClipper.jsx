@@ -91,7 +91,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             value={startSec}
             onChange={(e) => {
               const v = Number(e.target.value);
-              if (v < endSec - 1) setStartSec(v);
+              if (v < endSec - 1 && endSec - v <= 90) setStartSec(v);
             }}
             className="absolute w-full h-5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-bg-base [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-grab z-10"
           />
@@ -103,7 +103,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             value={endSec}
             onChange={(e) => {
               const v = Number(e.target.value);
-              if (v > startSec + 1) setEndSec(v);
+              if (v > startSec + 1 && v - startSec <= 90) setEndSec(v);
             }}
             className="absolute w-full h-5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-bg-base [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-grab z-20"
           />
