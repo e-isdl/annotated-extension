@@ -59,87 +59,6 @@ async function getPageInfoFromTab(tabId) {
   });
 }
 
-async function fetchTranscriptFromTab(tabId, videoId, startSec, endSec) {
-  // Step 1: Click Show Transcript button (MAIN world, non-async)
-  await chrome.scripting.executeScript({
-    target: { tabId },
-    world: 'MAIN',
-    func: () => {
-      const descSection = document.querySelector('ytd-video-description-transcript-section-renderer');
-      const btn = descSection?.querySelector('button')
-        || document.querySelector('button[aria-label="Show transcript"]')
-        || document.querySelector('button[aria-label="Mostrar transcripción"]');
-      if (btn) btn.click();
-    }
-  });
-
-  // Step 2: Wait for segments to appear, then read them
-  for (let attempt = 0; attempt < 10; attempt++) {
-    await new Promise(r => setTimeout(r, 500));
-
-    const results = await chrome.scripting.executeScript({
-      target: { tabId },
-      world: 'MAIN',
-      func: () => {
-        let segments = document.querySelectorAll('transcript-segment-view-model');
-        if (!segments.length) segments = document.querySelectorAll('ytd-transcript-segment-renderer');
-        return segments.length;
-      }
-    });
-
-    const count = results?.[0]?.result || 0;
-    if (count > 0) {
-      // Step 3: Read and filter segments
-      const data = await chrome.scripting.executeScript({
-        target: { tabId },
-        world: 'MAIN',
-        func: (startSec, endSec) => {
-          let segments = document.querySelectorAll('transcript-segment-view-model');
-          if (!segments.length) segments = document.querySelectorAll('ytd-transcript-segment-renderer');
-
-          const lines = [];
-          segments.forEach(seg => {
-            const timeEl = seg.querySelector('.ytwTranscriptSegmentViewModelTimestamp')
-              || seg.querySelector('.segment-timestamp')
-              || seg.querySelector('[class*="timestamp"]');
-            const textEl = seg.querySelector('.yt-core-attributed-string')
-              || seg.querySelector('.segment-text')
-              || seg.querySelector('[class*="text"]');
-
-            if (!timeEl || !textEl) return;
-
-            const timeText = timeEl.textContent.trim();
-            const parts = timeText.split(':').map(Number);
-            if (parts.some(isNaN)) return;
-
-            let segStart = 0;
-            if (parts.length === 3) segStart = parts[0] * 3600 + parts[1] * 60 + parts[2];
-            else if (parts.length === 2) segStart = parts[0] * 60 + parts[1];
-            else return;
-
-            const text = textEl.textContent.trim();
-            if (segStart >= startSec && segStart <= endSec && text) {
-              lines.push(text);
-            }
-          });
-
-          // Close transcript panel
-          const closeBtn = document.querySelector('button[aria-label="Close transcript"]')
-            || document.querySelector('button[aria-label="Cerrar transcripción"]');
-          if (closeBtn) closeBtn.click();
-
-          return lines.length ? lines.join(' ') : null;
-        },
-        args: [startSec, endSec]
-      });
-
-      return data?.[0]?.result || null;
-    }
-  }
-
-  return null;
-}
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PAGE_INFO' && sender.tab) {
     chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: message.data });
@@ -161,13 +80,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'FETCH_TRANSCRIPT') {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       if (tabs[0]?.id) {
-        const transcript = await fetchTranscriptFromTab(
-          tabs[0].id,
-          message.videoId,
-          message.startSec,
-          message.endSec
-        );
-        sendResponse({ transcript });
+        // Ensure content script is injected
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            files: ['content.js']
+          });
+        } catch (e) {}
+
+        chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
+          if (chrome.runtime.lastError) {
+            sendResponse({ transcript: null });
+          } else {
+            sendResponse(response || { transcript: null });
+          }
+        });
       } else {
         sendResponse({ transcript: null });
       }
