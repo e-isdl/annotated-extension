@@ -60,93 +60,84 @@ async function getPageInfoFromTab(tabId) {
 }
 
 async function fetchTranscriptFromTab(tabId, videoId, startSec, endSec) {
-  const results = await chrome.scripting.executeScript({
+  // Step 1: Click Show Transcript button (MAIN world, non-async)
+  await chrome.scripting.executeScript({
     target: { tabId },
     world: 'MAIN',
-    func: (startSec, endSec) => {
-      return new Promise((resolve) => {
-        try {
-          // Step 1: Try to find and click Show Transcript button
-          const descSection = document.querySelector('ytd-video-description-transcript-section-renderer');
-          const btn = descSection?.querySelector('button')
-            || document.querySelector('button[aria-label="Show transcript"]')
-            || document.querySelector('button[aria-label="Mostrar transcripción"]');
-
-          if (btn) {
-            btn.click();
-          }
-
-          // Step 2: Wait for transcript segments to appear, try multiple selectors
-          const maxAttempts = 10;
-          let attempt = 0;
-
-          function tryRead() {
-            attempt++;
-
-            // New YouTube DOM (2026+)
-            let segments = document.querySelectorAll('transcript-segment-view-model');
-
-            // Old YouTube DOM
-            if (!segments.length) {
-              segments = document.querySelectorAll('ytd-transcript-segment-renderer');
-            }
-
-            if (!segments.length && attempt < maxAttempts) {
-              setTimeout(tryRead, 500);
-              return;
-            }
-
-            if (!segments.length) {
-              resolve(null);
-              return;
-            }
-
-            const lines = [];
-            segments.forEach(seg => {
-              // Try new selectors first, then old
-              const timeEl = seg.querySelector('.ytwTranscriptSegmentViewModelTimestamp')
-                || seg.querySelector('.segment-timestamp')
-                || seg.querySelector('[class*="timestamp"]');
-
-              const textEl = seg.querySelector('.yt-core-attributed-string')
-                || seg.querySelector('.segment-text')
-                || seg.querySelector('[class*="text"]');
-
-              if (!timeEl || !textEl) return;
-
-              const timeText = timeEl.textContent.trim();
-              const parts = timeText.split(':').map(Number);
-              if (parts.some(isNaN)) return;
-
-              let segStart = 0;
-              if (parts.length === 3) segStart = parts[0] * 3600 + parts[1] * 60 + parts[2];
-              else if (parts.length === 2) segStart = parts[0] * 60 + parts[1];
-              else return;
-
-              const text = textEl.textContent.trim();
-              if (segStart >= startSec && segStart <= endSec && text) {
-                lines.push(text);
-              }
-            });
-
-            // Close the transcript panel
-            const closeBtn = document.querySelector('button[aria-label="Close transcript"]')
-              || document.querySelector('button[aria-label="Cerrar transcripción"]');
-            if (closeBtn) closeBtn.click();
-
-            resolve(lines.length ? lines.join(' ') : null);
-          }
-
-          setTimeout(tryRead, 1500);
-        } catch (e) {
-          resolve(null);
-        }
-      });
-    },
-    args: [startSec, endSec]
+    func: () => {
+      const descSection = document.querySelector('ytd-video-description-transcript-section-renderer');
+      const btn = descSection?.querySelector('button')
+        || document.querySelector('button[aria-label="Show transcript"]')
+        || document.querySelector('button[aria-label="Mostrar transcripción"]');
+      if (btn) btn.click();
+    }
   });
 
-  return results?.[0]?.result || null;
+  // Step 2: Wait for segments to appear, then read them
+  for (let attempt = 0; attempt < 10; attempt++) {
+    await new Promise(r => setTimeout(r, 500));
+
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: () => {
+        let segments = document.querySelectorAll('transcript-segment-view-model');
+        if (!segments.length) segments = document.querySelectorAll('ytd-transcript-segment-renderer');
+        return segments.length;
+      }
+    });
+
+    const count = results?.[0]?.result || 0;
+    if (count > 0) {
+      // Step 3: Read and filter segments
+      const data = await chrome.scripting.executeScript({
+        target: { tabId },
+        world: 'MAIN',
+        func: (startSec, endSec) => {
+          let segments = document.querySelectorAll('transcript-segment-view-model');
+          if (!segments.length) segments = document.querySelectorAll('ytd-transcript-segment-renderer');
+
+          const lines = [];
+          segments.forEach(seg => {
+            const timeEl = seg.querySelector('.ytwTranscriptSegmentViewModelTimestamp')
+              || seg.querySelector('.segment-timestamp')
+              || seg.querySelector('[class*="timestamp"]');
+            const textEl = seg.querySelector('.yt-core-attributed-string')
+              || seg.querySelector('.segment-text')
+              || seg.querySelector('[class*="text"]');
+
+            if (!timeEl || !textEl) return;
+
+            const timeText = timeEl.textContent.trim();
+            const parts = timeText.split(':').map(Number);
+            if (parts.some(isNaN)) return;
+
+            let segStart = 0;
+            if (parts.length === 3) segStart = parts[0] * 3600 + parts[1] * 60 + parts[2];
+            else if (parts.length === 2) segStart = parts[0] * 60 + parts[1];
+            else return;
+
+            const text = textEl.textContent.trim();
+            if (segStart >= startSec && segStart <= endSec && text) {
+              lines.push(text);
+            }
+          });
+
+          // Close transcript panel
+          const closeBtn = document.querySelector('button[aria-label="Close transcript"]')
+            || document.querySelector('button[aria-label="Cerrar transcripción"]');
+          if (closeBtn) closeBtn.click();
+
+          return lines.length ? lines.join(' ') : null;
+        },
+        args: [startSec, endSec]
+      });
+
+      return data?.[0]?.result || null;
+    }
+  }
+
+  return null;
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

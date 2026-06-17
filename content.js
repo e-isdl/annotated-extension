@@ -79,48 +79,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse(info);
     return true;
   }
-  if (message.type === 'FETCH_TRANSCRIPT') {
-    fetchTranscript(message.videoId, message.startSec, message.endSec)
-      .then(transcript => sendResponse({ transcript }))
-      .catch(() => sendResponse({ transcript: null }));
-    return true;
-  }
 });
-
-async function fetchTranscript(videoId, startSec, endSec) {
-  try {
-    const listUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&type=list`;
-    const listRes = await fetch(listUrl);
-    const listText = await listRes.text();
-    const parser = new DOMParser();
-    const listDoc = parser.parseFromString(listText, 'text/xml');
-    const tracks = listDoc.querySelectorAll('track');
-    let trackLang = 'en';
-    let trackKind = '';
-    for (const track of tracks) {
-      if (track.getAttribute('lang_code') === 'en') {
-        trackKind = track.getAttribute('kind') || '';
-        break;
-      }
-    }
-    const captionsUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${trackLang}&kind=${trackKind}`;
-    const captionsRes = await fetch(captionsUrl);
-    const captionsText = await captionsRes.text();
-    const captionsDoc = parser.parseFromString(captionsText, 'text/xml');
-    const textNodes = captionsDoc.querySelectorAll('text');
-    const lines = [];
-    for (const node of textNodes) {
-      const start = parseFloat(node.getAttribute('start'));
-      const dur = parseFloat(node.getAttribute('dur') || '0');
-      const end = start + dur;
-      if (end >= startSec && start <= endSec) {
-        lines.push(node.textContent.trim());
-      }
-    }
-    return lines.join(' ');
-  } catch (e) {
-    return null;
-  }
-}
 
 chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: detectPageInfo() }).catch(() => {});
