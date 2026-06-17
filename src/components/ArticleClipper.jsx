@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function ArticleClipper({ pageInfo, onReady }) {
   const { data, url } = pageInfo;
   const [selectedText, setSelectedText] = useState(data.selectedText || '');
   const WORD_LIMIT = 100;
+
+  useEffect(() => {
+    if (data.selectedText && data.selectedText !== selectedText) {
+      setSelectedText(data.selectedText);
+    }
+  }, [data.selectedText]);
   const wordCount = selectedText.trim().split(/\s+/).filter(Boolean).length;
   const isOverLimit = wordCount > WORD_LIMIT;
 

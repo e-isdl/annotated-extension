@@ -34,13 +34,23 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
     fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${data.videoId}&format=json`)
       .then(r => r.json())
       .then(() => {
-        const player = document.querySelector('video');
-        if (player && player.duration) {
-          const d = Math.floor(player.duration);
-          setDuration(d);
-          setEndSec(Math.min(30, d));
-          setEndInput(formatTime(Math.min(30, d)));
-        }
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (!tabs[0]?.id) return;
+          chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            func: () => {
+              const v = document.querySelector('video');
+              return v ? Math.floor(v.duration) : null;
+            },
+          }, (results) => {
+            const d = results?.[0]?.result;
+            if (d && d > 0) {
+              setDuration(d);
+              setEndSec(Math.min(30, d));
+              setEndInput(formatTime(Math.min(30, d)));
+            }
+          });
+        });
       })
       .catch(() => {});
   }, [data.videoId, data.duration]);

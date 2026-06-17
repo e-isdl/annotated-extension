@@ -53,6 +53,7 @@ export default function PodcastClipper({ pageInfo, onReady }) {
 
     setUploading(true);
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setUploading(false); return; }
     const filename = `clips/podcasts/${user.id}/${Date.now()}.webm`;
     const { error } = await supabase.storage.from('clips').upload(filename, blob);
     if (!error) {

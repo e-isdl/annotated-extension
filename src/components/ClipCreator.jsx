@@ -22,9 +22,12 @@ export default function ClipCreator({ pageInfo, session }) {
   const [step, setStep] = useState('clip');
   const [clipData, setClipData] = useState(null);
   const [publishedClip, setPublishedClip] = useState(null);
+  const [transcriptCache, setTranscriptCache] = useState(null);
+  const [currentTranscript, setCurrentTranscript] = useState(null);
 
   const handleClipReady = (data) => {
     setClipData(data);
+    setCurrentTranscript(null);
     setStep('annotate');
   };
 
@@ -35,6 +38,7 @@ export default function ClipCreator({ pageInfo, session }) {
         user_id: session.user.id,
         ...clipData,
         slug: generateSlug(clipData.title),
+        transcript: currentTranscript || null,
       })
       .select()
       .single();
@@ -99,7 +103,7 @@ export default function ClipCreator({ pageInfo, session }) {
 
       <div className="flex-1 overflow-y-auto">
         {step === 'clip' && renderClipper()}
-        {step === 'annotate' && <AnnotationForm clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} />}
+        {step === 'annotate' && <AnnotationForm clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} />}
         {step === 'success' && <SuccessScreen clip={publishedClip} onReset={() => { setStep('clip'); setClipData(null); }} />}
       </div>
     </div>

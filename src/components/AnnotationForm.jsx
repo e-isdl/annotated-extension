@@ -1,18 +1,59 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-function fetchTranscriptViaMessage(videoId, startSec, endSec) {
-  return new Promise((resolve) => {
-    chrome.runtime.sendMessage(
-      { type: 'FETCH_TRANSCRIPT', videoId, startSec, endSec },
-      (response) => {
-        resolve(response?.transcript || null);
-      }
-    );
+const APIFY_TOKEN = import.meta.env.VITE_APIFY_TOKEN;
+const APIFY_ACTOR_URL = 'https://api.apify.com/v2/actors/akash9078~youtube-transcript-extractor/run-sync-get-dataset-items';
+
+async function fetchTranscriptDirect(videoId, startSec, endSec) {
+  const s = Number(startSec);
+  const e = Number(endSec);
+
+  const res = await fetch(`${APIFY_ACTOR_URL}?token=${APIFY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ videoUrl: `https://www.youtube.com/watch?v=${videoId}` }),
   });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Apify HTTP ${res.status}: ${errText}`);
+  }
+
+  const items = await res.json();
+  if (!items?.length) throw new Error('Apify returned no results');
+  const item = items[0];
+  if (!item.success) throw new Error(`Apify failed: ${item.error || 'unknown'}`);
+
+  const full = item.transcript || '';
+  const segments = item.transcript_segments;
+
+  if (segments?.length > 0 && !isNaN(s) && !isNaN(e)) {
+    const filtered = segments.filter(seg => {
+      const t = Number(seg.start);
+      return t >= s && t <= e;
+    });
+    if (filtered.length > 0) {
+      return { filtered: filtered.map(seg => seg.text.replace(/>>\s*/g, '')).join(' '), full: full.replace(/>>\s*/g, '') };
+    }
+  }
+
+  if (full) {
+    if (!isNaN(s) && !isNaN(e) && e > s) {
+      const words = full.split(/\s+/).filter(Boolean);
+      const wordsPerSecond = 2.5;
+      const estimatedTotalDuration = words.length / wordsPerSecond;
+      const startWord = Math.floor((s / estimatedTotalDuration) * words.length);
+      const endWord = Math.min(Math.ceil((e / estimatedTotalDuration) * words.length), words.length);
+      const snippet = words.slice(startWord, endWord).join(' ');
+      if (snippet.trim()) return { filtered: snippet, full: full.replace(/>>\s*/g, '') };
+    }
+    return { filtered: full.replace(/>>\s*/g, ''), full: full.replace(/>>\s*/g, '') };
+  }
+
+  throw new Error('No transcript available');
 }
 
-export default function AnnotationForm({ clipData, onBack, onPublish }) {
+export default function AnnotationForm({ clipData, onBack, onPublish, transcriptCache, setTranscriptCache, onTranscriptChange }) {
   const [text, setText] = useState('');
   const [audioUrl, setAudioUrl] = useState(null);
   const [mode, setMode] = useState('text');
@@ -20,25 +61,60 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [transcript, setTranscript] = useState(null);
+  const [fullTranscript, setFullTranscript] = useState(null);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
+  const [transcriptError, setTranscriptError] = useState('');
+  const [editingTranscript, setEditingTranscript] = useState(false);
+  const [editingFull, setEditingFull] = useState(false);
+  const [showFull, setShowFull] = useState(false);
+  const [editedText, setEditedText] = useState('');
+  const [editedFullText, setEditedFullText] = useState('');
   const fileInputRef = useRef(null);
   const isYouTube = clipData?.source_type === 'youtube';
   const isArticle = clipData?.source_type === 'article';
+  const cacheKey = isYouTube ? `${clipData.youtube_id}:${clipData.start_sec}:${clipData.end_sec}` : null;
 
   useEffect(() => {
     if (isYouTube && clipData.youtube_id && clipData.start_sec !== undefined && clipData.end_sec !== undefined) {
+      if (transcriptCache && transcriptCache.key === cacheKey) {
+        setTranscript(transcriptCache.filtered);
+        setFullTranscript(transcriptCache.full);
+        return;
+      }
+
       setTranscriptLoading(true);
-      fetchTranscriptViaMessage(clipData.youtube_id, clipData.start_sec, clipData.end_sec)
-        .then(t => { if (t) setTranscript(t); })
-        .catch(() => {})
+      setTranscriptError('');
+      setEditingTranscript(false);
+      setEditingFull(false);
+      setShowFull(false);
+      fetchTranscriptDirect(clipData.youtube_id, clipData.start_sec, clipData.end_sec)
+        .then(({ filtered, full }) => {
+          setTranscript(filtered);
+          setFullTranscript(full);
+          setTranscriptCache({ key: cacheKey, filtered, full });
+        })
+        .catch(err => {
+          setTranscriptError(err.message || 'Failed to fetch transcript');
+        })
         .finally(() => setTranscriptLoading(false));
     }
   }, [clipData]);
 
+  useEffect(() => {
+    if (onTranscriptChange) onTranscriptChange(transcript);
+  }, [transcript]);
+
+  const [publishError, setPublishError] = useState('');
+
   const handlePublish = async () => {
     if (!text && !audioUrl) return;
     setPublishing(true);
-    await onPublish({ text_content: text || null, audio_url: audioUrl });
+    setPublishError('');
+    try {
+      await onPublish({ text_content: text || null, audio_url: audioUrl });
+    } catch (err) {
+      setPublishError(err.message || 'Failed to publish. Please try again.');
+    }
     setPublishing(false);
   };
 
@@ -93,16 +169,106 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
 
       {isYouTube && (
         <div className="bg-bg-surface border border-border rounded-lg p-3">
-          <p className="text-[10px] text-accent font-medium uppercase tracking-widest mb-2">Transcript</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] text-accent font-medium uppercase tracking-widest">Transcript</p>
+            {transcript && !transcriptLoading && (
+              <button
+                onClick={() => {
+                  if (editingTranscript) {
+                    setEditingTranscript(false);
+                  } else {
+                    setEditedText(transcript);
+                    setEditingTranscript(true);
+                  }
+                }}
+                className="text-[10px] text-text-muted hover:text-text-secondary transition-colors"
+              >
+                {editingTranscript ? 'Cancel' : 'Edit'}
+              </button>
+            )}
+          </div>
+
           {transcriptLoading ? (
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-accent/30 animate-pulse" />
               <p className="text-xs text-text-muted">Loading transcript...</p>
             </div>
+          ) : editingTranscript ? (
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                rows={6}
+                className="input resize-none text-xs leading-relaxed"
+              />
+              <button
+                onClick={() => { setTranscript(editedText); setEditingTranscript(false); }}
+                className="btn-primary text-xs py-1.5"
+              >
+                Save Changes
+              </button>
+            </div>
           ) : transcript ? (
-            <p className="text-xs text-text-secondary leading-relaxed">{transcript}</p>
+            <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{transcript}</p>
+          ) : transcriptError ? (
+            <p className="text-xs text-red-400">{transcriptError}</p>
           ) : (
             <p className="text-xs text-text-muted italic">No transcript available for this clip</p>
+          )}
+
+          {fullTranscript && !transcriptLoading && !editingTranscript && (
+            <div className="mt-3 border-t border-border pt-3">
+              <button
+                onClick={() => setShowFull(!showFull)}
+                className="flex items-center gap-1.5 text-[10px] text-text-muted hover:text-text-secondary transition-colors w-full"
+              >
+                <span className="text-[8px]">{showFull ? '\u25BE' : '\u25B8'}</span>
+                Full Transcript
+                <span className="text-text-muted/50 ml-auto">{fullTranscript.split(/\s+/).filter(Boolean).length} words</span>
+              </button>
+
+              {showFull && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[10px] text-text-muted">Complete transcript</p>
+                    <button
+                      onClick={() => {
+                        if (editingFull) {
+                          setEditingFull(false);
+                        } else {
+                          setEditedFullText(fullTranscript);
+                          setEditingFull(true);
+                        }
+                      }}
+                      className="text-[10px] text-text-muted hover:text-text-secondary transition-colors"
+                    >
+                      {editingFull ? 'Cancel' : 'Edit'}
+                    </button>
+                  </div>
+
+                  {editingFull ? (
+                    <div className="flex flex-col gap-2">
+                      <textarea
+                        value={editedFullText}
+                        onChange={(e) => setEditedFullText(e.target.value)}
+                        rows={8}
+                        className="input resize-none text-xs leading-relaxed"
+                      />
+                      <button
+                        onClick={() => { setFullTranscript(editedFullText); setEditingFull(false); }}
+                        className="btn-primary text-xs py-1.5"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-text-muted leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto rounded bg-bg-base p-2">
+                      {fullTranscript}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -184,6 +350,8 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
         </div>
       )}
 
+      {publishError && <p className="text-xs text-red-400 text-center">{publishError}</p>}
+
       <button
         onClick={handlePublish}
         disabled={(!text && !audioUrl) || publishing || uploading}
@@ -191,6 +359,9 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
       >
         {publishing ? 'Publishing...' : 'Publish'}
       </button>
+      {!text && !audioUrl && (
+        <p className="text-[11px] text-text-muted text-center -mt-2">Text or audio commentary required</p>
+      )}
     </div>
   );
 }
