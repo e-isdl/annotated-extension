@@ -1,40 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-async function fetchYouTubeTranscript(videoId, startSec, endSec) {
-  try {
-    const listUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&type=list`;
-    const listRes = await fetch(listUrl);
-    const listText = await listRes.text();
-    const parser = new DOMParser();
-    const listDoc = parser.parseFromString(listText, 'text/xml');
-    const tracks = listDoc.querySelectorAll('track');
-    let trackLang = 'en';
-    let trackKind = '';
-    for (const track of tracks) {
-      if (track.getAttribute('lang_code') === 'en') {
-        trackKind = track.getAttribute('kind') || '';
-        break;
+function fetchTranscriptViaMessage(videoId, startSec, endSec) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(
+      { type: 'FETCH_TRANSCRIPT', videoId, startSec, endSec },
+      (response) => {
+        resolve(response?.transcript || null);
       }
-    }
-    const captionsUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${trackLang}&kind=${trackKind}`;
-    const captionsRes = await fetch(captionsUrl);
-    const captionsText = await captionsRes.text();
-    const captionsDoc = parser.parseFromString(captionsText, 'text/xml');
-    const textNodes = captionsDoc.querySelectorAll('text');
-    const lines = [];
-    for (const node of textNodes) {
-      const start = parseFloat(node.getAttribute('start'));
-      const dur = parseFloat(node.getAttribute('dur') || '0');
-      const end = start + dur;
-      if (end >= startSec && start <= endSec) {
-        lines.push(node.textContent.trim());
-      }
-    }
-    return lines.join(' ');
-  } catch (e) {
-    return null;
-  }
+    );
+  });
 }
 
 export default function AnnotationForm({ clipData, onBack, onPublish }) {
@@ -57,7 +32,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
   useEffect(() => {
     if (isYouTube && clipData.youtube_id && clipData.start_sec !== undefined && clipData.end_sec !== undefined) {
       setTranscriptLoading(true);
-      fetchYouTubeTranscript(clipData.youtube_id, clipData.start_sec, clipData.end_sec)
+      fetchTranscriptViaMessage(clipData.youtube_id, clipData.start_sec, clipData.end_sec)
         .then(t => { if (t) setTranscript(t); })
         .catch(() => {})
         .finally(() => setTranscriptLoading(false));

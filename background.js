@@ -77,6 +77,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
+  if (message.type === 'FETCH_TRANSCRIPT') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
+          sendResponse(response);
+        });
+      } else {
+        sendResponse({ transcript: null });
+      }
+    });
+    return true;
+  }
 });
 
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
