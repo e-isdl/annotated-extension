@@ -109,7 +109,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
       {previewMode ? (
         <div className="rounded-lg overflow-hidden border border-border aspect-video bg-black">
           <iframe
-            src={`https://www.youtube.com/embed/${data.videoId}?start=${startSec}&end=${endSec}&autoplay=1&mute=1&rel=0`}
+            src={`https://www.youtube.com/embed/${data.videoId}?start=${Math.floor(startSec)}&autoplay=1&mute=1&rel=0&modestbranding=1`}
             className="w-full h-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
