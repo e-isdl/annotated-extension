@@ -1,5 +1,41 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+
+async function fetchYouTubeTranscript(videoId, startSec, endSec) {
+  try {
+    const listUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&type=list`;
+    const listRes = await fetch(listUrl);
+    const listText = await listRes.text();
+    const parser = new DOMParser();
+    const listDoc = parser.parseFromString(listText, 'text/xml');
+    const tracks = listDoc.querySelectorAll('track');
+    let trackLang = 'en';
+    let trackKind = '';
+    for (const track of tracks) {
+      if (track.getAttribute('lang_code') === 'en') {
+        trackKind = track.getAttribute('kind') || '';
+        break;
+      }
+    }
+    const captionsUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${trackLang}&kind=${trackKind}`;
+    const captionsRes = await fetch(captionsUrl);
+    const captionsText = await captionsRes.text();
+    const captionsDoc = parser.parseFromString(captionsText, 'text/xml');
+    const textNodes = captionsDoc.querySelectorAll('text');
+    const lines = [];
+    for (const node of textNodes) {
+      const start = parseFloat(node.getAttribute('start'));
+      const dur = parseFloat(node.getAttribute('dur') || '0');
+      const end = start + dur;
+      if (end >= startSec && start <= endSec) {
+        lines.push(node.textContent.trim());
+      }
+    }
+    return lines.join(' ');
+  } catch (e) {
+    return null;
+  }
+}
 
 export default function AnnotationForm({ clipData, onBack, onPublish }) {
   const [text, setText] = useState('');
@@ -9,11 +45,24 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [transcript, setTranscript] = useState(null);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const isYouTube = clipData?.source_type === 'youtube';
   const isArticle = clipData?.source_type === 'article';
+
+  useEffect(() => {
+    if (isYouTube && clipData.youtube_id && clipData.start_sec !== undefined && clipData.end_sec !== undefined) {
+      setTranscriptLoading(true);
+      fetchYouTubeTranscript(clipData.youtube_id, clipData.start_sec, clipData.end_sec)
+        .then(t => { if (t) setTranscript(t); })
+        .catch(() => {})
+        .finally(() => setTranscriptLoading(false));
+    }
+  }, [clipData]);
 
   const handlePublish = async () => {
     if (!text && !audioUrl) return;
@@ -47,11 +96,9 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
-
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
-
       mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         stream.getTracks().forEach(t => t.stop());
@@ -69,7 +116,6 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
         }
         setUploading(false);
       };
-
       mediaRecorder.start();
       setRecording(true);
       setRecordingTime(0);
@@ -90,16 +136,13 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
     }
   };
 
-  const removeAudio = () => {
-    setAudioUrl(null);
-  };
-
   return (
     <div className="p-4 flex flex-col gap-4">
       <button onClick={onBack} className="flex items-center gap-1 text-xs font-medium text-accent-text hover:text-accent bg-accent/10 px-3 py-1.5 rounded-md self-start transition-colors">
         ← Back to clip
       </button>
 
+      {/* Clip info */}
       <div className="bg-bg-surface border border-border rounded-lg p-3 flex items-start gap-3">
         {clipData.thumbnail && (
           <img src={clipData.thumbnail} className="w-12 h-8 object-cover rounded" />
@@ -116,6 +159,27 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
         </div>
       </div>
 
+      {/* Transcript */}
+      {isYouTube && (
+        <div className="bg-bg-surface border border-border rounded-lg p-3">
+          <p className="text-[10px] text-accent font-medium uppercase tracking-widest mb-2">Transcript</p>
+          {transcriptLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-accent/30 animate-pulse" />
+              <p className="text-xs text-text-muted">Loading transcript...</p>
+            </div>
+          ) : transcript ? (
+            <p className="text-xs text-text-secondary leading-relaxed">{transcript}</p>
+          ) : (
+            <p className="text-xs text-text-muted italic">No transcript available for this clip</p>
+          )}
+        </div>
+      )}
+
+      {/* Commentary label */}
+      <p className="text-[10px] text-accent font-medium uppercase tracking-widest">Your commentary</p>
+
+      {/* Text / Audio toggle */}
       <div className="flex gap-1 bg-bg-surface border border-border rounded-lg p-1">
         <button
           onClick={() => setMode('text')}
@@ -149,7 +213,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
             <div className="bg-bg-surface border border-border rounded-lg p-3">
               <audio ref={el => { if (el) el.src = audioUrl; }} controls className="w-full" />
               <button
-                onClick={removeAudio}
+                onClick={() => setAudioUrl(null)}
                 className="text-[11px] text-red-400 hover:text-red-300 mt-2 transition-colors"
               >
                 Remove audio
@@ -158,7 +222,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
           ) : recording ? (
             <div className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-              <p className="text-xs text-text-muted font-mono">{formatRecTime(recordingTime)}</p>
+              <p className="text-xs text-text-muted font-mono">{formatTime(recordingTime)}</p>
               <button
                 onClick={stopRecording}
                 className="px-4 py-2 text-xs font-medium rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors"
@@ -216,12 +280,6 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
 }
 
 function formatTime(s) {
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2, '0')}`;
-}
-
-function formatRecTime(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, '0')}`;
