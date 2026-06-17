@@ -171,7 +171,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             value={startSec}
             onChange={(e) => {
               const v = Number(e.target.value);
-              if (v < endSec - 1 && endSec - v <= 90) {
+              if (v < endSec - 1) {
                 setStartSec(v);
                 setStartInput(formatTime(v));
               }
@@ -185,7 +185,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             value={endSec}
             onChange={(e) => {
               const v = Number(e.target.value);
-              if (v > startSec + 1 && v - startSec <= 90) {
+              if (v > startSec + 1) {
                 setEndSec(v);
                 setEndInput(formatTime(v));
               }
@@ -293,8 +293,12 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
 
       {error && <p className="text-xs text-red-400">{error}</p>}
 
-      <button onClick={handleContinue} className="btn-primary w-full">
-        Continue to Annotate
+      <button
+        onClick={handleContinue}
+        disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
+        className="btn-primary w-full disabled:opacity-40"
+      >
+        {clipLen > 90 ? `${clipLen}s — max 90s to annotate` : 'Continue to Annotate'}
       </button>
     </div>
   );

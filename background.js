@@ -78,10 +78,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   if (message.type === 'FETCH_TRANSCRIPT') {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       if (tabs[0]?.id) {
+        await getPageInfoFromTab(tabs[0].id);
         chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
-          sendResponse(response);
+          sendResponse(response || { transcript: null });
         });
       } else {
         sendResponse({ transcript: null });

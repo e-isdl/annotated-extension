@@ -18,13 +18,9 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
   const [mode, setMode] = useState('text');
   const [publishing, setPublishing] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
+  const [uploadError, setUploadError] = useState('');
   const [transcript, setTranscript] = useState(null);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
-  const timerRef = useRef(null);
   const fileInputRef = useRef(null);
   const isYouTube = clipData?.source_type === 'youtube';
   const isArticle = clipData?.source_type === 'article';
@@ -50,65 +46,27 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadError('');
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const ext = file.name.split('.').pop() || 'webm';
-      const filename = `clips/annotations/${user.id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('clips').upload(filename, file);
-      if (!error) {
+      const filename = `annotations/${user?.id || 'anon'}/${Date.now()}.${ext}`;
+      const { data, error } = await supabase.storage.from('clips').upload(filename, file, {
+        contentType: file.type || 'audio/webm',
+      });
+      if (error) {
+        console.error('Upload error:', error);
+        setUploadError('Upload failed: ' + error.message);
+      } else {
         const { data: { publicUrl } } = supabase.storage.from('clips').getPublicUrl(filename);
         setAudioUrl(publicUrl);
       }
     } catch (err) {
       console.error('Upload error:', err);
+      setUploadError('Upload failed: ' + err.message);
     }
     setUploading(false);
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        stream.getTracks().forEach(t => t.stop());
-        setUploading(true);
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          const filename = `clips/annotations/${user.id}/${Date.now()}.webm`;
-          const { error } = await supabase.storage.from('clips').upload(filename, blob);
-          if (!error) {
-            const { data: { publicUrl } } = supabase.storage.from('clips').getPublicUrl(filename);
-            setAudioUrl(publicUrl);
-          }
-        } catch (err) {
-          console.error('Upload error:', err);
-        }
-        setUploading(false);
-      };
-      mediaRecorder.start();
-      setRecording(true);
-      setRecordingTime(0);
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-    } catch (err) {
-      console.error('Microphone error:', err);
-      alert('Could not access microphone. Please allow microphone access and try again.');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && recording) {
-      mediaRecorderRef.current.stop();
-      setRecording(false);
-      clearInterval(timerRef.current);
-    }
+    e.target.value = '';
   };
 
   return (
@@ -117,7 +75,6 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
         ← Back to clip
       </button>
 
-      {/* Clip info */}
       <div className="bg-bg-surface border border-border rounded-lg p-3 flex items-start gap-3">
         {clipData.thumbnail && (
           <img src={clipData.thumbnail} className="w-12 h-8 object-cover rounded" />
@@ -134,7 +91,6 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
         </div>
       </div>
 
-      {/* Transcript */}
       {isYouTube && (
         <div className="bg-bg-surface border border-border rounded-lg p-3">
           <p className="text-[10px] text-accent font-medium uppercase tracking-widest mb-2">Transcript</p>
@@ -151,10 +107,8 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
         </div>
       )}
 
-      {/* Commentary label */}
       <p className="text-[10px] text-accent font-medium uppercase tracking-widest">Your commentary</p>
 
-      {/* Text / Audio toggle */}
       <div className="flex gap-1 bg-bg-surface border border-border rounded-lg p-1">
         <button
           onClick={() => setMode('text')}
@@ -194,39 +148,26 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
                 Remove audio
               </button>
             </div>
-          ) : recording ? (
-            <div className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-              <p className="text-xs text-text-muted font-mono">{formatTime(recordingTime)}</p>
-              <button
-                onClick={stopRecording}
-                className="px-4 py-2 text-xs font-medium rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors"
-              >
-                Stop Recording
-              </button>
-            </div>
           ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={startRecording}
-                disabled={uploading}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs font-medium rounded-lg bg-bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors disabled:opacity-40"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                </svg>
-                Record audio
-              </button>
+            <div className="flex flex-col gap-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs font-medium rounded-lg bg-bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors disabled:opacity-40"
+                className="flex items-center justify-center gap-2 px-4 py-3 text-xs font-medium rounded-lg bg-bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors disabled:opacity-40"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
-                </svg>
-                Upload file
+                {uploading ? (
+                  <>
+                    <div className="w-3 h-3 rounded-full bg-accent/50 animate-pulse" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
+                    </svg>
+                    Upload audio file
+                  </>
+                )}
               </button>
               <input
                 ref={fileInputRef}
@@ -235,10 +176,10 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
                 onChange={handleFileUpload}
                 className="hidden"
               />
+              {uploadError && (
+                <p className="text-[11px] text-red-400">{uploadError}</p>
+              )}
             </div>
-          )}
-          {uploading && (
-            <p className="text-[11px] text-text-muted text-center">Uploading audio...</p>
           )}
         </div>
       )}
