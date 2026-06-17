@@ -63,44 +63,48 @@ async function fetchTranscriptFromTab(tabId, videoId, startSec, endSec) {
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     world: 'MAIN',
-    func: (videoId, startSec, endSec) => {
+    func: (startSec, endSec) => {
       return new Promise((resolve) => {
         try {
-          const html = document.documentElement.innerHTML;
-          const match = html.match(/"captionTracks":(\[.*?\])/);
-          if (!match) { resolve(null); return; }
+          // Click "Show transcript" button
+          const btn = document.querySelector('button[aria-label="Show transcript"]');
+          if (!btn) { resolve(null); return; }
+          btn.click();
 
-          const tracks = JSON.parse(match[1]);
-          const preferred = tracks.find(t => t.languageCode === 'en' && !t.kind)
-            ?? tracks.find(t => t.languageCode === 'en')
-            ?? tracks[0];
+          // Wait for transcript panel to load
+          setTimeout(() => {
+            const segments = document.querySelectorAll('ytd-transcript-segment-renderer');
+            if (!segments.length) { resolve(null); return; }
 
-          if (!preferred || !preferred.baseUrl) { resolve(null); return; }
+            const lines = [];
+            segments.forEach(seg => {
+              const timeEl = seg.querySelector('.segment-timestamp');
+              const textEl = seg.querySelector('.segment-text');
+              if (!timeEl || !textEl) return;
 
-          fetch(preferred.baseUrl + '&fmt=json3')
-            .then(r => r.json())
-            .then(data => {
-              const lines = [];
-              const events = data.events || [];
-              for (const event of events) {
-                if (!event.segs) continue;
-                const segStart = event.tStartMs / 1000;
-                const segDur = (event.dDurationMs || 0) / 1000;
-                const segEnd = segStart + segDur;
-                if (segEnd >= startSec && segStart <= endSec) {
-                  const text = event.segs.map(s => s.utf8).join('').trim();
-                  if (text) lines.push(text);
-                }
+              const timeText = timeEl.textContent.trim();
+              const parts = timeText.split(':').map(Number);
+              let segStart = 0;
+              if (parts.length === 3) segStart = parts[0] * 3600 + parts[1] * 60 + parts[2];
+              else if (parts.length === 2) segStart = parts[0] * 60 + parts[1];
+
+              if (segStart >= startSec && segStart <= endSec) {
+                lines.push(textEl.textContent.trim());
               }
-              resolve(lines.join(' '));
-            })
-            .catch(() => resolve(null));
+            });
+
+            // Close the transcript panel
+            const closeBtn = document.querySelector('button[aria-label="Close transcript"]');
+            if (closeBtn) closeBtn.click();
+
+            resolve(lines.join(' '));
+          }, 1500);
         } catch (e) {
           resolve(null);
         }
       });
     },
-    args: [videoId, startSec, endSec]
+    args: [startSec, endSec]
   });
 
   return results?.[0]?.result || null;
