@@ -59,6 +59,59 @@ async function getPageInfoFromTab(tabId) {
   });
 }
 
+async function fetchTranscriptFromTab(tabId, videoId, startSec, endSec) {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId },
+    world: 'MAIN',
+    func: (videoId, startSec, endSec) => {
+      return new Promise((resolve) => {
+        try {
+          const listUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&type=list`;
+          fetch(listUrl)
+            .then(r => r.text())
+            .then(listText => {
+              const parser = new DOMParser();
+              const listDoc = parser.parseFromString(listText, 'text/xml');
+              const tracks = listDoc.querySelectorAll('track');
+              let trackLang = 'en';
+              let trackKind = '';
+              for (const track of tracks) {
+                if (track.getAttribute('lang_code') === 'en') {
+                  trackKind = track.getAttribute('kind') || '';
+                  break;
+                }
+              }
+              const captionsUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${trackLang}&kind=${trackKind}`;
+              return fetch(captionsUrl);
+            })
+            .then(r => r.text())
+            .then(captionsText => {
+              const parser = new DOMParser();
+              const captionsDoc = parser.parseFromString(captionsText, 'text/xml');
+              const textNodes = captionsDoc.querySelectorAll('text');
+              const lines = [];
+              for (const node of textNodes) {
+                const start = parseFloat(node.getAttribute('start'));
+                const dur = parseFloat(node.getAttribute('dur') || '0');
+                const end = start + dur;
+                if (end >= startSec && start <= endSec) {
+                  lines.push(node.textContent.trim());
+                }
+              }
+              resolve(lines.join(' '));
+            })
+            .catch(() => resolve(null));
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    },
+    args: [videoId, startSec, endSec]
+  });
+
+  return results?.[0]?.result || null;
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PAGE_INFO' && sender.tab) {
     chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: message.data });
@@ -80,21 +133,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'FETCH_TRANSCRIPT') {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       if (tabs[0]?.id) {
-        try {
-          await chrome.scripting.executeScript({
-            target: { tabId: tabs[0].id },
-            files: ['content.js']
-          });
-        } catch (e) {}
-        setTimeout(() => {
-          chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
-            if (chrome.runtime.lastError) {
-              sendResponse({ transcript: null });
-            } else {
-              sendResponse(response || { transcript: null });
-            }
-          });
-        }, 200);
+        const transcript = await fetchTranscriptFromTab(
+          tabs[0].id,
+          message.videoId,
+          message.startSec,
+          message.endSec
+        );
+        sendResponse({ transcript });
       } else {
         sendResponse({ transcript: null });
       }
