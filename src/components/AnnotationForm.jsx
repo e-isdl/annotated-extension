@@ -33,7 +33,7 @@ async function fetchTranscriptDirect(videoId, startSec, endSec) {
       return t >= s && t <= e;
     });
     if (filtered.length > 0) {
-      return { filtered: filtered.map(seg => seg.text.replace(/>>\s*/g, '')).join(' '), full: full.replace(/>>\s*/g, '') };
+      return { filtered: filtered.map(seg => seg.text.replace(/>>\s*/g, '')).join(' '), full: full.replace(/>>\s*/g, ''), segments };
     }
   }
 
@@ -45,12 +45,51 @@ async function fetchTranscriptDirect(videoId, startSec, endSec) {
       const startWord = Math.floor((s / estimatedTotalDuration) * words.length);
       const endWord = Math.min(Math.ceil((e / estimatedTotalDuration) * words.length), words.length);
       const snippet = words.slice(startWord, endWord).join(' ');
-      if (snippet.trim()) return { filtered: snippet, full: full.replace(/>>\s*/g, '') };
+      if (snippet.trim()) return { filtered: snippet, full: full.replace(/>>\s*/g, ''), segments: null };
     }
-    return { filtered: full.replace(/>>\s*/g, ''), full: full.replace(/>>\s*/g, '') };
+    return { filtered: full.replace(/>>\s*/g, ''), full: full.replace(/>>\s*/g, ''), segments: null };
   }
 
   throw new Error('No transcript available');
+}
+
+function expandTranscript(currentText, fullTranscript, words = 5) {
+  if (!currentText || !fullTranscript) return currentText;
+  const currentWords = currentText.trim().split(/\s+/).filter(Boolean);
+  const fullWords = fullTranscript.trim().split(/\s+/).filter(Boolean);
+
+  const lastFew = currentWords.slice(-8).join(' ');
+  const matchIdx = fullTranscript.indexOf(lastFew);
+
+  if (matchIdx !== -1) {
+    const afterMatch = matchIdx + lastFew.length;
+    const remaining = fullTranscript.slice(afterMatch).trim();
+    const extraWords = remaining.split(/\s+/).filter(Boolean).slice(0, words);
+    if (extraWords.length > 0) {
+      return [...currentWords, ...extraWords].join(' ');
+    }
+  }
+
+  const firstFew = currentWords.slice(0, 8).join(' ');
+  const fwdIdx = fullTranscript.indexOf(firstFew);
+  if (fwdIdx !== -1) {
+    const afterText = fullTranscript.slice(fwdIdx).trim();
+    const textWords = afterText.split(/\s+/).filter(Boolean);
+    if (textWords.length > currentWords.length) {
+      const extraWords = textWords.slice(currentWords.length, currentWords.length + words);
+      if (extraWords.length > 0) {
+        return [...currentWords, ...extraWords].join(' ');
+      }
+    }
+  }
+
+  return currentText;
+}
+
+function contractTranscript(currentText, words = 5) {
+  if (!currentText) return currentText;
+  const currentWords = currentText.trim().split(/\s+/).filter(Boolean);
+  return currentWords.slice(0, -words).join(' ');
 }
 
 export default function AnnotationForm({ clipData, onBack, onPublish, transcriptCache, setTranscriptCache, onTranscriptChange }) {
@@ -72,13 +111,36 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
   const fileInputRef = useRef(null);
   const isYouTube = clipData?.source_type === 'youtube';
   const isArticle = clipData?.source_type === 'article';
-  const cacheKey = isYouTube ? `${clipData.youtube_id}:${clipData.start_sec}:${clipData.end_sec}` : null;
+  const cacheKey = isYouTube ? clipData.youtube_id : null;
 
   useEffect(() => {
     if (isYouTube && clipData.youtube_id && clipData.start_sec !== undefined && clipData.end_sec !== undefined) {
       if (transcriptCache && transcriptCache.key === cacheKey) {
-        setTranscript(transcriptCache.filtered);
-        setFullTranscript(transcriptCache.full);
+        const s = Number(clipData.start_sec);
+        const e = Number(clipData.end_sec);
+        const full = transcriptCache.full;
+        const segments = transcriptCache.segments;
+
+        if (segments?.length > 0 && !isNaN(s) && !isNaN(e)) {
+          const filtered = segments.filter(seg => {
+            const t = Number(seg.start);
+            return t >= s && t <= e;
+          });
+          if (filtered.length > 0) {
+            setTranscript(filtered.map(seg => seg.text.replace(/>>\s*/g, '')).join(' '));
+          } else if (full) {
+            const words = full.split(/\s+/).filter(Boolean);
+            const wordsPerSecond = 2.5;
+            const estimatedTotalDuration = words.length / wordsPerSecond;
+            const startWord = Math.floor((s / estimatedTotalDuration) * words.length);
+            const endWord = Math.min(Math.ceil((e / estimatedTotalDuration) * words.length), words.length);
+            setTranscript(words.slice(startWord, endWord).join(' '));
+          }
+        } else if (full) {
+          setTranscript(full.replace(/>>\s*/g, ''));
+        }
+
+        setFullTranscript(full);
         return;
       }
 
@@ -88,10 +150,10 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
       setEditingFull(false);
       setShowFull(false);
       fetchTranscriptDirect(clipData.youtube_id, clipData.start_sec, clipData.end_sec)
-        .then(({ filtered, full }) => {
+        .then(({ filtered, full, segments }) => {
           setTranscript(filtered);
           setFullTranscript(full);
-          setTranscriptCache({ key: cacheKey, filtered, full });
+          setTranscriptCache({ key: cacheKey, full, segments });
         })
         .catch(err => {
           setTranscriptError(err.message || 'Failed to fetch transcript');
@@ -201,12 +263,28 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
                 rows={6}
                 className="input resize-none text-xs leading-relaxed"
               />
-              <button
-                onClick={() => { setTranscript(editedText); setEditingTranscript(false); }}
-                className="btn-primary text-xs py-1.5"
-              >
-                Save Changes
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setEditedText(contractTranscript(editedText, 5))}
+                  disabled={editedText.trim().split(/\s+/).filter(Boolean).length <= 5}
+                  className="px-2 py-1 text-[10px] font-medium rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors disabled:opacity-30"
+                >
+                  −5 words
+                </button>
+                <button
+                  onClick={() => setEditedText(expandTranscript(editedText, fullTranscript, 5))}
+                  className="px-2 py-1 text-[10px] font-medium rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
+                >
+                  +5 words
+                </button>
+                <span className="text-[10px] text-text-muted ml-1">{editedText.trim().split(/\s+/).filter(Boolean).length} words</span>
+                <button
+                  onClick={() => { setTranscript(editedText); setEditingTranscript(false); }}
+                  className="btn-primary text-xs py-1.5 ml-auto"
+                >
+                  Save Changes
+                </button>
+              </div>
             </div>
           ) : transcript ? (
             <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{transcript}</p>

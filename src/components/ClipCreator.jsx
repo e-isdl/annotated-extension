@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import YouTubeClipper from './YouTubeClipper';
 import ArticleClipper from './ArticleClipper';
 import PodcastClipper from './PodcastClipper';
@@ -25,11 +25,11 @@ export default function ClipCreator({ pageInfo, session }) {
   const [transcriptCache, setTranscriptCache] = useState(null);
   const [currentTranscript, setCurrentTranscript] = useState(null);
 
-  const handleClipReady = (data) => {
+  const handleClipReady = useCallback((data) => {
     setClipData(data);
     setCurrentTranscript(null);
     setStep('annotate');
-  };
+  }, []);
 
   const handlePublish = async (annotationData) => {
     const { data: clip, error: clipErr } = await supabase
@@ -102,8 +102,12 @@ export default function ClipCreator({ pageInfo, session }) {
       )}
 
       <div className="flex-1 overflow-y-auto">
-        {step === 'clip' && renderClipper()}
-        {step === 'annotate' && <AnnotationForm clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} />}
+        <div style={{ display: step === 'clip' ? 'block' : 'none' }}>
+          {renderClipper()}
+        </div>
+        <div style={{ display: step === 'annotate' ? 'block' : 'none' }}>
+          {clipData && <AnnotationForm clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} />}
+        </div>
         {step === 'success' && <SuccessScreen clip={publishedClip} onReset={() => { setStep('clip'); setClipData(null); }} />}
       </div>
     </div>
