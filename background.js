@@ -66,32 +66,53 @@ async function fetchTranscriptFromTab(tabId, videoId, startSec, endSec) {
     func: (startSec, endSec) => {
       return new Promise((resolve) => {
         try {
-          // Click "Show transcript" button
-          const btn = document.querySelector('button[aria-label="Show transcript"]');
-          if (!btn) { resolve(null); return; }
-          btn.click();
+          // Step 1: Try to find and click Show Transcript button
+          const descSection = document.querySelector('ytd-video-description-transcript-section-renderer');
+          const btn = descSection?.querySelector('button')
+            || document.querySelector('button[aria-label="Show transcript"]')
+            || document.querySelector('button[aria-label="Mostrar transcripción"]');
 
-          // Wait for transcript panel to load
-          setTimeout(() => {
-            // Try multiple selector strategies
-            let segments = document.querySelectorAll('ytd-transcript-segment-renderer');
-            if (!segments.length) segments = document.querySelectorAll('[class*="segment"]');
-            if (!segments.length) segments = document.querySelectorAll('yt-formatted-string.segment-text');
+          if (btn) {
+            btn.click();
+          }
 
-            if (!segments.length) { resolve(null); return; }
+          // Step 2: Wait for transcript segments to appear, try multiple selectors
+          const maxAttempts = 10;
+          let attempt = 0;
+
+          function tryRead() {
+            attempt++;
+
+            // New YouTube DOM (2026+)
+            let segments = document.querySelectorAll('transcript-segment-view-model');
+
+            // Old YouTube DOM
+            if (!segments.length) {
+              segments = document.querySelectorAll('ytd-transcript-segment-renderer');
+            }
+
+            if (!segments.length && attempt < maxAttempts) {
+              setTimeout(tryRead, 500);
+              return;
+            }
+
+            if (!segments.length) {
+              resolve(null);
+              return;
+            }
 
             const lines = [];
             segments.forEach(seg => {
-              // Try multiple ways to get timestamp and text
-              const timeEl = seg.querySelector('.segment-timestamp') ||
-                             seg.querySelector('[class*="timestamp"]') ||
-                             seg.querySelector('yt-formatted-string:first-child');
-              const textEl = seg.querySelector('.segment-text') ||
-                             seg.querySelector('[class*="text"]') ||
-                             seg.querySelector('yt-formatted-string:last-child');
+              // Try new selectors first, then old
+              const timeEl = seg.querySelector('.ytwTranscriptSegmentViewModelTimestamp')
+                || seg.querySelector('.segment-timestamp')
+                || seg.querySelector('[class*="timestamp"]');
+
+              const textEl = seg.querySelector('.yt-core-attributed-string')
+                || seg.querySelector('.segment-text')
+                || seg.querySelector('[class*="text"]');
 
               if (!timeEl || !textEl) return;
-              if (timeEl === textEl) return;
 
               const timeText = timeEl.textContent.trim();
               const parts = timeText.split(':').map(Number);
@@ -109,11 +130,14 @@ async function fetchTranscriptFromTab(tabId, videoId, startSec, endSec) {
             });
 
             // Close the transcript panel
-            const closeBtn = document.querySelector('button[aria-label="Close transcript"]');
+            const closeBtn = document.querySelector('button[aria-label="Close transcript"]')
+              || document.querySelector('button[aria-label="Cerrar transcripción"]');
             if (closeBtn) closeBtn.click();
 
             resolve(lines.length ? lines.join(' ') : null);
-          }, 2000);
+          }
+
+          setTimeout(tryRead, 1500);
         } catch (e) {
           resolve(null);
         }
