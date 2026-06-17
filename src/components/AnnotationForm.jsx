@@ -51,14 +51,14 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
       const { data: { user } } = await supabase.auth.getUser();
       const ext = file.name.split('.').pop() || 'webm';
       const filename = `annotations/${user?.id || 'anon'}/${Date.now()}.${ext}`;
-      const { data, error } = await supabase.storage.from('clips').upload(filename, file, {
+      const { data, error } = await supabase.storage.from('annotation-audio').upload(filename, file, {
         contentType: file.type || 'audio/webm',
       });
       if (error) {
         console.error('Upload error:', error);
         setUploadError('Upload failed: ' + error.message);
       } else {
-        const { data: { publicUrl } } = supabase.storage.from('clips').getPublicUrl(filename);
+        const { data: { publicUrl } } = supabase.storage.from('annotation-audio').getPublicUrl(filename);
         setAudioUrl(publicUrl);
       }
     } catch (err) {

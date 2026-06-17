@@ -80,10 +80,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'FETCH_TRANSCRIPT') {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       if (tabs[0]?.id) {
-        await getPageInfoFromTab(tabs[0].id);
-        chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
-          sendResponse(response || { transcript: null });
-        });
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            files: ['content.js']
+          });
+        } catch (e) {}
+        setTimeout(() => {
+          chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
+            if (chrome.runtime.lastError) {
+              sendResponse({ transcript: null });
+            } else {
+              sendResponse(response || { transcript: null });
+            }
+          });
+        }, 200);
       } else {
         sendResponse({ transcript: null });
       }
