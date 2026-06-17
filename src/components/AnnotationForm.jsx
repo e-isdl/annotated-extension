@@ -7,13 +7,18 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
   const [mode, setMode] = useState('text');
   const [publishing, setPublishing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const timerRef = useRef(null);
   const fileInputRef = useRef(null);
   const isArticle = clipData?.source_type === 'article';
 
   const handlePublish = async () => {
     if (!text && !audioUrl) return;
     setPublishing(true);
-    await onPublish({ text_content: text, audio_url: audioUrl });
+    await onPublish({ text_content: text || null, audio_url: audioUrl });
     setPublishing(false);
   };
 
@@ -34,6 +39,59 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
       console.error('Upload error:', err);
     }
     setUploading(false);
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(t => t.stop());
+        setUploading(true);
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          const filename = `clips/annotations/${user.id}/${Date.now()}.webm`;
+          const { error } = await supabase.storage.from('clips').upload(filename, blob);
+          if (!error) {
+            const { data: { publicUrl } } = supabase.storage.from('clips').getPublicUrl(filename);
+            setAudioUrl(publicUrl);
+          }
+        } catch (err) {
+          console.error('Upload error:', err);
+        }
+        setUploading(false);
+      };
+
+      mediaRecorder.start();
+      setRecording(true);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Microphone error:', err);
+      alert('Could not access microphone. Please allow microphone access and try again.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && recording) {
+      mediaRecorderRef.current.stop();
+      setRecording(false);
+      clearInterval(timerRef.current);
+    }
+  };
+
+  const removeAudio = () => {
+    setAudioUrl(null);
   };
 
   return (
@@ -58,17 +116,97 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
         </div>
       </div>
 
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={isArticle ? "What's your take on this?" : "What's your take on this clip?"}
-        rows={5}
-        className="input resize-none text-sm leading-relaxed"
-      />
+      <div className="flex gap-1 bg-bg-surface border border-border rounded-lg p-1">
+        <button
+          onClick={() => setMode('text')}
+          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            mode === 'text' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Text
+        </button>
+        <button
+          onClick={() => setMode('audio')}
+          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            mode === 'audio' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Audio
+        </button>
+      </div>
+
+      {mode === 'text' ? (
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={isArticle ? "What's your take on this?" : "What's your take on this clip?"}
+          rows={5}
+          className="input resize-none text-sm leading-relaxed"
+        />
+      ) : (
+        <div className="flex flex-col gap-3">
+          {audioUrl ? (
+            <div className="bg-bg-surface border border-border rounded-lg p-3">
+              <audio ref={el => { if (el) el.src = audioUrl; }} controls className="w-full" />
+              <button
+                onClick={removeAudio}
+                className="text-[11px] text-red-400 hover:text-red-300 mt-2 transition-colors"
+              >
+                Remove audio
+              </button>
+            </div>
+          ) : recording ? (
+            <div className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col items-center gap-3">
+              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+              <p className="text-xs text-text-muted font-mono">{formatRecTime(recordingTime)}</p>
+              <button
+                onClick={stopRecording}
+                className="px-4 py-2 text-xs font-medium rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors"
+              >
+                Stop Recording
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={startRecording}
+                disabled={uploading}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs font-medium rounded-lg bg-bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors disabled:opacity-40"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
+                Record audio
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs font-medium rounded-lg bg-bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors disabled:opacity-40"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
+                </svg>
+                Upload file
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="audio/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+          )}
+          {uploading && (
+            <p className="text-[11px] text-text-muted text-center">Uploading audio...</p>
+          )}
+        </div>
+      )}
 
       <button
         onClick={handlePublish}
-        disabled={!text || publishing}
+        disabled={(!text && !audioUrl) || publishing || uploading}
         className="btn-primary w-full disabled:opacity-40"
       >
         {publishing ? 'Publishing...' : 'Publish'}
@@ -78,6 +216,12 @@ export default function AnnotationForm({ clipData, onBack, onPublish }) {
 }
 
 function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function formatRecTime(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, '0')}`;
