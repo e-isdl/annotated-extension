@@ -73,23 +73,38 @@ async function fetchTranscriptFromTab(tabId, videoId, startSec, endSec) {
 
           // Wait for transcript panel to load
           setTimeout(() => {
-            const segments = document.querySelectorAll('ytd-transcript-segment-renderer');
+            // Try multiple selector strategies
+            let segments = document.querySelectorAll('ytd-transcript-segment-renderer');
+            if (!segments.length) segments = document.querySelectorAll('[class*="segment"]');
+            if (!segments.length) segments = document.querySelectorAll('yt-formatted-string.segment-text');
+
             if (!segments.length) { resolve(null); return; }
 
             const lines = [];
             segments.forEach(seg => {
-              const timeEl = seg.querySelector('.segment-timestamp');
-              const textEl = seg.querySelector('.segment-text');
+              // Try multiple ways to get timestamp and text
+              const timeEl = seg.querySelector('.segment-timestamp') ||
+                             seg.querySelector('[class*="timestamp"]') ||
+                             seg.querySelector('yt-formatted-string:first-child');
+              const textEl = seg.querySelector('.segment-text') ||
+                             seg.querySelector('[class*="text"]') ||
+                             seg.querySelector('yt-formatted-string:last-child');
+
               if (!timeEl || !textEl) return;
+              if (timeEl === textEl) return;
 
               const timeText = timeEl.textContent.trim();
               const parts = timeText.split(':').map(Number);
+              if (parts.some(isNaN)) return;
+
               let segStart = 0;
               if (parts.length === 3) segStart = parts[0] * 3600 + parts[1] * 60 + parts[2];
               else if (parts.length === 2) segStart = parts[0] * 60 + parts[1];
+              else return;
 
-              if (segStart >= startSec && segStart <= endSec) {
-                lines.push(textEl.textContent.trim());
+              const text = textEl.textContent.trim();
+              if (segStart >= startSec && segStart <= endSec && text) {
+                lines.push(text);
               }
             });
 
@@ -97,8 +112,8 @@ async function fetchTranscriptFromTab(tabId, videoId, startSec, endSec) {
             const closeBtn = document.querySelector('button[aria-label="Close transcript"]');
             if (closeBtn) closeBtn.click();
 
-            resolve(lines.join(' '));
-          }, 1500);
+            resolve(lines.length ? lines.join(' ') : null);
+          }, 2000);
         } catch (e) {
           resolve(null);
         }
