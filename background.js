@@ -66,36 +66,30 @@ async function fetchTranscriptFromTab(tabId, videoId, startSec, endSec) {
     func: (videoId, startSec, endSec) => {
       return new Promise((resolve) => {
         try {
-          const listUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&type=list`;
-          fetch(listUrl)
-            .then(r => r.text())
-            .then(listText => {
-              const parser = new DOMParser();
-              const listDoc = parser.parseFromString(listText, 'text/xml');
-              const tracks = listDoc.querySelectorAll('track');
-              let trackLang = 'en';
-              let trackKind = '';
-              for (const track of tracks) {
-                if (track.getAttribute('lang_code') === 'en') {
-                  trackKind = track.getAttribute('kind') || '';
-                  break;
-                }
-              }
-              const captionsUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${trackLang}&kind=${trackKind}`;
-              return fetch(captionsUrl);
-            })
-            .then(r => r.text())
-            .then(captionsText => {
-              const parser = new DOMParser();
-              const captionsDoc = parser.parseFromString(captionsText, 'text/xml');
-              const textNodes = captionsDoc.querySelectorAll('text');
+          const html = document.documentElement.innerHTML;
+          const match = html.match(/"captionTracks":(\[.*?\])/);
+          if (!match) { resolve(null); return; }
+
+          const tracks = JSON.parse(match[1]);
+          const preferred = tracks.find(t => t.languageCode === 'en' && !t.kind)
+            ?? tracks.find(t => t.languageCode === 'en')
+            ?? tracks[0];
+
+          if (!preferred || !preferred.baseUrl) { resolve(null); return; }
+
+          fetch(preferred.baseUrl + '&fmt=json3')
+            .then(r => r.json())
+            .then(data => {
               const lines = [];
-              for (const node of textNodes) {
-                const start = parseFloat(node.getAttribute('start'));
-                const dur = parseFloat(node.getAttribute('dur') || '0');
-                const end = start + dur;
-                if (end >= startSec && start <= endSec) {
-                  lines.push(node.textContent.trim());
+              const events = data.events || [];
+              for (const event of events) {
+                if (!event.segs) continue;
+                const segStart = event.tStartMs / 1000;
+                const segDur = (event.dDurationMs || 0) / 1000;
+                const segEnd = segStart + segDur;
+                if (segEnd >= startSec && segStart <= endSec) {
+                  const text = event.segs.map(s => s.utf8).join('').trim();
+                  if (text) lines.push(text);
                 }
               }
               resolve(lines.join(' '));
