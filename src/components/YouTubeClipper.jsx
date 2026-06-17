@@ -71,15 +71,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
     if (!isNaN(sec) && sec > startSec && sec <= duration) setEndSec(sec);
   };
 
-  const jumpTo = (sec) => {
-    const clamped = Math.max(0, Math.min(sec, duration));
-    setStartSec(clamped);
-    setStartInput(formatTime(clamped));
-    const end = Math.min(clamped + 30, duration);
-    setEndSec(end);
-    setEndInput(formatTime(end));
-  };
-
   const handleContinue = () => {
     if (endSec <= startSec) { setError('End time must be after start time.'); return; }
     if (clipLen > 90) { setError('Clip must be 90 seconds or less.'); return; }
@@ -149,7 +140,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         {previewMode ? 'Hide preview' : 'Preview clip'}
       </button>
 
-      {/* SLIDERS — main control */}
+      {/* SLIDERS */}
       <div className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between text-xs font-mono text-text-muted">
           <span>{formatTime(startSec)}</span>
@@ -200,94 +191,58 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         </div>
       </div>
 
-      {/* TIME INPUTS */}
+      {/* TIME INPUTS + ADJUST BUTTONS */}
       <div className="bg-bg-surface border border-border rounded-lg p-3 flex items-center gap-2">
         <div className="flex-1">
           <label className="text-[10px] text-text-muted block mb-1">Start</label>
-          <input
-            type="text"
-            value={startInput}
-            onChange={(e) => handleStartInput(e.target.value)}
-            onBlur={() => setStartInput(formatTime(startSec))}
-            className="input text-sm font-mono w-full text-center"
-            placeholder="0:00"
-          />
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => updateStart(startSec - 5)}
+              className="px-2 py-1.5 text-xs rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
+            >
+              -5
+            </button>
+            <input
+              type="text"
+              value={startInput}
+              onChange={(e) => handleStartInput(e.target.value)}
+              onBlur={() => setStartInput(formatTime(startSec))}
+              className="input text-sm font-mono flex-1 text-center"
+              placeholder="0:00"
+            />
+            <button
+              onClick={() => updateStart(startSec + 5)}
+              className="px-2 py-1.5 text-xs rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
+            >
+              +5
+            </button>
+          </div>
         </div>
         <span className="text-text-muted mt-4">→</span>
         <div className="flex-1">
           <label className="text-[10px] text-text-muted block mb-1">End</label>
-          <input
-            type="text"
-            value={endInput}
-            onChange={(e) => handleEndInput(e.target.value)}
-            onBlur={() => setEndInput(formatTime(endSec))}
-            className="input text-sm font-mono w-full text-center"
-            placeholder="0:30"
-          />
-        </div>
-      </div>
-
-      {/* FINE-TUNE BUTTONS */}
-      <div className="bg-bg-surface border border-border rounded-lg p-3">
-        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2">Fine-tune start</p>
-        <div className="flex gap-1.5">
-          {[-30, -10, -5, -1, 1, 5, 10, 30].map((offset) => (
+          <div className="flex items-center gap-1">
             <button
-              key={`s${offset}`}
-              onClick={() => updateStart(startSec + offset)}
-              className="flex-1 px-1 py-1.5 text-[10px] rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors font-mono"
+              onClick={() => updateEnd(endSec - 5)}
+              className="px-2 py-1.5 text-xs rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
             >
-              {offset > 0 ? '+' : ''}{offset}s
+              -5
             </button>
-          ))}
-        </div>
-        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2 mt-3">Fine-tune end</p>
-        <div className="flex gap-1.5">
-          {[-30, -10, -5, -1, 1, 5, 10, 30].map((offset) => (
+            <input
+              type="text"
+              value={endInput}
+              onChange={(e) => handleEndInput(e.target.value)}
+              onBlur={() => setEndInput(formatTime(endSec))}
+              className="input text-sm font-mono flex-1 text-center"
+              placeholder="0:30"
+            />
             <button
-              key={`e${offset}`}
-              onClick={() => updateEnd(endSec + offset)}
-              className="flex-1 px-1 py-1.5 text-[10px] rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors font-mono"
+              onClick={() => updateEnd(endSec + 5)}
+              className="px-2 py-1.5 text-xs rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
             >
-              {offset > 0 ? '+' : ''}{offset}s
+              +5
             </button>
-          ))}
-        </div>
-      </div>
-
-      {/* QUICK PRESETS + JUMP TO */}
-      <div className="bg-bg-surface border border-border rounded-lg p-3">
-        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2">Quick clip length</p>
-        <div className="flex gap-2 mb-3">
-          {[10, 15, 30, 60, 90].map((sec) => (
-            <button
-              key={sec}
-              onClick={() => {
-                const end = Math.min(startSec + sec, duration);
-                setEndSec(end);
-                setEndInput(formatTime(end));
-              }}
-              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
-                clipLen === sec
-                  ? 'bg-accent text-white'
-                  : 'bg-bg-raised text-text-secondary hover:text-text-primary border border-border'
-              }`}
-            >
-              {sec}s
-            </button>
-          ))}
-        </div>
-        <p className="text-[10px] text-text-muted font-medium uppercase tracking-wide mb-2">Jump to</p>
-        <div className="flex gap-1.5 flex-wrap">
-          {[0, 30, 60, 120, 180, 300, 600, 900, 1800].filter(t => t < duration).map((sec) => (
-            <button
-              key={sec}
-              onClick={() => jumpTo(sec)}
-              className="px-2 py-1.5 text-[10px] rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors font-mono"
-            >
-              {formatTime(sec)}
-            </button>
-          ))}
+          </div>
         </div>
       </div>
 
