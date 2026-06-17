@@ -5,6 +5,7 @@ import PodcastClipper from './PodcastClipper';
 import AnnotationForm from './AnnotationForm';
 import SuccessScreen from './SuccessScreen';
 import { supabase } from '../lib/supabase';
+import { notify } from '../lib/notifications';
 
 function generateSlug(title) {
   if (!title) return Math.random().toString(36).slice(2, 10);
@@ -49,6 +50,33 @@ export default function ClipCreator({ pageInfo, session }) {
       user_id: session.user.id,
       ...annotationData,
     });
+
+    // Notify followers
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('handle')
+        .eq('id', session.user.id)
+        .single();
+      const handle = profile?.handle || 'Someone';
+
+      const { data: followers } = await supabase
+        .from('follows')
+        .select('follower_id')
+        .eq('following_id', session.user.id);
+
+      if (followers?.length > 0) {
+        const notifications = followers.map(f => ({
+          user_id: f.follower_id,
+          type: 'clip',
+          message: `@${handle} posted a new clip: "${clipData.title}"`,
+          clip_id: clip.id,
+        }));
+        await supabase.from('notifications').insert(notifications);
+      }
+    } catch (err) {
+      console.error('Follower notifications failed:', err);
+    }
 
     setPublishedClip(clip);
     setStep('success');
