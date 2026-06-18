@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function Auth() {
-  const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState(null);
   const [error, setError] = useState('');
 
   const signInWithGoogle = async () => {
-    setLoading(true);
+    setLoadingProvider('google');
     setError('');
     
     try {
@@ -27,7 +27,7 @@ export default function Auth() {
           async (redirectUrl) => {
             if (chrome.runtime.lastError || !redirectUrl) {
               setError('Sign in was cancelled or failed.');
-              setLoading(false);
+              setLoadingProvider(null);
               return;
             }
             
@@ -50,11 +50,11 @@ export default function Auth() {
                 await supabase.auth.exchangeCodeForSession(code);
               }
               
-              setLoading(false);
+              setLoadingProvider(null);
             } catch (err) {
               console.error('Session error:', err);
               setError('Failed to complete sign in.');
-              setLoading(false);
+              setLoadingProvider(null);
             }
           }
         );
@@ -62,12 +62,12 @@ export default function Auth() {
     } catch (err) {
       console.error('Sign in error:', err);
       setError('Failed to sign in. Please try again.');
-      setLoading(false);
+      setLoadingProvider(null);
     }
   };
 
   const signInWithX = async () => {
-    setLoading(true);
+    setLoadingProvider('twitter');
     setError('');
     
     try {
@@ -89,7 +89,7 @@ export default function Auth() {
       setError('Failed to sign in. Please try again.');
     }
     
-    setLoading(false);
+    setLoadingProvider(null);
   };
 
   return (
@@ -111,19 +111,19 @@ export default function Auth() {
       <div className="w-full flex flex-col gap-3">
         <button 
           onClick={signInWithGoogle} 
-          disabled={loading}
+          disabled={loadingProvider !== null}
           className="w-full flex items-center justify-center gap-3 bg-accent hover:bg-accent/90 rounded-lg py-3 px-4 text-sm font-medium text-white transition-colors disabled:opacity-50"
         >
           <GoogleIcon />
-          {loading ? 'Signing in...' : 'Continue with Google'}
+          {loadingProvider === 'google' ? 'Signing in...' : 'Continue with Google'}
         </button>
         <button 
           onClick={signInWithX} 
-          disabled={loading}
+          disabled={loadingProvider !== null}
           className="w-full flex items-center justify-center gap-3 bg-accent hover:bg-accent/90 rounded-lg py-3 px-4 text-sm font-medium text-white transition-colors disabled:opacity-50"
         >
           <XIcon />
-          {loading ? 'Signing in... (opens new tab)' : 'Continue with X'}
+          {loadingProvider === 'twitter' ? 'Signing in... (opens new tab)' : 'Continue with X'}
         </button>
       </div>
 
