@@ -33,7 +33,30 @@ async function fetchTranscriptDirect(videoId, startSec, endSec) {
       return t >= s && t <= e;
     });
     if (filtered.length > 0) {
-      return { filtered: filtered.map(seg => seg.text.replace(/>>\s*/g, '')).join(' '), full: full.replace(/>>\s*/g, ''), segments };
+      let joined = filtered.map(seg => seg.text.replace(/>>\s*/g, '')).join(' ');
+
+      // Trim to start after a sentence boundary (., !, ?)
+      const sentenceStart = joined.search(/[.!?]\s+[A-Z]/);
+      if (sentenceStart !== -1) {
+        joined = joined.slice(sentenceStart + 2).trim();
+      }
+
+      // Trim to end at a sentence boundary
+      const lastPeriod = joined.search(/[.!?](?:\s|$)/g);
+      if (lastPeriod !== -1) {
+        // Find the last sentence boundary
+        let lastIdx = -1;
+        const re = /[.!?]/g;
+        let m;
+        while ((m = re.exec(joined)) !== null) {
+          lastIdx = m.index;
+        }
+        if (lastIdx !== -1 && lastIdx < joined.length - 1) {
+          joined = joined.slice(0, lastIdx + 1).trim();
+        }
+      }
+
+      if (joined.trim()) return { filtered: joined, full: full.replace(/>>\s*/g, ''), segments };
     }
   }
 
@@ -127,7 +150,26 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
             return t >= s && t <= e;
           });
           if (filtered.length > 0) {
-            setTranscript(filtered.map(seg => seg.text.replace(/>>\s*/g, '')).join(' '));
+            let joined = filtered.map(seg => seg.text.replace(/>>\s*/g, '')).join(' ');
+
+            // Trim to start after a sentence boundary
+            const sentenceStart = joined.search(/[.!?]\s+[A-Z]/);
+            if (sentenceStart !== -1) {
+              joined = joined.slice(sentenceStart + 2).trim();
+            }
+
+            // Trim to end at a sentence boundary
+            let lastIdx = -1;
+            const re = /[.!?]/g;
+            let m;
+            while ((m = re.exec(joined)) !== null) {
+              lastIdx = m.index;
+            }
+            if (lastIdx !== -1 && lastIdx < joined.length - 1) {
+              joined = joined.slice(0, lastIdx + 1).trim();
+            }
+
+            setTranscript(joined);
           } else if (full) {
             const words = full.split(/\s+/).filter(Boolean);
             const wordsPerSecond = 2.5;
