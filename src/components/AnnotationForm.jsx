@@ -1,14 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-const APIFY_TOKEN = import.meta.env.VITE_APIFY_TOKEN;
 const APIFY_ACTOR_URL = 'https://api.apify.com/v2/actors/akash9078~youtube-transcript-extractor/run-sync-get-dataset-items';
+
+async function getApifyToken() {
+  const envToken = import.meta.env.VITE_APIFY_TOKEN;
+  if (envToken) return envToken;
+  return new Promise((resolve) => {
+    chrome.storage.local.get('apify_api_key', (result) => resolve(result.apify_api_key || ''));
+  });
+}
 
 async function fetchTranscriptDirect(videoId, startSec, endSec) {
   const s = Number(startSec);
   const e = Number(endSec);
 
-  const res = await fetch(`${APIFY_ACTOR_URL}?token=${APIFY_TOKEN}`, {
+  const token = await getApifyToken();
+  if (!token) throw new Error('No Apify API key. Open Settings to add one.');
+
+  const res = await fetch(`${APIFY_ACTOR_URL}?token=${token}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ videoUrl: `https://www.youtube.com/watch?v=${videoId}` }),
