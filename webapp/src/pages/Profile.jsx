@@ -178,11 +178,12 @@ export default function Profile() {
   const currentClips = activeTab === 'clips' ? clips : activeTab === 'likes' ? likedClips : [];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Avatar profile={profile} size="lg" />
-          <div>
+    <div className="profile-page">
+      <div className="profile-banner" />
+      <div className="profile-header">
+        <div className="profile-identity">
+          <div className="profile-avatar-shell"><Avatar profile={profile} size="lg" /></div>
+          <div className="profile-copy">
             <h1 className="text-xl font-bold text-text-primary">{profile.display_name || profile.handle}</h1>
             <p className="text-sm text-text-secondary">@{profile.handle}</p>
             {profile.bio && (
@@ -193,21 +194,21 @@ export default function Profile() {
         <FollowButton profileId={profile.id} />
       </div>
 
-      <div className="flex items-center gap-4 text-sm text-text-muted">
-        <span>{clips.length} clips</span>
+      <div className="profile-stats">
+        <span><strong>{clips.length}</strong> posts</span>
         <span>{followerCount} followers</span>
         <span>{followingCount} following</span>
       </div>
 
-      <div className="flex gap-1 bg-bg-surface border border-border rounded-lg p-1 flex-wrap">
+      <div className="profile-tabs">
         {TABS.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setActiveTab(tab.value)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            className={`profile-tab ${
               activeTab === tab.value
-                ? 'bg-accent text-white'
-                : 'text-text-secondary hover:text-text-primary'
+                ? 'profile-tab-active'
+                : ''
             }`}
           >
             {tab.label}
@@ -215,6 +216,7 @@ export default function Profile() {
         ))}
       </div>
 
+      <div className="profile-content">
       {activeTab === 'followers' ? (
         <div className="flex flex-col gap-3">
           {followers.length === 0 && (
@@ -320,6 +322,7 @@ export default function Profile() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

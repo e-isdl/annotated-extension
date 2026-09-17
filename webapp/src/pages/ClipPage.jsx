@@ -113,8 +113,8 @@ export default function ClipPage() {
   if (!clip) return <NotFound />;
 
   return (
-    <article className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+    <article className="detail-page real-detail-page">
+      <div className="detail-author-row">
         <div className="flex items-center gap-3">
           <Link to={profile?.handle ? `/u/${profile.handle}` : '#'}>
             <Avatar profile={profile} size="md" />

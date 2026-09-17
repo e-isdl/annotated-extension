@@ -9,8 +9,10 @@ Every post keeps the original source visible, identifies the exact passage or
 moment being discussed, and gives the author a place to add a sharp reaction,
 explanation, correction, or supporting evidence.
 
-The product should feel as immediately understandable as Reddit, but its
-native object is an annotation rather than a generic post:
+The product should use the complete, familiar shape of a modern Reddit-style
+community product—home feeds, communities, profiles, posts, comments, votes,
+saves, discovery, and creation—but its native object is an annotation rather
+than a generic post:
 
 > Find something worth discussing → preserve the context → add a point of view
 > → let the community respond.
@@ -19,9 +21,11 @@ The Chrome extension is the capture surface. The web app is the destination,
 community, and discovery engine. The web app is the priority for the bounty
 demo.
 
-## 2. What we are borrowing from Reddit
+## 2. The community model we are copying
 
-We are borrowing proven interaction patterns, not Reddit branding or assets:
+We are copying the full interaction model because users already understand it.
+Annotated keeps its own name, visual details, copy, source previews, and code;
+the product behavior should remain immediately legible to a Reddit user:
 
 - Communities organize recurring conversations around a topic.
 - A home feed is personalized from followed communities and people.
@@ -232,8 +236,9 @@ Trust signals:
 
 ## 10. Visual direction
 
-The target is “serious internet conversation,” not a clone of Reddit's exact
-orange branding. The visual system should use:
+The target is a modern Reddit-like community experience with Annotated's own
+identity. We should keep the density, hierarchy, and posting rhythm familiar
+while avoiding Reddit-owned assets, logos, or copied implementation details:
 
 - Warm paper/ink contrast with one highlighter accent.
 - Compact, information-rich cards with generous reading line-height.

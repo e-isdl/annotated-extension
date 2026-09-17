@@ -72,22 +72,25 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <p className="text-sm text-text-muted">
+    <div className="section-page search-page">
+      <div className="search-results-header">
+        <p className="eyebrow">SEARCH</p>
+        <h1 className="section-title">Results for <span>“{query}”</span></h1>
+        <p className="section-subtitle">Find posts, people, and the source context around a conversation.</p>
+        <p className="text-sm text-text-muted search-results-inline">
           Results for <span className="text-text-primary font-medium">"{query}"</span>
         </p>
       </div>
 
-      <div className="flex gap-1 bg-bg-surface border border-border rounded-lg p-1">
+      <div className="profile-tabs search-tabs">
         {TABS.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setActiveTab(tab.value)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            className={`profile-tab ${
               activeTab === tab.value
-                ? 'bg-accent text-white'
-                : 'text-text-secondary hover:text-text-primary'
+                ? 'profile-tab-active'
+                : ''
             }`}
           >
             {tab.label}

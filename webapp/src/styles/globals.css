@@ -396,6 +396,32 @@ body { font-family: Arial, Helvetica, -apple-system, BlinkMacSystemFont, sans-se
 .comment-tools button:hover { color: var(--reddit-text); }
 .comment-node > .flex > .min-w-0 > .flex button { padding: 0; border: 0; background: transparent; cursor: pointer; }
 
+.profile-page { padding-bottom: 60px; }
+.profile-banner { height: 112px; border: 1px solid var(--reddit-border); border-bottom: 0; border-radius: 8px 8px 0 0; background: linear-gradient(115deg, #25272a 0%, #151719 58%, #30201a 100%); }
+.profile-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; padding: 0 20px 16px; border: 1px solid var(--reddit-border); border-top: 0; border-radius: 0 0 8px 8px; background: var(--reddit-surface); }
+.profile-identity { display: flex; align-items: flex-end; gap: 14px; min-width: 0; margin-top: -34px; }
+.profile-avatar-shell { display: flex; align-items: center; justify-content: center; width: 76px; height: 76px; padding: 4px; border: 4px solid var(--reddit-surface); border-radius: 50%; background: var(--reddit-orange); }
+.profile-copy { min-width: 0; padding-bottom: 1px; }
+.profile-copy h1 { margin: 0; font-size: 21px; letter-spacing: -.02em; }
+.profile-copy p { margin: 3px 0 0; }
+.profile-stats { display: flex; gap: 18px; padding: 14px 2px; color: var(--reddit-muted); font-size: 11px; }
+.profile-stats strong { color: var(--reddit-text); font-weight: 700; }
+.profile-tabs { display: flex; gap: 2px; overflow-x: auto; margin: 0 0 16px; padding: 4px; border: 1px solid var(--reddit-border); border-radius: 6px; background: var(--reddit-surface); }
+.profile-tab { flex: 0 0 auto; padding: 8px 12px; border: 0; border-bottom: 2px solid transparent; border-radius: 3px; background: transparent; color: var(--reddit-muted); font-size: 11px; font-weight: 600; cursor: pointer; }
+.profile-tab:hover { color: var(--reddit-text); }
+.profile-tab-active { border-bottom-color: var(--reddit-orange); color: var(--reddit-text); }
+.profile-content { display: flex; flex-direction: column; gap: 12px; }
+.search-results-header { margin-bottom: 18px; }
+.search-results-header .section-title { margin-top: 8px; }
+.search-results-header .section-title span { color: var(--reddit-orange); }
+.search-results-inline { display: none; }
+.search-tabs { margin-bottom: 12px; }
+.real-detail-page { gap: 18px; }
+.detail-author-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.real-detail-page > h1 { margin: 2px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.15; letter-spacing: -.03em; }
+.real-detail-page > .rounded-xl { border-color: var(--reddit-border); border-radius: 7px; background: var(--reddit-surface); }
+.real-detail-page .comments-panel { margin-top: 6px; }
+
 @media (max-width: 760px) {
   .app-main { padding-top: 14px; }
   .feed-hero h1 { font-size: 27px; }
@@ -405,4 +431,9 @@ body { font-family: Arial, Helvetica, -apple-system, BlinkMacSystemFont, sans-se
   .create-post-action { display: none; }
   .source-preview { height: 100px; }
   .source-preview-image { width: 94px; }
+  .profile-banner { height: 84px; }
+  .profile-header { align-items: flex-start; padding: 0 12px 14px; }
+  .profile-identity { align-items: flex-start; flex-direction: column; gap: 8px; margin-top: -28px; }
+  .profile-avatar-shell { width: 64px; height: 64px; }
+  .profile-copy h1 { font-size: 18px; }
 }
