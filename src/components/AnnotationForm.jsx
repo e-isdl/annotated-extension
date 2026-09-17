@@ -4,8 +4,6 @@ import { supabase } from '../lib/supabase';
 const APIFY_ACTOR_URL = 'https://api.apify.com/v2/actors/akash9078~youtube-transcript-extractor/run-sync-get-dataset-items';
 
 async function getApifyToken() {
-  const envToken = import.meta.env.VITE_APIFY_TOKEN;
-  if (envToken) return envToken;
   return new Promise((resolve) => {
     chrome.storage.local.get('apify_api_key', (result) => resolve(result.apify_api_key || ''));
   });

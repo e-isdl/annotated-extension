@@ -1,54 +1,63 @@
-# Annotated Extension
+# Annotated
 
-Chrome extension for clipping and annotating content from the web.
+Clip and annotate content from the web. This repository contains the Chrome
+extension, public web app, and Supabase project configuration.
 
-## Features
+## Repository layout
 
-- Clip YouTube videos with custom time ranges
-- Clip text from articles
-- Add text annotations to clips
-- Upload audio annotations
-- Share clips to the Annotated community
+- `src/`, `background.js`, and `content.js` — Chrome extension
+- `webapp/` — React/Vite public site deployed to Cloudflare Pages
+- `supabase/` — Supabase CLI configuration
+- `sql/` — reviewed SQL patches
 
-## Installation (Developer Mode)
+## Development
 
-Since this extension is not yet on the Chrome Web Store, you can install it in developer mode:
+Create local environment files from the examples. Never commit them.
 
-1. **Download this repository**
-   - Click the green "Code" button above → "Download ZIP"
-   - Extract the ZIP file
+```bash
+copy .env.example .env
+copy webapp/.env.example webapp/.env
+```
 
-2. **Download the latest release**
-   - Go to [Releases](../../releases)
-   - Download the `annotated-extension.zip` from the latest release
+Build the extension:
 
-3. **Load in Chrome**
-   - Open Chrome and go to `chrome://extensions`
-   - Enable **Developer mode** (toggle in top right)
-   - Click **Load unpacked**
-   - Select the extracted `annotated-extension` folder from the release
+```bash
+npm ci
+npm run build
+```
 
-4. **Pin the extension**
-   - Click the puzzle piece icon in Chrome's toolbar
-   - Pin "Annotated" for easy access
+Build the web app:
 
-## Usage
+```bash
+cd webapp
+npm ci
+npm run build
+```
 
-1. Click the Annotated icon in your toolbar
-2. Sign in with your Google account
-3. Navigate to any YouTube video or article
-4. Click the Annotated icon to start clipping
-5. Select your clip range and add an annotation
-6. Publish to share with the community
+## Extension installation
+
+1. Build the extension with `npm run build`.
+2. Open `chrome://extensions`.
+3. Enable Developer mode.
+4. Select **Load unpacked** and choose this repository directory.
+
+## Deployment
+
+The production Pages project is `annotated`. Cloudflare deployment is handled
+by `.github/workflows/deploy-pages.yml` after these GitHub Actions secrets are
+configured:
+
+- `CLOUDFLARE_API_TOKEN` — scoped to the Pages project/account
+- `CLOUDFLARE_ACCOUNT_ID` — the Cloudflare account ID
+
+Supabase schema changes must be reviewed before applying them to production.
 
 ## Links
 
-- [Web App](https://annotated-2ec.pages.dev)
-- [Report Issues](https://github.com/e-isdl/annotated-extension/issues)
+- Web app: https://annotated-2ec.pages.dev
+- Issues: https://github.com/e-isdl/annotated-extension/issues
 
-## Tech Stack
+## License
 
-- React 18 + Vite
-- Tailwind CSS
-- Chrome Extension Manifest V3
-- Supabase (backend)
+The source code is released under the MIT License. User-generated content and
+third-party media remain subject to their own rights and terms.
