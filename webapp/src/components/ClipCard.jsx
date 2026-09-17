@@ -7,6 +7,7 @@ import VoteButtons from './VoteButtons';
 export default function ClipCard({ clip }) {
   const annotation = clip.annotations?.[0];
   const commentary = clip.annotation || annotation?.text_content;
+  const commentaryPreview = annotationPreview(commentary);
   const [score, setScore] = useState(clip.score ?? 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
@@ -69,7 +70,7 @@ export default function ClipCard({ clip }) {
 
       <Link to={href} className="block no-underline group">
         <h2 className="post-title">{clip.title}</h2>
-        {commentary && <p className="post-commentary">{commentary}</p>}
+        {commentary && <p className="post-commentary">{commentaryPreview.text}{commentaryPreview.truncated && <span className="post-commentary-more">…</span>}</p>}
 
         <div className="source-preview">
           <div className="source-preview-copy">
@@ -127,4 +128,18 @@ function formatTime(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function annotationPreview(value) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!text) return { text: '', truncated: false };
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+  if (sentences.length > 2) {
+    return { text: sentences.slice(0, 2).join('').trim(), truncated: true };
+  }
+  if (text.length > 220) {
+    const cut = text.slice(0, 220).replace(/\s+\S*$/, '').trim();
+    return { text: cut, truncated: true };
+  }
+  return { text, truncated: false };
 }

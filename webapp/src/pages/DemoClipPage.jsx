@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import VoteButtons from '../components/VoteButtons';
+import YouTubeEmbed from '../components/YouTubeEmbed';
+import AudioPlayer from '../components/AudioPlayer';
+import AnnotationLead from '../components/AnnotationLead';
 
 const DEMO_COMMENTS = [
   { handle: 'theorycraft', body: 'This is the difference between a feed that gives you information and a feed that gives you something to think about.', score: 148, age: '18m' },
@@ -21,7 +24,7 @@ export default function DemoClipPage({ clip }) {
   }
 
   return (
-    <article className="detail-page">
+    <article className="detail-page annotated-post-page">
       <Link to="/" className="back-link">← Back to Home</Link>
 
       <div className="detail-meta-row">
@@ -30,36 +33,50 @@ export default function DemoClipPage({ clip }) {
         <Link to={`/u/${clip.profiles.handle}`} className="post-author no-underline">@{clip.profiles.handle}</Link>
         <span>•</span>
         <span>{timeAgo(clip.created_at)}</span>
-        <span className={`badge badge-${clip.source_type}`}>{clip.annotation_type}</span>
       </div>
+
+      <AnnotationLead text={clip.annotation} profile={clip.profiles} annotationType={clip.annotation_type} />
 
       <h1 className="detail-title">{clip.title}</h1>
 
-      <div className="detail-commentary">{clip.annotation}</div>
+      <section className="source-post" aria-label="Original source post">
+        <div className="source-post-header">
+          <div>
+            <p className="source-post-kicker">SOURCE POST</p>
+            <p className="source-post-domain">{clip.source_domain}</p>
+          </div>
+          <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
+        </div>
+        <SourceMedia clip={clip} />
+      </section>
 
-      <div className="detail-context">
-        <div className="detail-context-heading"><span className="eyebrow mb-0">SOURCE CONTEXT</span><span className="source-label">{clip.source_domain}</span></div>
-        {clip.source_image_url || clip.thumbnail ? <img src={clip.source_image_url || clip.thumbnail} alt="" className="detail-source-image" /> : null}
-        <div className="detail-quote-wrap">
-          <span className="quote-mark">“</span>
-          <p>{clip.article_text || clip.transcript || clip.source_preview_text}</p>
+      <details className="transcript-drawer">
+        <summary>
+          <span>Show transcript &amp; context</span>
+          <span className="transcript-drawer-hint">Read the exact moment</span>
+        </summary>
+        <div className="transcript-drawer-body">
+          <div className="detail-quote-wrap">
+            <span className="quote-mark">“</span>
+            <p>{clip.article_text || clip.transcript || clip.source_preview_text || 'No transcript was captured for this source.'}</p>
+          </div>
+          <div className="source-post-footer">
+            <p>{clip.source_title}</p>
+            <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link">Open original ↗</a>
+          </div>
+          {clip.start_sec !== undefined && <span className="timestamp">{formatTime(clip.start_sec)} → {formatTime(clip.end_sec)}</span>}
         </div>
-        <div className="flex items-center justify-between gap-3 mt-4">
-          <p className="text-xs text-text-secondary truncate">{clip.source_title}</p>
-          <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link shrink-0">Open original ↗</a>
-        </div>
-        {clip.start_sec !== undefined && <div className="mt-3"><span className="timestamp">{formatTime(clip.start_sec)} → {formatTime(clip.end_sec)}</span></div>}
-      </div>
+      </details>
 
       <div className="detail-actions">
         <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
+        <a href="#comments" className="post-action no-underline">▱ {clip.comments_count} comments</a>
         <button type="button" className="post-action" onClick={share}>↗ {shared ? 'Copied' : 'Share'}</button>
         <button type="button" className={`post-action ${saved ? 'post-action-saved' : ''}`} onClick={() => setSaved(!saved)}>{saved ? '★ Saved' : '☆ Save'}</button>
-        <span className="detail-comment-count">{clip.comments_count} comments</span>
       </div>
 
       <section className="comments-panel" id="comments">
-        <div className="comments-heading"><div><p className="eyebrow mb-1">THE DISCUSSION</p><h2>{clip.comments_count} comments</h2></div><button className="sort-chip">Best⌄</button></div>
+        <div className="comments-heading"><div><p className="eyebrow mb-1">THE DISCUSSION</p><h2>{clip.comments_count} comments</h2></div><select className="sort-chip" defaultValue="best"><option value="best">Best</option><option value="new">New</option></select></div>
         <div className="comment-signin"><span>✎</span><p>Have something to add?</p><button type="button" className="btn-ghost text-xs py-2 px-3">Sign in to comment</button></div>
         <div className="comment-list">
           {DEMO_COMMENTS.map((comment) => (
@@ -73,6 +90,28 @@ export default function DemoClipPage({ clip }) {
       </section>
     </article>
   );
+}
+
+function SourceMedia({ clip }) {
+  if (clip.source_type === 'youtube' && clip.youtube_id && !String(clip.id).startsWith('demo-')) {
+    return <div className="source-media"><YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted={false} autoplay={false} /></div>;
+  }
+  if (clip.source_type === 'youtube') {
+    return (
+      <a className="video-poster" href={clip.source_url} target="_blank" rel="noopener noreferrer" style={{ backgroundImage: `url(${clip.thumbnail || clip.source_image_url || ''})` }}>
+        <span className="video-poster-shade" />
+        <span className="video-play">▶</span>
+        <span className="video-poster-label">Open video on YouTube ↗</span>
+      </a>
+    );
+  }
+  if (clip.source_type === 'podcast' && clip.audio_url) {
+    return <div className="source-media"><AudioPlayer src={clip.audio_url} /></div>;
+  }
+  if (clip.source_image_url || clip.thumbnail) {
+    return <img src={clip.source_image_url || clip.thumbnail} alt="" className="source-post-image" />;
+  }
+  return <div className="source-text-placeholder">This post is anchored to a source conversation. Open the original or expand the context below.</div>;
 }
 
 function timeAgo(dateStr) {

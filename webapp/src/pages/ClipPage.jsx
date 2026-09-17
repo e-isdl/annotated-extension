@@ -9,6 +9,7 @@ import FileClaimButton from '../components/FileClaimButton';
 import CommentSection from '../components/CommentSection';
 import VoteButtons from '../components/VoteButtons';
 import Avatar from '../components/Avatar';
+import AnnotationLead from '../components/AnnotationLead';
 import { getDemoClip } from '../lib/demoData';
 import DemoClipPage from './DemoClipPage';
 
@@ -26,11 +27,13 @@ export default function ClipPage() {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [claims, setClaims] = useState([]);
+  const [saved, setSaved] = useState(false);
+  const [shared, setShared] = useState(false);
 
   const demoClip = getDemoClip(id);
-  if (demoClip) return <DemoClipPage clip={demoClip} />;
 
   useEffect(() => {
+    if (demoClip) return;
     async function load() {
       const { data: { session } } = await supabase.auth.getSession();
       setCurrentUser(session?.user || null);
@@ -92,7 +95,9 @@ export default function ClipPage() {
       setLoading(false);
     }
     load();
-  }, [id]);
+  }, [id, demoClip]);
+
+  if (demoClip) return <DemoClipPage clip={demoClip} />;
 
   const handleDeleteClip = async () => {
     setDeleting(true);
@@ -108,6 +113,22 @@ export default function ClipPage() {
   };
 
   const isOwner = currentUser && clip && currentUser.id === clip.user_id;
+
+  async function handleShare() {
+    try { await navigator.clipboard.writeText(window.location.href); } catch {}
+    setShared(true);
+    window.setTimeout(() => setShared(false), 1600);
+  }
+
+  async function handleSave() {
+    const next = !saved;
+    setSaved(next);
+    if (!clip || !currentUser) return;
+    const result = next
+      ? await supabase.from('post_saves').insert({ clip_id: clip.id, user_id: currentUser.id })
+      : await supabase.from('post_saves').delete().eq('clip_id', clip.id).eq('user_id', currentUser.id);
+    if (result.error && result.error.code !== '42P01') setSaved(!next);
+  }
 
   if (loading) return <LoadingState />;
   if (!clip) return <NotFound />;
@@ -127,6 +148,7 @@ export default function ClipPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link to={`/c/${clip.community_slug || 'annotated'}`} className="community-pill no-underline"><span className="community-dot">{(clip.community_name || 'Annotated')[0]}</span> c/{clip.community_name || 'Annotated'}</Link>
           <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
           {isOwner && (
           <div className="flex items-center gap-1">
@@ -161,6 +183,8 @@ export default function ClipPage() {
         </div>
       </div>
 
+      <AnnotationLead text={annotation?.text_content} profile={profile} annotationType={clip.annotation_type || 'Annotation'} />
+
       <h1 className="text-2xl font-bold text-text-primary leading-tight tracking-tight">
         {clip.title}
       </h1>
@@ -173,93 +197,49 @@ export default function ClipPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
-        <FileClaimButton clipId={clip.id} />
-      </div>
-
-      <div className="rounded-xl overflow-hidden border border-border">
+      <section className="source-post" aria-label="Original source post">
+        <div className="source-post-header">
+          <div>
+            <p className="source-post-kicker">SOURCE POST</p>
+            <p className="source-post-domain">{clip.source_domain || sourceDomain(clip.source_url)}</p>
+          </div>
+          <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
+        </div>
         {clip.source_type === 'youtube' && (
-          <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted={false} autoplay />
+          <div className="source-media"><YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted={false} autoplay={false} /></div>
         )}
         {clip.source_type === 'podcast' && (
-          <AudioPlayer src={clip.audio_url} />
+          <div className="source-media"><AudioPlayer src={clip.audio_url} /></div>
         )}
         {clip.source_type === 'article' && clip.article_text && (
-          <div className="p-6 bg-bg-surface">
-            <div className="border-l-2 border-accent/40 pl-5">
-              <p className="text-base text-text-secondary leading-[1.9] whitespace-pre-wrap">{clip.article_text}</p>
-            </div>
-          </div>
+          <div className="source-article-body"><p>{clip.article_text}</p></div>
         )}
-      </div>
+      </section>
 
-      {(transcript || annotation) && (
-        <div className="flex flex-col gap-4">
-          {transcript && (
-            <div>
-              <p className="text-[10px] text-text-muted font-medium uppercase tracking-widest mb-2">Transcript</p>
-              <div className="bg-bg-surface border border-border rounded-xl p-5 sm:p-6">
-                <p className="text-base sm:text-lg text-text-secondary/90 leading-[1.85] whitespace-pre-wrap font-medium">
-                  &ldquo;{transcript}&rdquo;
-                </p>
-              </div>
-            </div>
-          )}
+      {annotation?.audio_url && <AnnotationBlock annotation={{ ...annotation, text_content: null }} />}
 
-          {annotation && (annotation.text_content || annotation.audio_url) && (
-            <div>
-              <p className="text-[10px] text-accent font-medium uppercase tracking-widest mb-2">Commentary</p>
-              <div className="relative">
-                <div className="absolute left-0 top-3 bottom-3 w-[2px] bg-accent rounded-full" />
-                <div className="ml-4 bg-gradient-to-br from-bg-surface/80 to-bg-surface/40 backdrop-blur-sm rounded-xl border border-accent/[0.08] overflow-hidden">
-                  <div className="p-5 sm:p-6 flex flex-col gap-4">
-                    {annotation.text_content && (
-                      <p className="text-[15px] sm:text-base leading-[1.85] font-semibold" style={{ color: '#aaa' }}>
-                        {annotation.text_content}
-                      </p>
-                    )}
-
-                    {annotation.audio_url && (
-                      <div className="flex flex-col gap-3">
-                        <audio
-                          ref={el => { if (el) el.src = annotation.audio_url; }}
-                          onEnded={() => {}}
-                        />
-                        <div className="bg-bg-raised/60 rounded-lg p-3 flex items-center gap-3">
-                          <button
-                            onClick={() => {
-                              const audio = document.querySelector('audio[src="' + annotation.audio_url + '"]');
-                              if (audio) audio.paused ? audio.play() : audio.pause();
-                            }}
-                            className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center text-accent hover:bg-accent/25 transition-colors shrink-0"
-                          >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          </button>
-                          <span className="text-xs text-text-muted">Audio commentary</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+      {(transcript || clip.article_text) && (
+        <details className="transcript-drawer">
+          <summary>
+            <span>Show transcript &amp; context</span>
+            <span className="transcript-drawer-hint">Read the exact source moment</span>
+          </summary>
+          <div className="transcript-drawer-body">
+            <div className="detail-quote-wrap"><span className="quote-mark">“</span><p>{transcript || clip.article_text}</p></div>
+            {clip.source_url && <div className="source-post-footer"><p>{clip.source_title || sourceDomain(clip.source_url)}</p><a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link">Open original ↗</a></div>}
+          </div>
+        </details>
       )}
 
-      <a
-        href={clip.source_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 text-sm text-text-secondary hover:text-accent-text transition-colors group"
-      >
-        <span className="font-mono text-xs text-text-muted group-hover:text-accent-text">↗</span>
-        View original source
-        <span className="font-mono text-xs text-text-muted truncate">{clip.source_url}</span>
-      </a>
+      <div className="detail-actions">
+        <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
+        <FileClaimButton clipId={clip.id} />
+        <button type="button" className="post-action" onClick={handleShare}>↗ {shared ? 'Copied' : 'Share'}</button>
+        <button type="button" className={`post-action ${saved ? 'post-action-saved' : ''}`} onClick={handleSave}>{saved ? '★ Saved' : '☆ Save'}</button>
+        <span className="detail-comment-count">Join the discussion below</span>
+      </div>
+
+      {clip.source_url && <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link real-source-link">↗ View original source <span>{clip.source_url}</span></a>}
 
       {isOwner && claims.length > 0 && (
         <div className="flex flex-col gap-3">
@@ -325,6 +305,10 @@ function formatTime(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function sourceDomain(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'source'; }
 }
 
 function LoadingState() {
