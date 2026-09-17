@@ -1,0 +1,108 @@
+const demoProfile = {
+  id: 'demo-profile',
+  handle: 'annotated_editor',
+  display_name: 'Annotated editorial',
+  avatar_url: null,
+};
+
+export const DEMO_COMMUNITIES = [
+  { slug: 'media-literacy', name: 'Media Literacy', members: '18.4k', description: 'Break down the stories, screenshots, and claims shaping the internet.' },
+  { slug: 'technology', name: 'Technology', members: '12.8k', description: 'Products, platforms, and the ideas behind them.' },
+  { slug: 'startups', name: 'Startups', members: '9.6k', description: 'The building, shipping, and thinking behind new companies.' },
+  { slug: 'internet-culture', name: 'Internet Culture', members: '7.2k', description: 'The posts, memes, and moments that become the internet.' },
+];
+
+export const DEMO_CLIPS = [
+  {
+    id: 'demo-1',
+    slug: 'context-is-the-new-content',
+    user_id: demoProfile.id,
+    profiles: demoProfile,
+    community_slug: 'media-literacy',
+    community_name: 'Media Literacy',
+    source_type: 'article',
+    annotation_type: 'Explainer',
+    title: 'Context is becoming the new content',
+    article_text: 'The internet does not have an information problem. It has a context problem. The next generation of social products will help people understand why something matters, not just pass it along.',
+    source_title: 'The internet is not short on information',
+    source_domain: 'theconversation.com',
+    source_url: 'https://theconversation.com/',
+    source_image_url: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=900&q=80',
+    created_at: new Date(Date.now() - 45 * 60000).toISOString(),
+    score: 842,
+    comments_count: 64,
+    annotation: 'This is the product opportunity: let people point at the exact sentence, image, or moment they mean. A link without the why is just another tab.',
+  },
+  {
+    id: 'demo-2',
+    slug: 'the-screenshot-is-the-receipt',
+    user_id: 'demo-maya',
+    profiles: { id: 'demo-maya', handle: 'mayachen', display_name: 'Maya Chen', avatar_url: null },
+    community_slug: 'internet-culture',
+    community_name: 'Internet Culture',
+    source_type: 'social',
+    annotation_type: 'Found receipts',
+    title: 'The screenshot is the receipt, but the thread is the argument',
+    article_text: 'A post can disappear in five minutes. The useful part is not pretending a screenshot is the whole truth—it is preserving enough context for people to inspect the claim and disagree in public.',
+    source_title: 'A post worth preserving',
+    source_domain: 'x.com',
+    source_url: 'https://x.com/',
+    source_image_url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80',
+    source_preview_text: '“Everyone remembers the take. Nobody remembers what it was responding to.”',
+    created_at: new Date(Date.now() - 3.4 * 3600000).toISOString(),
+    score: 611,
+    comments_count: 38,
+    annotation: 'Preservation and attribution should work together. Show the original, show the capture date, and give the community somewhere to add the missing context.',
+  },
+  {
+    id: 'demo-3',
+    slug: 'the-best-part-of-a-video-is-not-the-headline',
+    user_id: 'demo-omar',
+    profiles: { id: 'demo-omar', handle: 'omarbuilds', display_name: 'Omar Builds', avatar_url: null },
+    community_slug: 'startups',
+    community_name: 'Startups',
+    source_type: 'youtube',
+    annotation_type: 'Hot take',
+    title: 'The best part of a video is rarely the headline',
+    transcript: 'The thing that changes your mind is usually a ninety-second aside buried halfway through the conversation.',
+    source_title: 'A conversation about making things people want',
+    source_domain: 'youtube.com',
+    source_url: 'https://www.youtube.com/',
+    youtube_id: 'dQw4w9WgXcQ',
+    start_sec: 42,
+    end_sec: 132,
+    thumbnail: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=900&q=80',
+    created_at: new Date(Date.now() - 8.2 * 3600000).toISOString(),
+    score: 389,
+    comments_count: 27,
+    annotation: 'Clipping is not about stealing the whole show. It is about giving one useful moment a place to start a better conversation.',
+  },
+  {
+    id: 'demo-4',
+    slug: 'a-good-feed-teaches-you-how-to-look',
+    user_id: 'demo-lena',
+    profiles: { id: 'demo-lena', handle: 'lenarivers', display_name: 'Lena Rivers', avatar_url: null },
+    community_slug: 'technology',
+    community_name: 'Technology',
+    source_type: 'article',
+    annotation_type: 'Steelman',
+    title: 'A good feed teaches you how to look, not just what to look at',
+    article_text: 'Recommendation systems are excellent at predicting what will keep us scrolling. They are less interested in helping us become better readers of the world.',
+    source_title: 'What should a useful feed optimize for?',
+    source_domain: 'worksinprogress.co',
+    source_url: 'https://worksinprogress.co/',
+    source_image_url: 'https://images.unsplash.com/photo-1516321165247-4aa89a48be28?auto=format&fit=crop&w=900&q=80',
+    created_at: new Date(Date.now() - 19 * 3600000).toISOString(),
+    score: 274,
+    comments_count: 19,
+    annotation: 'The best version of an algorithmic feed may be one that occasionally teaches you a useful question to ask.',
+  },
+];
+
+export function getDemoClip(id) {
+  return DEMO_CLIPS.find((clip) => clip.id === id || clip.slug === id) || null;
+}
+
+export function getDemoCommunity(slug) {
+  return DEMO_COMMUNITIES.find((community) => community.slug === slug) || null;
+}

@@ -4,10 +4,12 @@ import { castVote, getUserVote } from '../lib/api';
 import { notify } from '../lib/notifications';
 
 export default function VoteButtons({ clipId, score, setScore }) {
+  const isDemo = String(clipId).startsWith('demo-');
   const [userVote, setUserVote] = useState(null);
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
+    if (isDemo) return;
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setUserId(user.id);
@@ -17,6 +19,17 @@ export default function VoteButtons({ clipId, score, setScore }) {
   }, [clipId]);
 
   const handleVote = async (direction) => {
+    if (isDemo) {
+      setUserVote((current) => {
+        if (current === direction) {
+          setScore((value) => value - direction);
+          return null;
+        }
+        setScore((value) => current ? value - current + direction : value + direction);
+        return direction;
+      });
+      return;
+    }
     if (!userId) { alert('Sign in to vote.'); return; }
 
     const prevVote = userVote;

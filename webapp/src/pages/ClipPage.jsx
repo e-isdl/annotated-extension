@@ -9,6 +9,8 @@ import FileClaimButton from '../components/FileClaimButton';
 import CommentSection from '../components/CommentSection';
 import VoteButtons from '../components/VoteButtons';
 import Avatar from '../components/Avatar';
+import { getDemoClip } from '../lib/demoData';
+import DemoClipPage from './DemoClipPage';
 
 export default function ClipPage() {
   const { id } = useParams();
@@ -24,6 +26,9 @@ export default function ClipPage() {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [claims, setClaims] = useState([]);
+
+  const demoClip = getDemoClip(id);
+  if (demoClip) return <DemoClipPage clip={demoClip} />;
 
   useEffect(() => {
     async function load() {

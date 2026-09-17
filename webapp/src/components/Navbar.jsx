@@ -124,7 +124,7 @@ export default function Navbar() {
 
   return (
     <nav className="border-b border-border-subtle bg-bg-base sticky top-0 z-10">
-      <div className="max-w-2xl mx-auto px-4 h-12 flex items-center justify-between">
+      <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between gap-5">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="w-6 h-6 rounded bg-accent flex items-center justify-center">
             <span className="text-bg-base font-bold text-xs">A</span>
@@ -134,7 +134,7 @@ export default function Navbar() {
 
         <form
           onSubmit={(e) => { e.preventDefault(); if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`); }}
-          className="flex-1 max-w-xs mx-4"
+          className="flex-1 max-w-md mx-2"
         >
           <div className="relative">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted">
@@ -150,9 +150,10 @@ export default function Navbar() {
           </div>
         </form>
 
-        <div className="flex items-center gap-5 shrink-0">
-          <Link to="/" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Feed</Link>
-          <Link to="/leaderboard" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
+        <div className="flex items-center gap-4 shrink-0">
+          <Link to="/explore" className="hidden sm:block text-xs text-text-secondary hover:text-text-primary transition-colors">Explore</Link>
+          <Link to="/leaderboard" className="hidden md:block text-xs text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
+          <Link to="/create" className="hidden sm:inline-flex btn-primary text-xs py-2 px-3">Create</Link>
 
           {user ? (
             <>
