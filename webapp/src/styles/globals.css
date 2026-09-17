@@ -525,3 +525,68 @@ button, input, textarea, select { font-family: var(--ui-font); }
   .source-post-header { padding: 11px 12px; }
   .transcript-drawer-hint { display: none; }
 }
+
+/* Calm visual system: one accent, quiet surfaces, readable hierarchy. */
+:root {
+  --calm-bg: #111213;
+  --calm-surface: #1a1b1d;
+  --calm-raised: #222426;
+  --calm-border: rgba(255,255,255,.105);
+  --calm-border-soft: rgba(255,255,255,.075);
+  --calm-accent: #e85b38;
+}
+
+html, body { background: var(--calm-bg); }
+body { color: #d9dcdf; font-family: 'Inter', 'Segoe UI Variable', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+.app-shell { gap: 28px; }
+.app-main { padding-top: 28px; }
+.community-sidebar, .right-rail { padding-top: 28px; }
+.sidebar-link, .community-link { border-radius: 9px; }
+.sidebar-link-active { background: rgba(255,255,255,.06); box-shadow: inset 2px 0 0 var(--calm-accent); }
+.community-dot, .community-dot-lg { background: #bd583b; color: #fff; }
+.btn-primary { background: var(--calm-accent); border-radius: 8px; box-shadow: none; }
+.btn-primary:hover { background: #f06a45; opacity: 1; }
+.btn-primary:disabled { background: #3a2925; color: #a28b83; opacity: 1; cursor: not-allowed; }
+.btn-ghost { border-color: var(--calm-border); border-radius: 8px; }
+.input { background: var(--calm-surface); border-color: var(--calm-border); border-radius: 8px; }
+.input:focus { border-color: rgba(232,91,56,.75); box-shadow: 0 0 0 3px rgba(232,91,56,.09); }
+.post-card, .create-prompt, .rail-card, .create-form, .create-preview { background: var(--calm-surface); border-color: var(--calm-border); border-radius: 10px; }
+.post-card:hover { background: #1d1e20; border-color: rgba(255,255,255,.17); }
+.post-meta { color: #8d9297; }
+.post-meta .badge, .source-post-header .badge, .annotation-lead .badge { background: rgba(255,255,255,.07); color: #aeb3b7; }
+.post-title { color: #eef0f1; font-weight: 600; }
+.post-commentary { color: #bcc1c5; }
+.source-preview, .source-post { border-color: var(--calm-border); border-radius: 9px; }
+.source-preview { background: #161719; }
+.source-post { background: #0c0d0e; }
+.source-preview-image { opacity: .62; }
+.post-actions, .detail-actions { border-color: var(--calm-border-soft); }
+.post-action { color: #858b90; border-radius: 7px; }
+.post-action:hover { color: #e4e6e8; background: rgba(255,255,255,.06); }
+.post-action-saved { color: #e5b85e; }
+.feed-tabs, .profile-tabs { background: rgba(255,255,255,.025); border-color: var(--calm-border); border-radius: 9px; }
+.feed-tab-active, .profile-tab-active { background: rgba(255,255,255,.08); border-bottom-color: var(--calm-accent); }
+.annotation-lead { border-color: var(--calm-border); border-left: 3px solid var(--calm-accent); border-radius: 10px; background: #1b1c1e; }
+.annotation-lead-label { color: #f07a5a; }
+.annotation-lead > p { color: #e3e5e6; font-size: 16px; font-weight: 450; }
+.source-post-header { background: #191a1c; border-color: var(--calm-border); }
+.transcript-drawer { border-color: var(--calm-border); border-radius: 10px; background: var(--calm-surface); }
+.transcript-drawer summary { color: #d7dadd; }
+.transcript-drawer summary::before { color: #e87551; }
+.detail-title, .real-detail-page > h1 { max-width: 700px; color: #f0f1f2; font-size: clamp(27px, 3vw, 33px); font-weight: 600; line-height: 1.18; letter-spacing: -.025em; }
+.detail-post-context { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: #8d9297; font-size: 12px; }
+.detail-commentary { border-left-color: var(--calm-accent); background: #1b1c1e; }
+.comment-composer, .comment-signin { border-color: var(--calm-border); border-radius: 10px; background: var(--calm-surface); }
+.comment-node { border-color: var(--calm-border); }
+.comment-body { color: #c1c5c8; }
+.source-article-body { background: #191a1c; }
+.source-article-body p { color: #d7dadd; }
+.real-source-link, .source-link { color: #7fc1e8; }
+.right-rail .create-prompt { border-color: var(--calm-border); background: var(--calm-surface); }
+
+@media (max-width: 760px) {
+  .app-main { padding-top: 20px; }
+  .post-card { border-radius: 8px; }
+  .detail-title, .real-detail-page > h1 { font-size: 27px; }
+  .annotation-lead > p { font-size: 15px; }
+}

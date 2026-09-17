@@ -8,7 +8,6 @@ import AnnotationBlock from '../components/AnnotationBlock';
 import FileClaimButton from '../components/FileClaimButton';
 import CommentSection from '../components/CommentSection';
 import VoteButtons from '../components/VoteButtons';
-import Avatar from '../components/Avatar';
 import AnnotationLead from '../components/AnnotationLead';
 import { getDemoClip } from '../lib/demoData';
 import DemoClipPage from './DemoClipPage';
@@ -136,19 +135,13 @@ export default function ClipPage() {
   return (
     <article className="detail-page real-detail-page">
       <div className="detail-author-row">
-        <div className="flex items-center gap-3">
-          <Link to={profile?.handle ? `/u/${profile.handle}` : '#'}>
-            <Avatar profile={profile} size="md" />
-          </Link>
-          <div>
-            <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="no-underline">
-              <p className="text-sm font-medium text-text-primary hover:text-accent transition-colors">@{profile?.handle}</p>
-            </Link>
-            <p className="text-xs text-text-muted">{formatDate(clip.created_at)}</p>
-          </div>
+        <div className="detail-post-context">
+          <Link to={`/c/${clip.community_slug || 'annotated'}`} className="community-pill no-underline"><span className="community-dot">{(clip.community_name || 'Annotated')[0]}</span> c/{clip.community_name || 'Annotated'}</Link>
+          <span>•</span>
+          <span>{formatDate(clip.created_at)}</span>
+          {!annotation?.text_content && <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author no-underline">by @{profile?.handle || 'anonymous'}</Link>}
         </div>
         <div className="flex items-center gap-2">
-          <Link to={`/c/${clip.community_slug || 'annotated'}`} className="community-pill no-underline"><span className="community-dot">{(clip.community_name || 'Annotated')[0]}</span> c/{clip.community_name || 'Annotated'}</Link>
           <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
           {isOwner && (
           <div className="flex items-center gap-1">
@@ -213,6 +206,12 @@ export default function ClipPage() {
         )}
         {clip.source_type === 'article' && clip.article_text && (
           <div className="source-article-body"><p>{clip.article_text}</p></div>
+        )}
+        {clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && (clip.source_image_url || clip.thumbnail) && (
+          <img src={clip.source_image_url || clip.thumbnail} alt="" className="source-post-image" />
+        )}
+        {clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && !clip.source_image_url && !clip.thumbnail && (
+          <div className="source-text-placeholder">This post is anchored to a source conversation. Open the original or expand the context below.</div>
         )}
       </section>
 

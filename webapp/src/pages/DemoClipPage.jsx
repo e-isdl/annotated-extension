@@ -30,8 +30,6 @@ export default function DemoClipPage({ clip }) {
       <div className="detail-meta-row">
         <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>
         <span>•</span>
-        <Link to={`/u/${clip.profiles.handle}`} className="post-author no-underline">@{clip.profiles.handle}</Link>
-        <span>•</span>
         <span>{timeAgo(clip.created_at)}</span>
       </div>
 
