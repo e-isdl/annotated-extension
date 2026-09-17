@@ -35,11 +35,21 @@ alter table public.clips add column if not exists source_domain text;
 alter table public.clips add column if not exists source_title text;
 alter table public.clips add column if not exists source_image_url text;
 alter table public.clips add column if not exists source_excerpt text;
+alter table public.comments add column if not exists parent_comment_id uuid references public.comments(id) on delete cascade;
 
 create index if not exists communities_slug_idx on public.communities(slug);
 create index if not exists community_members_user_idx on public.community_members(user_id);
 create index if not exists clips_community_created_idx on public.clips(community_id, created_at desc);
 create index if not exists post_saves_user_idx on public.post_saves(user_id, created_at desc);
+create index if not exists comments_parent_idx on public.comments(clip_id, parent_comment_id, created_at);
+
+insert into public.communities (slug, name, description, rules)
+values
+  ('media-literacy', 'Media Literacy', 'Break down the stories, screenshots, and claims shaping the internet.', 'Point to the source. Separate what is visible from what is inferred.'),
+  ('technology', 'Technology', 'Products, platforms, and the ideas behind them.', 'Bring a source and explain why it matters.'),
+  ('startups', 'Startups', 'The building, shipping, and thinking behind new companies.', 'Share the useful part, not just the announcement.'),
+  ('internet-culture', 'Internet Culture', 'The posts, memes, and moments that become the internet.', 'Preserve context and credit the original creator.')
+on conflict (slug) do nothing;
 
 alter table public.communities enable row level security;
 alter table public.community_members enable row level security;

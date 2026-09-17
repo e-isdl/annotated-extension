@@ -5,10 +5,16 @@ import { generateSlug } from '../lib/api';
 import { DEMO_COMMUNITIES } from '../lib/demoData';
 
 const TYPES = ['Reaction', 'Fact check', 'Explainer', 'Steelman', 'Found receipts'];
+const POST_MODES = [
+  { label: 'Source', value: 'source' },
+  { label: 'Text', value: 'text' },
+  { label: 'Moment', value: 'moment' },
+];
 
 export default function CreatePage() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [mode, setMode] = useState('source');
   const [form, setForm] = useState({ community: 'media-literacy', type: 'Reaction', url: '', title: '', quote: '', commentary: '' });
   const [status, setStatus] = useState('');
   const [publishing, setPublishing] = useState(false);
@@ -66,13 +72,21 @@ export default function CreatePage() {
     <div className="create-page">
       <Link to="/" className="back-link">← Back home</Link>
       <div className="create-header">
-        <p className="eyebrow">NEW ANNOTATION</p>
-        <h1>Put a point on the internet.</h1>
-        <p>Bring a source. Add your angle. Give people something specific to respond to.</p>
+        <p className="eyebrow">CREATE A POST</p>
+        <h1>Start a conversation.</h1>
+        <p>Post like Reddit. Keep the source, exact moment, and your point of view attached so the discussion has somewhere solid to begin.</p>
       </div>
 
       <form onSubmit={publish} className="create-layout">
         <div className="create-form">
+          <div className="create-mode-tabs" role="tablist" aria-label="Post type">
+            {POST_MODES.map((postMode) => (
+              <button key={postMode.value} type="button" role="tab" aria-selected={mode === postMode.value} onClick={() => setMode(postMode.value)} className={`create-mode-tab ${mode === postMode.value ? 'create-mode-tab-active' : ''}`}>
+                {postMode.label}
+              </button>
+            ))}
+          </div>
+
           <label className="form-label">Community
             <select className="input" value={form.community} onChange={(e) => update('community', e.target.value)}>
               {DEMO_COMMUNITIES.map((community) => <option key={community.slug} value={community.slug}>c/{community.name}</option>)}
@@ -101,7 +115,7 @@ export default function CreatePage() {
             <textarea className="input resize-none" rows={7} value={form.commentary} onChange={(e) => update('commentary', e.target.value)} placeholder="What do you want people to understand, question, or add?" />
           </label>
           {status && <p className="form-status">{status}</p>}
-          <button type="submit" className="btn-primary w-full" disabled={publishing}>{publishing ? 'Publishing…' : user ? 'Publish thread ↗' : 'Sign in to publish ↗'}</button>
+          <button type="submit" className="btn-primary w-full" disabled={publishing}>{publishing ? 'Publishing…' : user ? `Post to c/${DEMO_COMMUNITIES.find((item) => item.slug === form.community)?.name}` : 'Sign in to post ↗'}</button>
         </div>
 
         <div className="create-preview-wrap">

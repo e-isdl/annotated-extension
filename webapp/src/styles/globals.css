@@ -232,8 +232,12 @@
   .create-header h1 { margin: 10px 0 8px; color: #EEECEA; font-size: 35px; line-height: 1.05; letter-spacing: -.045em; }
   .create-header p:not(.eyebrow) { max-width: 560px; margin: 0; color: #8C8C9E; font-size: 14px; line-height: 1.7; }
   .create-layout { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(270px, .92fr); gap: 18px; align-items: start; }
-  .create-form, .create-preview { padding: 18px; border: 1px solid #2C2C38; border-radius: 13px; background: #17171D; }
-  .create-form { display: flex; flex-direction: column; gap: 17px; }
+.create-form, .create-preview { padding: 18px; border: 1px solid #2C2C38; border-radius: 13px; background: #17171D; }
+.create-form { display: flex; flex-direction: column; gap: 17px; }
+.create-mode-tabs { display: flex; gap: 2px; margin: -18px -18px 2px; padding: 6px; border-bottom: 1px solid #2C2C38; }
+.create-mode-tab { flex: 1; padding: 9px 10px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #8C8C9E; font-size: 12px; font-weight: 600; cursor: pointer; }
+.create-mode-tab:hover { color: #EEECEA; }
+.create-mode-tab-active { border-bottom-color: #FF4500; color: #EEECEA; }
   .form-label { display: flex; flex-direction: column; gap: 7px; color: #B8B6B9; font-size: 12px; font-weight: 600; }
   .form-label .input { font-weight: 400; }
   .type-picker { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -339,6 +343,14 @@ body { font-family: Arial, Helvetica, -apple-system, BlinkMacSystemFont, sans-se
 .feed-tabs { margin-bottom: 10px; border-radius: 6px; background: transparent; border-color: var(--reddit-border); }
 .feed-tab { padding: 6px 12px; font-size: 11px; }
 .feed-tab-active { background: var(--reddit-raised); color: var(--reddit-text); }
+.modern-feed-heading { padding: 6px 0 14px; border-bottom: 1px solid var(--reddit-border); }
+.modern-feed-heading h1 { margin: 0; color: var(--reddit-text); font-size: 21px; font-weight: 700; letter-spacing: -.02em; }
+.modern-feed-heading p { margin-top: 4px; }
+.create-post-bar { display: flex; align-items: center; gap: 10px; margin: 12px 0 10px; padding: 10px; border: 1px solid var(--reddit-border); border-radius: 7px; background: var(--reddit-surface); }
+.create-post-bar:hover { border-color: #5a5b5c; }
+.create-post-avatar { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--reddit-orange); color: #fff; font-size: 12px; font-weight: 700; }
+.create-post-placeholder { flex: 1; padding: 8px 10px; border: 1px solid var(--reddit-border); border-radius: 4px; color: var(--reddit-muted); font-size: 12px; }
+.create-post-action { color: var(--x-blue); font-size: 10px; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
 .feed-list { gap: 8px; }
 .post-card { padding: 12px 13px 8px; background: var(--reddit-surface); border-color: var(--reddit-border); border-radius: 7px; }
 .post-card:hover { background: #1d1d1e; border-color: #5a5b5c; }
@@ -374,11 +386,23 @@ body { font-family: Arial, Helvetica, -apple-system, BlinkMacSystemFont, sans-se
 .source-link, .back-link, .post-author, .source-icon { color: var(--x-blue); }
 .post-action-saved { color: #f2c94c; }
 
+.comment-section { margin-top: 26px; }
+.comment-composer { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; padding: 12px; border: 1px solid var(--reddit-border); border-radius: 7px; background: var(--reddit-surface); }
+.comment-tree { margin-top: 18px; }
+.comment-node { padding: 12px 0 13px 10px; border-left: 1px solid var(--reddit-border); }
+.comment-body { margin: 8px 0 7px; color: #b8babc; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.comment-tools { display: flex; gap: 14px; color: var(--reddit-muted); font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+.comment-tools button { padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.comment-tools button:hover { color: var(--reddit-text); }
+.comment-node > .flex > .min-w-0 > .flex button { padding: 0; border: 0; background: transparent; cursor: pointer; }
+
 @media (max-width: 760px) {
   .app-main { padding-top: 14px; }
   .feed-hero h1 { font-size: 27px; }
   .feed-hero-copy { font-size: 12px; }
   .post-card { border-radius: 5px; }
+  .modern-feed-heading .btn-primary { display: none; }
+  .create-post-action { display: none; }
   .source-preview { height: 100px; }
   .source-preview-image { width: 94px; }
 }

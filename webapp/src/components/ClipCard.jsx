@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import Avatar from './Avatar';
 import VoteButtons from './VoteButtons';
 
@@ -12,12 +13,42 @@ export default function ClipCard({ clip }) {
   const href = `/clip/${clip.slug || clip.id}`;
   const sourceImage = clip.source_image_url || clip.thumbnail || (clip.youtube_id ? `https://img.youtube.com/vi/${clip.youtube_id}/hqdefault.jpg` : null);
 
+  useEffect(() => {
+    if (String(clip.id).startsWith('demo-')) return;
+    let active = true;
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('post_saves')
+        .select('clip_id')
+        .eq('clip_id', clip.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (active && data) setSaved(true);
+    });
+    return () => { active = false; };
+  }, [clip.id]);
+
   const handleShare = async (event) => {
     event.preventDefault();
     event.stopPropagation();
     try { await navigator.clipboard.writeText(`${window.location.origin}${href}`); } catch {}
     setShared(true);
     window.setTimeout(() => setShared(false), 1600);
+  };
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const next = !saved;
+    setSaved(next);
+    if (String(clip.id).startsWith('demo-')) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const result = next
+      ? await supabase.from('post_saves').insert({ clip_id: clip.id, user_id: user.id })
+      : await supabase.from('post_saves').delete().eq('clip_id', clip.id).eq('user_id', user.id);
+    if (result.error && result.error.code !== '42P01') setSaved(!next);
   };
 
   return (
@@ -71,7 +102,7 @@ export default function ClipCard({ clip }) {
         <button type="button" onClick={handleShare} className="post-action">
           <span>↗</span> {shared ? 'Copied' : 'Share'}
         </button>
-        <button type="button" onClick={() => setSaved(!saved)} className={`post-action post-action-last ${saved ? 'post-action-saved' : ''}`}>
+        <button type="button" onClick={handleSave} className={`post-action post-action-last ${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
         </button>
       </div>

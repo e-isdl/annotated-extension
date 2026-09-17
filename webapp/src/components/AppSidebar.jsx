@@ -2,16 +2,17 @@ import { Link, useLocation } from 'react-router-dom';
 import { DEMO_COMMUNITIES } from '../lib/demoData';
 
 const NAV_ITEMS = [
-  { label: 'Home', path: '/', icon: '⌂' },
-  { label: 'Popular', path: '/?sort=top', icon: '✦' },
-  { label: 'Latest', path: '/?sort=new', icon: '◷' },
+  { label: 'Home', path: '/', icon: '⌂', sort: null },
+  { label: 'Popular', path: '/?sort=top', icon: '✦', sort: 'top' },
+  { label: 'Latest', path: '/?sort=new', icon: '◷', sort: 'new' },
   { label: 'Explore', path: '/explore', icon: '⌕' },
   { label: 'Saved', path: '/saved', icon: '▱' },
 ];
 
 export default function AppSidebar() {
   const location = useLocation();
-  const isActive = (path) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+  const currentSort = new URLSearchParams(location.search).get('sort');
+  const isActive = (item) => item.path === '/' ? location.pathname === '/' && !currentSort : item.path.startsWith('/?') ? location.pathname === '/' && currentSort === item.sort : location.pathname.startsWith(item.path);
 
   return (
     <aside className="community-sidebar">
@@ -22,7 +23,7 @@ export default function AppSidebar() {
             <Link
               key={item.label}
               to={item.path}
-              className={`sidebar-link ${isActive(item.path) ? 'sidebar-link-active' : ''}`}
+              className={`sidebar-link ${isActive(item) ? 'sidebar-link-active' : ''}`}
             >
               <span className="sidebar-icon">{item.icon}</span>
               {item.label}
@@ -48,7 +49,7 @@ export default function AppSidebar() {
 
       <div className="sidebar-note">
         <span className="text-lg">✎</span>
-        <p>Good arguments start with good context.</p>
+        <p>Every post keeps its source, context, and conversation together.</p>
       </div>
     </aside>
   );

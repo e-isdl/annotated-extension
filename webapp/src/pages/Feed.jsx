@@ -71,25 +71,22 @@ export default function Feed() {
 
   return (
     <div className="feed-page">
-      <section className="feed-hero">
-        <div>
-          <p className="eyebrow">THE HOME FOR CONTEXT</p>
-          <h1>Ideas are better when people point at the moment.</h1>
-          <p className="feed-hero-copy">Annotated is where the internet brings its receipts. Read the source, find the argument, and join the conversation.</p>
-        </div>
-        <Link to="/create" className="btn-primary feed-hero-action">Start a thread <span>↗</span></Link>
-      </section>
-
-      <section className="feed-heading">
+      <section className="feed-heading modern-feed-heading">
         <div>
           <div className="flex items-center gap-2">
-            <h2>{sort === 'best' ? 'Home' : activeSort.label}</h2>
+            <h1>{sort === 'best' ? 'Home' : activeSort.label}</h1>
             {usingDemo && <span className="demo-badge">DEMO FEED</span>}
           </div>
-          <p>{activeSort.helper}</p>
+          <p>{activeSort.helper}. Every post keeps the source in view.</p>
         </div>
-        <div className="feed-count"><strong>{clips.length}</strong> conversations</div>
+        <Link to="/create" className="btn-primary text-xs py-2 px-3">Create post</Link>
       </section>
+
+      <Link to="/create" className="create-post-bar no-underline">
+        <span className="create-post-avatar">A</span>
+        <span className="create-post-placeholder">Create a post</span>
+        <span className="create-post-action">Link or source</span>
+      </Link>
 
       <div className="feed-tabs" role="tablist" aria-label="Feed sort">
         {SORT_OPTIONS.map((option) => (

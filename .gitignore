@@ -6,4 +6,5 @@ dist/
 .env.*
 !.env.example
 supabase/.temp/
+supabase/**/.temp/
 *.secret
