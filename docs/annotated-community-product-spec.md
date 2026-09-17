@@ -240,13 +240,15 @@ The target is a modern Reddit-like community experience with Annotated's own
 identity. We should keep the density, hierarchy, and posting rhythm familiar
 while avoiding Reddit-owned assets, logos, or copied implementation details:
 
-- Warm paper/ink contrast with one highlighter accent.
-- Compact, information-rich cards with generous reading line-height.
-- A consistent left-border or highlighter mark for quoted context.
-- Strong typography hierarchy: commentary first, source second, metadata third.
+- A near-black neutral surface with one orange action/selection accent.
+- A native system sans for the social UI; compact metadata, readable titles,
+  and generous line-height for quoted context.
+- A consistent source preview that makes the original material inspectable.
+- Strong typography hierarchy: title first, annotation second, source third,
+  metadata and actions last.
 - Dark mode first, with a light theme possible later.
 - Rounded surfaces used sparingly; avoid a dashboard full of floating cards.
-- Real thumbnails and source domains to make the feed feel alive.
+- Real thumbnails and source domains to make the feed feel alive and credible.
 
 The visual test is whether a screenshot makes someone want to open a post and
 read the argument, not merely admire the UI.
