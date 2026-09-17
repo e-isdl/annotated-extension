@@ -1,5 +1,5 @@
 export default function SuccessScreen({ clip, onReset }) {
-  const clipUrl = `https://annotated-2ec.pages.dev/clip/${clip?.slug || clip?.id}`;
+  const clipUrl = `https://annotated4.pages.dev/clip/${clip?.slug || clip?.id}`;
 
   return (
     <div className="flex flex-col items-center justify-center h-full px-6 gap-4 text-center">

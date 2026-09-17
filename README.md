@@ -54,7 +54,7 @@ Supabase schema changes must be reviewed before applying them to production.
 
 ## Links
 
-- Web app: https://annotated-2ec.pages.dev
+- Web app: https://annotated4.pages.dev
 - Issues: https://github.com/e-isdl/annotated-extension/issues
 
 ## License
