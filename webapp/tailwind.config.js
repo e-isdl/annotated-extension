@@ -4,16 +4,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: { base: '#0E0E12', surface: '#17171D', raised: '#202028' },
-        border: { DEFAULT: '#2C2C38', subtle: '#1F1F28' },
-        text: { primary: '#EEECEA', secondary: '#8C8C9E', muted: '#52525E' },
-        accent: { DEFAULT: '#E53935', dim: 'rgba(229,57,53,0.12)', text: '#EF5350' },
-        claim: { DEFAULT: '#E03131', dim: 'rgba(224,49,49,0.10)' },
+        bg: { base: '#0F1113', surface: '#1A1A1B', raised: '#272729' },
+        border: { DEFAULT: '#343536', subtle: '#252526' },
+        text: { primary: '#D7DADC', secondary: '#818384', muted: '#5C5D5E' },
+        accent: { DEFAULT: '#FF4500', dim: 'rgba(255,69,0,0.12)', text: '#FF6A3D' },
+        claim: { DEFAULT: '#EA0027', dim: 'rgba(234,0,39,0.10)' },
         success: '#2F9E44',
         podcast: '#A855F7',
       },
       fontFamily: {
-        ui: ['Inter', '-apple-system', 'sans-serif'],
+        ui: ['Arial', 'Helvetica Neue', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
     },
