@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { notify } from '../lib/notifications';
 
 export default function FollowButton({ profileId }) {
   const [isFollowing, setIsFollowing] = useState(false);
@@ -39,20 +38,6 @@ export default function FollowButton({ profileId }) {
         .from('follows')
         .insert({ follower_id: currentUserId, following_id: profileId });
       setIsFollowing(true);
-
-      const { data: followerProfile } = await supabase
-        .from('profiles')
-        .select('handle')
-        .eq('id', currentUserId)
-        .single();
-
-      if (followerProfile) {
-        notify({
-          userId: profileId,
-          type: 'follow',
-          message: `@${followerProfile.handle} started following you`,
-        });
-      }
     }
   };
 

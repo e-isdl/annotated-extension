@@ -6,12 +6,14 @@ export default function PodcastClipper({ pageInfo, onReady }) {
   const [recorded, setRecorded] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
   const [seconds, setSeconds] = useState(0);
   const mediaRef = useRef(null);
   const timerRef = useRef(null);
   const chunksRef = useRef([]);
 
   const startRecording = async () => {
+    setError('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -32,7 +34,7 @@ export default function PodcastClipper({ pageInfo, onReady }) {
         });
       }, 1000);
     } catch (err) {
-      alert('Please allow microphone access to record audio clips.');
+      setError('Microphone access is needed to record an audio clip. Check your browser permissions and try again.');
     }
   };
 
@@ -98,6 +100,7 @@ export default function PodcastClipper({ pageInfo, onReady }) {
           </button>
         )}
         {uploading && <p className="text-xs text-text-muted">Uploading...</p>}
+        {error && <p className="text-xs text-claim text-center" role="alert">{error}</p>}
       </div>
     </div>
   );

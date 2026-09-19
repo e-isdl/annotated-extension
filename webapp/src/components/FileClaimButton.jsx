@@ -1,21 +1,16 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { notify } from '../lib/notifications';
+import { useToast } from './ToastProvider';
 
 export default function FileClaimButton({ clipId }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const { push } = useToast();
 
   const handleSubmit = async () => {
     if (!reason.trim() || !email.trim()) return;
-
-    const { data: clipData } = await supabase
-      .from('clips')
-      .select('user_id, title')
-      .eq('id', clipId)
-      .single();
 
     const { error } = await supabase.from('claims').insert({
       clip_id: clipId,
@@ -24,17 +19,8 @@ export default function FileClaimButton({ clipId }) {
     });
     if (error) {
       console.error('Claim failed:', error);
-      alert('Failed to submit claim. Please try again.');
+      push('Claim could not be submitted. Please try again.', 'error');
       return;
-    }
-
-    if (clipData?.user_id) {
-      notify({
-        userId: clipData.user_id,
-        type: 'claim',
-        message: `New claim filed on "${clipData.title}" by ${email}: ${reason.slice(0, 100)}`,
-        clipId,
-      });
     }
 
     setSubmitted(true);

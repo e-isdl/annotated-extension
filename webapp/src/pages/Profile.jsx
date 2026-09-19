@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ClipCard from '../components/ClipCard';
 import FollowButton from '../components/FollowButton';
 import Avatar from '../components/Avatar';
+import { getCommentCounts } from '../lib/api';
 
 const TABS = [
   { label: 'Clips', value: 'clips' },
@@ -15,9 +16,10 @@ const TABS = [
 ];
 
 export default function Profile() {
-  const { handle } = useParams();
+  const { handle, tab: routeTab } = useParams();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
-  const [activeTab, setActiveTab] = useState('clips');
+  const [activeTab, setActiveTab] = useState(routeTab === 'comments' ? 'comments' : 'clips');
   const [loading, setLoading] = useState(true);
   const [clips, setClips] = useState([]);
   const [likedClips, setLikedClips] = useState([]);
@@ -77,12 +79,11 @@ export default function Profile() {
             scores[v.clip_id] = (scores[v.clip_id] || 0) + v.direction;
           });
 
-          const clipsWithCounts = await Promise.all(clipsRes.data.map(async (clip) => {
-            const { count } = await supabase
-              .from('comments')
-              .select('id', { count: 'exact', head: true })
-              .eq('clip_id', clip.id);
-            return { ...clip, score: scores[clip.id] || 0, comments_count: count ?? 0 };
+          const commentCounts = await getCommentCounts(clipIds);
+          const clipsWithCounts = clipsRes.data.map((clip) => ({
+            ...clip,
+            score: scores[clip.id] || 0,
+            comments_count: commentCounts[clip.id] || 0,
           }));
           setClips(clipsWithCounts);
         }
@@ -98,6 +99,10 @@ export default function Profile() {
     if (!profile) return;
     loadTab(activeTab);
   }, [activeTab, profile]);
+
+  useEffect(() => {
+    setActiveTab(routeTab === 'comments' ? 'comments' : 'clips');
+  }, [routeTab]);
 
   async function loadTab(tab) {
     if (!profile) return;
@@ -123,12 +128,11 @@ export default function Profile() {
           votesData2?.forEach(v => {
             scores[v.clip_id] = (scores[v.clip_id] || 0) + v.direction;
           });
-          const likedWithCounts = await Promise.all(data.map(async (clip) => {
-            const { count } = await supabase
-              .from('comments')
-              .select('id', { count: 'exact', head: true })
-              .eq('clip_id', clip.id);
-            return { ...clip, score: scores[clip.id] || 0, comments_count: count ?? 0 };
+          const commentCounts = await getCommentCounts(clipIds);
+          const likedWithCounts = data.map((clip) => ({
+            ...clip,
+            score: scores[clip.id] || 0,
+            comments_count: commentCounts[clip.id] || 0,
           }));
           setLikedClips(likedWithCounts);
         }
@@ -204,7 +208,11 @@ export default function Profile() {
         {TABS.map((tab) => (
           <button
             key={tab.value}
-            onClick={() => setActiveTab(tab.value)}
+            onClick={() => {
+              setActiveTab(tab.value);
+              if (tab.value === 'clips') navigate(`/u/${handle}/annotations`);
+              else if (tab.value === 'comments') navigate(`/u/${handle}/comments`);
+            }}
             className={`profile-tab ${
               activeTab === tab.value
                 ? 'profile-tab-active'

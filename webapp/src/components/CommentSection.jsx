@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { deleteComment } from '../lib/api';
-import { notify } from '../lib/notifications';
 import Avatar from './Avatar';
+import { useToast } from './ToastProvider';
 
 export default function CommentSection({ clipId }) {
   const [comments, setComments] = useState([]);
@@ -13,8 +13,9 @@ export default function CommentSection({ clipId }) {
   const [replyBody, setReplyBody] = useState('');
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sort, setSort] = useState('best');
+  const [sort, setSort] = useState('oldest');
   const [deletingId, setDeletingId] = useState(null);
+  const { push } = useToast();
 
   useEffect(() => {
     let active = true;
@@ -77,18 +78,12 @@ export default function CommentSection({ clipId }) {
       if (error) throw error;
       setComments((current) => current.map((comment) => comment.id === tempId ? data : comment));
 
-      if (user) {
-        const { data: clipData } = await supabase.from('clips').select('user_id, title').eq('id', clipId).single();
-        if (clipData?.user_id && clipData.user_id !== user.id) {
-          const { data: commenterProfile } = await supabase.from('profiles').select('handle').eq('id', user.id).single();
-          notify({ userId: clipData.user_id, type: 'comment', message: `@${commenterProfile?.handle || 'Someone'} commented on "${clipData.title}": ${commentBody.slice(0, 80)}`, clipId });
-        }
-      }
     } catch (error) {
       console.error('Comment failed:', error);
       setComments((current) => current.filter((comment) => comment.id !== tempId));
       if (parentCommentId) setReplyBody(commentBody);
       else setBody(commentBody);
+      push('Comment could not be posted. Please try again.', 'error');
     }
   };
 
@@ -100,6 +95,7 @@ export default function CommentSection({ clipId }) {
       setComments((current) => current.filter((comment) => comment.id !== commentId && comment.parent_comment_id !== commentId));
     } catch (error) {
       console.error('Delete failed:', error);
+      push('Comment could not be deleted.', 'error');
     } finally {
       setDeletingId(null);
     }
@@ -110,7 +106,7 @@ export default function CommentSection({ clipId }) {
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-text-primary">Discussion <span className="text-text-muted font-normal">({comments.length})</span></h3>
         <select value={sort} onChange={(event) => setSort(event.target.value)} className="sort-chip">
-          <option value="best">Best</option>
+          <option value="oldest">Oldest</option>
           <option value="new">New</option>
         </select>
       </div>
@@ -148,6 +144,7 @@ export default function CommentSection({ clipId }) {
 }
 
 function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, setReplyBody, submitComment, handleDelete, deletingId }) {
+  const { push } = useToast();
   const displayName = comment.user_id ? `@${comment.profiles?.handle || 'user'}` : comment.anonymous_name || 'Anonymous';
   const canDelete = session?.user && session.user.id === comment.user_id;
   const children = comment.children || [];
@@ -164,7 +161,14 @@ function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, 
             {canDelete && <button onClick={() => handleDelete(comment.id)} disabled={deletingId === comment.id} className="text-[10px] text-claim hover:text-claim/80">{deletingId === comment.id ? '…' : 'delete'}</button>}
           </div>
           <p className="comment-body">{comment.body}</p>
-          <div className="comment-tools"><button onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}>Reply</button><button>Share</button></div>
+          <div className="comment-tools"><button onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}>Reply</button><button onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(`${window.location.origin}/clip/${comment.clip_id || ''}#comment-${comment.id}`);
+              push('Comment link copied.', 'info');
+            } catch {
+              push('Could not copy the comment link.', 'error');
+            }
+          }}>Share</button></div>
           {replyTo === comment.id && (
             <div className="flex gap-2 mt-2">
               <input autoFocus value={replyBody} onChange={(event) => setReplyBody(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') submitComment({ text: replyBody, parentCommentId: comment.id }); }} placeholder={`Reply to ${displayName}`} className="input text-xs flex-1" />

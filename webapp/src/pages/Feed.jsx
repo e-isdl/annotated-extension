@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ClipCard from '../components/ClipCard';
 import { DEMO_CLIPS } from '../lib/demoData';
@@ -11,9 +11,10 @@ const SORT_OPTIONS = [
   { label: 'Top', value: 'top', helper: 'Highest-signal posts' },
 ];
 
-export default function Feed() {
+export default function Feed({ sortOverride = null }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const requestedSort = searchParams.get('sort');
+  const navigate = useNavigate();
+  const requestedSort = sortOverride || searchParams.get('sort');
   const [clips, setClips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [usingDemo, setUsingDemo] = useState(false);
@@ -28,12 +29,13 @@ export default function Feed() {
       try {
         let query = supabase
           .from('clips_with_scores')
-          .select('*, profiles(*), annotations(id, text_content, audio_url)')
+          .select('*, profiles(*), annotations(id, text_content, audio_url), communities(slug, name)')
           .limit(40);
 
         if (sort === 'new') query = query.order('created_at', { ascending: false });
         else if (sort === 'top') query = query.order('score', { ascending: false, nullsFirst: false });
-        else query = query.order('created_at', { ascending: false });
+        else if (sort === 'hot') query = query.order('hot_score', { ascending: false, nullsFirst: false });
+        else query = query.order('best_score', { ascending: false, nullsFirst: false });
 
         const { data, error } = await query;
         if (cancelled) return;
@@ -44,12 +46,9 @@ export default function Feed() {
           return;
         }
 
-        const clipsWithCounts = await Promise.all(data.map(async (clip) => {
-          const { count } = await supabase
-            .from('comments')
-            .select('id', { count: 'exact', head: true })
-            .eq('clip_id', clip.id);
-          return normalizeClip({ ...clip, comments_count: count ?? 0 });
+        const clipsWithCounts = data.map((clip) => normalizeClip({
+          ...clip,
+          comments_count: clip.comments_count ?? 0,
         }));
         if (!cancelled) {
           setClips(rankClips(clipsWithCounts, sort));
@@ -95,7 +94,10 @@ export default function Feed() {
             type="button"
             role="tab"
             aria-selected={sort === option.value}
-            onClick={() => setSearchParams(option.value === 'best' ? {} : { sort: option.value })}
+            onClick={() => {
+              if (sortOverride) navigate(option.value === 'best' ? '/' : `/?sort=${option.value}`);
+              else setSearchParams(option.value === 'best' ? {} : { sort: option.value });
+            }}
             className={sort === option.value ? 'feed-tab feed-tab-active' : 'feed-tab'}
           >
             {option.label}
@@ -122,8 +124,9 @@ export default function Feed() {
 
 function normalizeClip(clip) {
   const sourceDomain = clip.source_domain || getDomain(clip.source_url);
-  const communityName = clip.community_name || getCommunityName(clip.source_type);
-  return { ...clip, source_domain: sourceDomain, community_name: communityName, community_slug: clip.community_slug || slugify(communityName) };
+  const communityName = clip.community_name || clip.communities?.name || 'Community';
+  const communitySlug = clip.community_slug || clip.communities?.slug || 'annotated';
+  return { ...clip, source_domain: sourceDomain, community_name: communityName, community_slug: communitySlug };
 }
 
 function rankClips(items, sort) {
@@ -145,16 +148,6 @@ function hotScore(clip) {
 
 function getDomain(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'source'; }
-}
-
-function getCommunityName(sourceType) {
-  if (sourceType === 'youtube') return 'Internet Culture';
-  if (sourceType === 'podcast') return 'Media Literacy';
-  return 'Annotated';
-}
-
-function slugify(value) {
-  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
 function LoadingSkeleton() {

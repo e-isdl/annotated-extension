@@ -33,9 +33,9 @@ export default function DemoClipPage({ clip }) {
         <span>{timeAgo(clip.created_at)}</span>
       </div>
 
-      <AnnotationLead text={clip.annotation} profile={clip.profiles} annotationType={clip.annotation_type} />
+      <AnnotationLead text={clip.annotation} profile={clip.profiles} annotationType={clip.annotation_type} asHeading />
 
-      <h1 className="detail-title">{clip.title}</h1>
+      <h2 className="detail-title detail-source-title">{clip.title}</h2>
 
       <section className="source-post" aria-label="Original source post">
         <div className="source-post-header">
@@ -60,7 +60,7 @@ export default function DemoClipPage({ clip }) {
           </div>
           <div className="source-post-footer">
             <p>{clip.source_title}</p>
-            <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link">Open original ↗</a>
+            <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link">Open {clip.source_domain} ↗</a>
           </div>
           {clip.start_sec !== undefined && <span className="timestamp">{formatTime(clip.start_sec)} → {formatTime(clip.end_sec)}</span>}
         </div>
@@ -69,7 +69,7 @@ export default function DemoClipPage({ clip }) {
       <div className="detail-actions">
         <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
         <a href="#comments" className="post-action no-underline">▱ {clip.comments_count} comments</a>
-        <button type="button" className="post-action" onClick={share}>↗ {shared ? 'Copied' : 'Share'}</button>
+        <button type="button" className="post-action" onClick={share}>↗ <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span></button>
         <button type="button" className={`post-action ${saved ? 'post-action-saved' : ''}`} onClick={() => setSaved(!saved)}>{saved ? '★ Saved' : '☆ Save'}</button>
       </div>
 

@@ -158,7 +158,8 @@ export default function Navbar() {
           {user ? (
             <>
               <div className="relative" ref={notifRef}>
-                <button
+                  <button
+                  aria-label="Open notifications"
                   onClick={() => { setShowNotifs(!showNotifs); if (!showNotifs) markAllRead(); }}
                   className="relative text-text-secondary hover:text-text-primary transition-colors"
                 >
@@ -176,7 +177,7 @@ export default function Navbar() {
                 {showNotifs && (
                   <div className="absolute right-0 top-full mt-2 w-80 bg-bg-surface border border-border rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto">
                     <div className="p-3 border-b border-border flex items-center justify-between">
-                      <span className="text-xs font-medium text-text-primary">Notifications</span>
+                      <Link to="/notifications" onClick={() => setShowNotifs(false)} className="text-xs font-medium text-text-primary no-underline">Notifications</Link>
                       {notifCount > 0 && (
                         <button onClick={markAllRead} className="text-[10px] text-accent-text hover:text-accent">Mark all read</button>
                       )}
@@ -204,12 +205,14 @@ export default function Navbar() {
                 )}
               </div>
 
-              <Link to={`/u/${user.user_metadata?.user_name || user.id}`}>
-                <img
-                  src={user.user_metadata?.avatar_url}
-                  alt="avatar"
+              <Link to={`/u/${user.user_metadata?.user_name || user.id}`} aria-label="Open your profile">
+                {user.user_metadata?.avatar_url ? <img
+                  src={user.user_metadata.avatar_url}
+                  alt=""
                   className="w-7 h-7 rounded-full border border-border"
-                />
+                /> : <span className="w-7 h-7 rounded-full border border-border bg-accent text-white text-xs font-semibold flex items-center justify-center">
+                  {(user.user_metadata?.user_name || user.email || 'A')[0].toUpperCase()}
+                </span>}
               </Link>
             </>
           ) : (
