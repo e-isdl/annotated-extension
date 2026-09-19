@@ -12,21 +12,25 @@ import ExplorePage from './pages/ExplorePage';
 import CreatePage from './pages/CreatePage';
 import SavedPage from './pages/SavedPage';
 import CommunityPage from './pages/CommunityPage';
+import NotificationsPage from './pages/NotificationsPage';
+import { ToastProvider } from './components/ToastProvider';
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-bg-base text-text-primary font-ui">
-        <Navbar />
-        <AppShell />
-      </div>
+      <ToastProvider>
+        <div className="min-h-screen bg-bg-base text-text-primary font-ui">
+          <Navbar />
+          <AppShell />
+        </div>
+      </ToastProvider>
     </BrowserRouter>
   );
 }
 
 function AppShell() {
   const location = useLocation();
-  const isFeedSurface = location.pathname === '/' || location.pathname.startsWith('/c/');
+  const isFeedSurface = location.pathname === '/' || location.pathname === '/popular' || location.pathname === '/latest' || location.pathname.startsWith('/c/');
 
   return (
     <div className={`app-shell ${isFeedSurface ? '' : 'app-shell-focused'}`}>
@@ -34,14 +38,19 @@ function AppShell() {
       <main className="app-main">
         <Routes>
           <Route path="/" element={<Feed />} />
+          <Route path="/popular" element={<Feed sortOverride="top" />} />
+          <Route path="/latest" element={<Feed sortOverride="new" />} />
           <Route path="/clip/:id" element={<ClipPage />} />
           <Route path="/u/:handle" element={<Profile />} />
+          <Route path="/u/:handle/annotations" element={<Profile />} />
+          <Route path="/u/:handle/comments" element={<Profile />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/create" element={<CreatePage />} />
           <Route path="/saved" element={<SavedPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/c/:slug" element={<CommunityPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

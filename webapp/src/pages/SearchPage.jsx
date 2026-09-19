@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ClipCard from '../components/ClipCard';
 import Avatar from '../components/Avatar';
+import { getCommentCounts } from '../lib/api';
 
 const TABS = [
   { label: 'Clips', value: 'clips' },
@@ -46,12 +47,11 @@ export default function SearchPage() {
           .in('clip_id', clipIds);
         const scores = {};
         votesData?.forEach(v => { scores[v.clip_id] = (scores[v.clip_id] || 0) + v.direction; });
-        const scoredClips = await Promise.all(clipsRes.data.map(async (clip) => {
-          const { count } = await supabase
-            .from('comments')
-            .select('id', { count: 'exact', head: true })
-            .eq('clip_id', clip.id);
-          return { ...clip, score: scores[clip.id] || 0, comments_count: count ?? 0 };
+        const commentCounts = await getCommentCounts(clipIds);
+        const scoredClips = clipsRes.data.map((clip) => ({
+          ...clip,
+          score: scores[clip.id] || 0,
+          comments_count: commentCounts[clip.id] || 0,
         }));
         setClips(scoredClips);
       }

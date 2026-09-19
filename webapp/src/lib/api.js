@@ -36,6 +36,18 @@ export async function getClipsByUser(userId) {
   return data || [];
 }
 
+export async function getCommentCounts(clipIds) {
+  if (!clipIds?.length) return {};
+  const { data } = await supabase
+    .from('comments')
+    .select('clip_id')
+    .in('clip_id', clipIds);
+  return (data || []).reduce((counts, comment) => {
+    counts[comment.clip_id] = (counts[comment.clip_id] || 0) + 1;
+    return counts;
+  }, {});
+}
+
 export async function getComments(clipId) {
   const { data } = await supabase
     .from('comments')
@@ -88,25 +100,12 @@ export async function fileClaim(clipId, reason, email) {
 }
 
 export async function castVote(supabase, clipId, userId, direction) {
-  const { data: existing } = await supabase
-    .from('votes')
-    .select('id, direction')
-    .eq('clip_id', clipId)
-    .eq('user_id', userId)
-    .single();
-
-  if (existing) {
-    if (existing.direction === direction) {
-      await supabase.from('votes').delete().eq('id', existing.id);
-      return 'removed';
-    } else {
-      await supabase.from('votes').update({ direction }).eq('id', existing.id);
-      return 'switched';
-    }
-  } else {
-    await supabase.from('votes').insert({ clip_id: clipId, user_id: userId, direction });
-    return 'added';
-  }
+  const { data, error } = await supabase.rpc('toggle_vote', {
+    p_clip_id: clipId,
+    p_direction: direction,
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function getUserVote(supabase, clipId, userId) {

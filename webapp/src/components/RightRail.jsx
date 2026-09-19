@@ -1,7 +1,24 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { DEMO_COMMUNITIES } from '../lib/demoData';
 
 export default function RightRail() {
+  const [communities, setCommunities] = useState(DEMO_COMMUNITIES);
+
+  useEffect(() => {
+    async function load() {
+      const { data, error } = await supabase.from('communities').select('*').order('name').limit(3);
+      if (error || !data?.length) return;
+      const hydrated = await Promise.all(data.map(async (community) => {
+        const { count } = await supabase.from('community_members').select('user_id', { count: 'exact', head: true }).eq('community_id', community.id);
+        return { ...community, members: count || 0 };
+      }));
+      setCommunities(hydrated);
+    }
+    load();
+  }, []);
+
   return (
     <aside className="right-rail">
       <Link to="/create" className="create-prompt no-underline">
@@ -21,7 +38,7 @@ export default function RightRail() {
           <Link to="/explore" className="text-[11px] text-accent-text hover:text-accent">See all</Link>
         </div>
         <div className="flex flex-col gap-3">
-          {DEMO_COMMUNITIES.slice(0, 3).map((community, index) => (
+          {communities.slice(0, 3).map((community, index) => (
             <Link key={community.slug} to={`/c/${community.slug}`} className="flex items-center gap-3 no-underline group">
               <span className="text-xs font-mono text-text-muted w-4">0{index + 1}</span>
               <span className="community-dot community-dot-lg">{community.name[0]}</span>

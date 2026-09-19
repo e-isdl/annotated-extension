@@ -1,13 +1,25 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { DEMO_CLIPS, getDemoCommunity } from '../lib/demoData';
 import ClipCard from '../components/ClipCard';
+import { useToast } from '../components/ToastProvider';
+
+const SORTS = [
+  { label: 'Best', value: 'best' },
+  { label: 'New', value: 'new' },
+  { label: 'Top', value: 'top' },
+];
 
 export default function CommunityPage() {
   const { slug } = useParams();
-  const [community, setCommunity] = useState(getDemoCommunity(slug) || { slug, name: slug.replace(/-/g, ' '), members: 'New', description: 'A new place for thoughtful source-based conversations.' });
-  const [clips, setClips] = useState(DEMO_CLIPS.filter((clip) => clip.community_slug === slug));
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { push } = useToast();
+  const requestedSort = searchParams.get('sort');
+  const sort = SORTS.some((option) => option.value === requestedSort) ? requestedSort : 'best';
+  const demoCommunity = getDemoCommunity(slug);
+  const [community, setCommunity] = useState(demoCommunity || { slug, name: slug.replace(/-/g, ' '), members: 'New', description: 'A new place for thoughtful source-based conversations.' });
+  const [clips, setClips] = useState(demoCommunity ? DEMO_CLIPS.filter((clip) => clip.community_slug === slug) : []);
   const [loading, setLoading] = useState(true);
   const [communityId, setCommunityId] = useState(null);
   const [joined, setJoined] = useState(false);
@@ -17,43 +29,46 @@ export default function CommunityPage() {
     let active = true;
     async function load() {
       setLoading(true);
-      const { data: communityRow } = await supabase.from('communities').select('*').eq('slug', slug).maybeSingle();
-      if (communityRow && active) {
-        setCommunity({ ...communityRow, members: communityRow.member_count || 'New' });
+      const { data: communityRow, error: communityError } = await supabase.from('communities').select('*').eq('slug', slug).maybeSingle();
+      if (!active) return;
+
+      if (communityRow && !communityError) {
+        setCommunity(communityRow);
         setCommunityId(communityRow.id);
-        const { data: { user } } = await supabase.auth.getUser();
+        const [{ count }, { data: { user } }, clipsResponse] = await Promise.all([
+          supabase.from('community_members').select('user_id', { count: 'exact', head: true }).eq('community_id', communityRow.id),
+          supabase.auth.getUser(),
+          supabase.from('clips_with_scores').select('*, profiles(*), annotations(id, text_content, audio_url)').eq('community_id', communityRow.id).limit(50),
+        ]);
         if (user) {
           const { data: membership } = await supabase.from('community_members').select('user_id').eq('community_id', communityRow.id).eq('user_id', user.id).maybeSingle();
           if (active) setJoined(Boolean(membership));
         }
-      }
-
-      const { data } = await supabase
-        .from('clips')
-        .select('*, profiles(*), annotations(id, text_content, audio_url)')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (!active) return;
-      if (data?.length) {
-        const normalized = data.map((clip) => normalizeClip(clip));
-        const matching = normalized.filter((clip) => clip.community_slug === slug);
-        if (matching.length) setClips(matching);
+        if (!active) return;
+        setCommunity((current) => ({ ...current, members: count ?? current.members ?? 'New' }));
+        setClips(sortClips((clipsResponse.data || []).map((clip) => ({ ...clip, community_name: communityRow.name, community_slug: communityRow.slug })), sort));
+      } else if (demoCommunity) {
+        setCommunity(demoCommunity);
+        setClips(sortClips(DEMO_CLIPS.filter((clip) => clip.community_slug === slug), sort));
+      } else {
+        setClips([]);
       }
       setLoading(false);
     }
     load();
     return () => { active = false; };
-  }, [slug]);
+  }, [slug, sort, demoCommunity]);
 
   async function toggleJoin() {
     if (!communityId || joinLoading) return;
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { window.alert('Sign in to join this community.'); return; }
+    if (!user) { push('Sign in to join this community.', 'info'); return; }
     setJoinLoading(true);
     const result = joined
       ? await supabase.from('community_members').delete().eq('community_id', communityId).eq('user_id', user.id)
       : await supabase.from('community_members').insert({ community_id: communityId, user_id: user.id });
-    if (!result.error) setJoined(!joined);
+    if (result.error) push(result.error.message || 'Community membership could not be updated.', 'error');
+    else setJoined(!joined);
     setJoinLoading(false);
   }
 
@@ -66,20 +81,18 @@ export default function CommunityPage() {
           <h1>c/{community.name}</h1>
           <p>{community.description}</p>
         </div>
-        <button type="button" className={joined ? 'btn-ghost joined-button' : 'btn-primary'} onClick={toggleJoin} disabled={joinLoading}>{joinLoading ? '…' : joined ? 'Joined' : 'Join'}</button>
+        {communityId && <button type="button" className={joined ? 'btn-ghost joined-button' : 'btn-primary'} onClick={toggleJoin} disabled={joinLoading}>{joinLoading ? '…' : joined ? 'Joined' : 'Join'}</button>}
       </div>
 
       <div className="community-stats">
-        <span><strong>{community.members}</strong> members</span>
-        <span><strong>{clips.length || '—'}</strong> featured threads</span>
+        <span><strong>{community.members || 'New'}</strong> members</span>
+        <span><strong>{clips.length || '—'}</strong> threads</span>
         <span>Public community</span>
       </div>
 
       <div className="community-toolbar">
-        <div className="feed-tabs">
-          <button className="feed-tab feed-tab-active">Best</button>
-          <button className="feed-tab">New</button>
-          <button className="feed-tab">Top</button>
+        <div className="feed-tabs" role="tablist" aria-label="Community sort">
+          {SORTS.map((option) => <button key={option.value} type="button" role="tab" aria-selected={sort === option.value} onClick={() => setSearchParams(option.value === 'best' ? {} : { sort: option.value })} className={sort === option.value ? 'feed-tab feed-tab-active' : 'feed-tab'}>{option.label}</button>)}
         </div>
         <Link to="/create" className="btn-primary text-xs py-2 px-3">Create thread</Link>
       </div>
@@ -97,7 +110,8 @@ export default function CommunityPage() {
   );
 }
 
-function normalizeClip(clip) {
-  const name = clip.community_name || (clip.source_type === 'youtube' ? 'Internet Culture' : clip.source_type === 'podcast' ? 'Media Literacy' : 'Annotated');
-  return { ...clip, community_name: name, community_slug: clip.community_slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') };
+function sortClips(items, sort) {
+  if (sort === 'new') return [...items].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (sort === 'top') return [...items].sort((a, b) => (b.score || 0) - (a.score || 0));
+  return [...items].sort((a, b) => ((b.score || 0) + (b.comments_count || 0) * 3) - ((a.score || 0) + (a.comments_count || 0) * 3));
 }

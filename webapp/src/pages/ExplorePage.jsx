@@ -1,7 +1,27 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { DEMO_COMMUNITIES, DEMO_CLIPS } from '../lib/demoData';
 
 export default function ExplorePage() {
+  const [communities, setCommunities] = useState(DEMO_COMMUNITIES);
+
+  useEffect(() => {
+    async function load() {
+      const { data, error } = await supabase.from('communities').select('*').order('name');
+      if (error || !data?.length) return;
+      const hydrated = await Promise.all(data.map(async (community) => {
+        const [{ count: members }, { count: posts }] = await Promise.all([
+          supabase.from('community_members').select('user_id', { count: 'exact', head: true }).eq('community_id', community.id),
+          supabase.from('clips').select('id', { count: 'exact', head: true }).eq('community_id', community.id),
+        ]);
+        return { ...community, members: members || 0, postCount: posts || 0 };
+      }));
+      setCommunities(hydrated);
+    }
+    load();
+  }, []);
+
   return (
     <div className="section-page">
       <p className="eyebrow">EXPLORE</p>
@@ -9,8 +29,8 @@ export default function ExplorePage() {
       <p className="section-subtitle">Communities are where source material turns into a shared point of view.</p>
 
       <div className="explore-grid">
-        {DEMO_COMMUNITIES.map((community) => {
-          const postCount = DEMO_CLIPS.filter((clip) => clip.community_slug === community.slug).length;
+        {communities.map((community) => {
+          const postCount = community.postCount ?? DEMO_CLIPS.filter((clip) => clip.community_slug === community.slug).length;
           return (
             <Link key={community.slug} to={`/c/${community.slug}`} className="explore-community no-underline">
               <div className="flex items-center justify-between">

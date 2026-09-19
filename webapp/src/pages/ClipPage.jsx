@@ -11,6 +11,7 @@ import VoteButtons from '../components/VoteButtons';
 import AnnotationLead from '../components/AnnotationLead';
 import { getDemoClip } from '../lib/demoData';
 import DemoClipPage from './DemoClipPage';
+import { useToast } from '../components/ToastProvider';
 
 export default function ClipPage() {
   const { id } = useParams();
@@ -28,6 +29,7 @@ export default function ClipPage() {
   const [claims, setClaims] = useState([]);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
+  const { push } = useToast();
 
   const demoClip = getDemoClip(id);
 
@@ -39,23 +41,19 @@ export default function ClipPage() {
 
       let clipData = null;
 
-      const { data: bySlug } = await supabase
-        .from('clips')
-        .select('*, profiles(*)')
-        .eq('slug', id)
-        .single();
+      const bySlug = await loadClip('slug', id);
       if (bySlug) {
         clipData = bySlug;
       } else {
-        const { data: byId } = await supabase
-          .from('clips')
-          .select('*, profiles(*)')
-          .eq('id', id)
-          .single();
-        clipData = byId;
+        clipData = await loadClip('id', id);
       }
 
       if (clipData) {
+        clipData = {
+          ...clipData,
+          community_name: clipData.community_name || clipData.communities?.name,
+          community_slug: clipData.community_slug || clipData.communities?.slug,
+        };
         setClip(clipData);
         setProfile(clipData.profiles);
 
@@ -105,7 +103,7 @@ export default function ClipPage() {
       navigate('/');
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Failed to delete clip.');
+      push('Failed to delete this post.', 'error');
       setDeleting(false);
       setConfirmDelete(false);
     }
@@ -176,11 +174,11 @@ export default function ClipPage() {
         </div>
       </div>
 
-      <AnnotationLead text={annotation?.text_content} profile={profile} annotationType={clip.annotation_type || 'Annotation'} />
+      <AnnotationLead text={annotation?.text_content} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading={Boolean(annotation?.text_content)} />
 
-      <h1 className="text-2xl font-bold text-text-primary leading-tight tracking-tight">
+      <h2 className={`${annotation?.text_content ? 'detail-source-title' : 'detail-title'} text-text-primary leading-tight tracking-tight`}>
         {clip.title}
-      </h1>
+      </h2>
 
       {clip.source_type === 'youtube' && clip.start_sec !== undefined && clip.end_sec !== undefined && (
         <div className="flex items-center gap-1">
@@ -233,12 +231,12 @@ export default function ClipPage() {
       <div className="detail-actions">
         <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
         <FileClaimButton clipId={clip.id} />
-        <button type="button" className="post-action" onClick={handleShare}>↗ {shared ? 'Copied' : 'Share'}</button>
+        <button type="button" className="post-action" onClick={handleShare}>↗ <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span></button>
         <button type="button" className={`post-action ${saved ? 'post-action-saved' : ''}`} onClick={handleSave}>{saved ? '★ Saved' : '☆ Save'}</button>
         <span className="detail-comment-count">Join the discussion below</span>
       </div>
 
-      {clip.source_url && <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link real-source-link">↗ View original source <span>{clip.source_url}</span></a>}
+      {clip.source_url && <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link real-source-link">↗ View original source <span>{sourceDomain(clip.source_url)}</span></a>}
 
       {isOwner && claims.length > 0 && (
         <div className="flex flex-col gap-3">
@@ -290,6 +288,22 @@ export default function ClipPage() {
       <CommentSection clipId={clip.id} />
     </article>
   );
+}
+
+async function loadClip(column, value) {
+  const withCommunity = await supabase
+    .from('clips')
+    .select('*, profiles(*), communities(slug, name)')
+    .eq(column, value)
+    .single();
+  if (!withCommunity.error) return withCommunity.data;
+
+  const fallback = await supabase
+    .from('clips')
+    .select('*, profiles(*)')
+    .eq(column, value)
+    .single();
+  return fallback.data;
 }
 
 function formatDate(dateStr) {

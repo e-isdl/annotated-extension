@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { castVote, getUserVote } from '../lib/api';
-import { notify } from '../lib/notifications';
+import { useToast } from './ToastProvider';
 
 export default function VoteButtons({ clipId, score, setScore }) {
   const isDemo = String(clipId).startsWith('demo-');
   const [userVote, setUserVote] = useState(null);
   const [userId, setUserId] = useState(null);
+  const { push } = useToast();
 
   useEffect(() => {
     if (isDemo) return;
@@ -30,7 +31,7 @@ export default function VoteButtons({ clipId, score, setScore }) {
       });
       return;
     }
-    if (!userId) { alert('Sign in to vote.'); return; }
+    if (!userId) { push('Sign in to vote on a post.', 'info'); return; }
 
     const prevVote = userVote;
     const prevScore = score;
@@ -46,24 +47,10 @@ export default function VoteButtons({ clipId, score, setScore }) {
       setScore((s) => s + direction);
     }
 
-    castVote(supabase, clipId, userId, direction).then(async () => {
-      if (direction === 1 && prevVote !== 1) {
-        try {
-          const { data: clip } = await supabase.from('clips').select('user_id, title').eq('id', clipId).single();
-          if (clip?.user_id && clip.user_id !== userId) {
-            const { data: profile } = await supabase.from('profiles').select('handle').eq('id', userId).single();
-            notify({
-              userId: clip.user_id,
-              type: 'like',
-              message: `@${profile?.handle || 'Someone'} liked "${clip.title}"`,
-              clipId,
-            });
-          }
-        } catch {}
-      }
-    }).catch(() => {
+    castVote(supabase, clipId, userId, direction).catch(() => {
       setUserVote(prevVote);
       setScore(prevScore);
+      push('Your vote could not be saved. Try again.', 'error');
     });
   };
 

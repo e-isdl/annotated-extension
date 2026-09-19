@@ -69,8 +69,8 @@ export default function ClipCard({ clip }) {
       </div>
 
       <Link to={href} className="block no-underline group">
-        <h2 className="post-title">{clip.title}</h2>
-        {commentary && <p className="post-commentary">{commentaryPreview.text}{commentaryPreview.truncated && <span className="post-commentary-more">…</span>}</p>}
+        {commentary && <p className="post-annotation-preview">{commentaryPreview.text}{commentaryPreview.truncated && <span className="post-commentary-more">…</span>}</p>}
+        <h2 className="post-title post-source-title">{clip.title}</h2>
 
         <div className="source-preview">
           <div className="source-preview-copy">
@@ -82,17 +82,17 @@ export default function ClipCard({ clip }) {
             ) : (
               <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
             )}
-            <p className="source-title">{clip.source_title || clip.title}</p>
-            {clip.start_sec !== undefined && clip.end_sec !== undefined && (
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="timestamp">{formatTime(clip.start_sec)}</span>
-                <span className="text-text-muted text-xs">→</span>
-                <span className="timestamp">{formatTime(clip.end_sec)}</span>
-              </div>
-            )}
+            {clip.source_title && clip.source_title !== clip.title && <p className="source-title">{clip.source_title}</p>}
           </div>
           {sourceImage && <img src={sourceImage} alt="" className="source-preview-image" loading="lazy" />}
         </div>
+        {clip.start_sec !== undefined && clip.end_sec !== undefined && (
+          <div className="post-timestamp-row" aria-label={`Source moment from ${formatTime(clip.start_sec)} to ${formatTime(clip.end_sec)}`}>
+            <span className="timestamp">{formatTime(clip.start_sec)}</span>
+            <span className="text-text-muted text-xs">→</span>
+            <span className="timestamp">{formatTime(clip.end_sec)}</span>
+          </div>
+        )}
       </Link>
 
       <div className="post-actions">
@@ -101,7 +101,7 @@ export default function ClipCard({ clip }) {
           <span>▱</span> {clip.comments_count ?? 0} comments
         </Link>
         <button type="button" onClick={handleShare} className="post-action">
-          <span>↗</span> {shared ? 'Copied' : 'Share'}
+          <span>↗</span> <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span>
         </button>
         <button type="button" onClick={handleSave} className={`post-action post-action-last ${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
