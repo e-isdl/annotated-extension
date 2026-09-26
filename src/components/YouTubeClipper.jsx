@@ -106,7 +106,15 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
     if (!state || state.adPlaying) return;
     const position = Math.floor(state.currentTime || 0);
     if (which === 'start') {
-      updateStart(position);
+      const start = Math.min(position, duration - 1);
+      if (start < 0) return;
+      setStartSec(start);
+      setStartInput(formatTime(start));
+      if (endSec <= start + 1) {
+        const end = Math.min(duration, start + 30);
+        setEndSec(end);
+        setEndInput(formatTime(end));
+      }
       setQuickStep('end');
     } else {
       updateEnd(Math.max(position, startSec + 1));
