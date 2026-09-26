@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { getCurrentVideoState } from '../lib/videoState';
 
 function formatTime(s) {
   const m = Math.floor(s / 60);
@@ -23,22 +22,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const [startInput, setStartInput] = useState('0:00');
   const [endInput, setEndInput] = useState('0:30');
   const [previewMode, setPreviewMode] = useState(false);
-  const [videoState, setVideoState] = useState(null);
-  const [quickStep, setQuickStep] = useState('start');
-
-  useEffect(() => {
-    let cancelled = false;
-    const poll = async () => {
-      const state = await getCurrentVideoState();
-      if (!cancelled && state) setVideoState(state);
-    };
-    poll();
-    const id = setInterval(poll, 1000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
 
   useEffect(() => {
     if (data.duration && data.duration > 0) {
@@ -96,39 +79,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
     setEndInput(val);
     const sec = parseTime(val);
     if (!isNaN(sec) && sec > startSec && sec <= duration) setEndSec(sec);
-  };
-
-  const adPlaying = Boolean(videoState?.adPlaying);
-
-  const setPointFromPlayback = async (which) => {
-    const state = await getCurrentVideoState();
-    if (state) setVideoState(state);
-    if (!state || state.adPlaying) return;
-    const position = Math.floor(state.currentTime || 0);
-    if (which === 'start') {
-      const start = Math.min(position, duration - 1);
-      if (start < 0) return;
-      setStartSec(start);
-      setStartInput(formatTime(start));
-      if (endSec <= start + 1) {
-        const end = Math.min(duration, start + 30);
-        setEndSec(end);
-        setEndInput(formatTime(end));
-      }
-      setQuickStep('end');
-    } else {
-      updateEnd(Math.max(position, startSec + 1));
-      setQuickStep('done');
-    }
-  };
-
-  const resetQuick = () => {
-    setStartSec(0);
-    setStartInput('0:00');
-    const end = Math.min(30, duration);
-    setEndSec(end);
-    setEndInput(formatTime(end));
-    setQuickStep('start');
   };
 
   const handleContinue = () => {
@@ -227,7 +177,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
                 setStartInput(formatTime(v));
               }
             }}
-            className="absolute w-full h-5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-bg-base [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-grab z-10"
+            className="absolute w-full h-7 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:cursor-grab z-10"
           />
           <input
             type="range"
@@ -241,7 +191,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
                 setEndInput(formatTime(v));
               }
             }}
-            className="absolute w-full h-5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-bg-base [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-grab z-20"
+            className="absolute w-full h-7 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:cursor-grab z-20"
           />
         </div>
 
@@ -304,48 +254,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* QUICK SET — optional big buttons, the sliders above work on their own */}
-      <div className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-text-secondary">Quick set</span>
-          <span className="text-[11px] font-mono text-text-muted">
-            {videoState ? `video at ${formatTime(videoState.currentTime)}` : 'reading video…'}
-          </span>
-        </div>
-
-        {adPlaying && (
-          <p className="text-xs text-amber-400">An ad is playing — the buttons resume when the video does.</p>
-        )}
-
-        <div className={quickStep === 'done' ? 'grid grid-cols-2 gap-2' : 'flex flex-col gap-2'}>
-          <button
-            onClick={() => setPointFromPlayback('start')}
-            disabled={adPlaying || !videoState}
-            className="w-full py-4 rounded-xl bg-accent text-white text-base font-semibold hover:opacity-90 active:scale-[0.99] transition disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {quickStep === 'done' ? 'Start point' : 'Set start point'}
-          </button>
-          {quickStep !== 'start' && (
-            <button
-              onClick={() => setPointFromPlayback('end')}
-              disabled={adPlaying || !videoState}
-              className="w-full py-4 rounded-xl bg-accent text-white text-base font-semibold hover:opacity-90 active:scale-[0.99] transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {quickStep === 'done' ? 'End point' : 'Set end point'}
-            </button>
-          )}
-        </div>
-
-        {quickStep === 'done' && (
-          <button
-            onClick={resetQuick}
-            className="text-xs text-text-muted hover:text-text-secondary transition-colors text-center"
-          >
-            Reset quick set
-          </button>
-        )}
       </div>
 
       {error && <p className="text-xs text-red-400">{error}</p>}

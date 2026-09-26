@@ -81,25 +81,6 @@ function getDurationFromPage() {
   return 0;
 }
 
-function getVideoState() {
-  const video = document.querySelector('video');
-  let duration = Math.floor(Number(getVideoDetails()?.lengthSeconds || 0));
-  if (!duration && video && isFinite(video.duration)) duration = Math.floor(video.duration);
-  return {
-    currentTime: video ? Math.floor(video.currentTime) : 0,
-    duration: duration || 0,
-    paused: video ? Boolean(video.paused) : true,
-    adPlaying: isAdPlaying(),
-  };
-}
-
-function seekVideo(seconds) {
-  const video = document.querySelector('video');
-  if (!video || !isFinite(seconds)) return false;
-  video.currentTime = Math.max(0, seconds);
-  return true;
-}
-
 if (!window.__annotatedContentLoaded) {
   window.__annotatedContentLoaded = true;
 
@@ -116,14 +97,6 @@ if (!window.__annotatedContentLoaded) {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'GET_PAGE_INFO') {
       sendResponse(detectPageInfo());
-      return true;
-    }
-    if (message.type === 'GET_VIDEO_STATE') {
-      sendResponse(getVideoState());
-      return true;
-    }
-    if (message.type === 'SEEK_VIDEO') {
-      sendResponse({ ok: seekVideo(Number(message.time)) });
       return true;
     }
   });
