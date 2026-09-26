@@ -5,15 +5,8 @@ import YouTubeEmbed from '../components/YouTubeEmbed';
 import AudioPlayer from '../components/AudioPlayer';
 import AnnotationLead from '../components/AnnotationLead';
 import { useToast } from '../components/ToastProvider';
-import CommentSection from '../components/CommentSection';
 
-const DEMO_COMMENTS = [
-  { id: 'demo-comment-theorycraft', handle: 'theorycraft', body: 'This is the difference between a feed that gives you information and a feed that gives you something to think about.', score: 148, vote_count: 164, ageMinutes: 18 },
-  { id: 'demo-comment-softlaunch', handle: 'softlaunch', body: 'The source should probably be visible even when the discussion gets long. Context collapse is where most platforms lose me.', score: 82, vote_count: 94, ageMinutes: 11, parent_comment_id: 'demo-comment-theorycraft' },
-  { id: 'demo-comment-mayachen', handle: 'mayachen', body: 'Yes. The quote is the anchor, not the entire post.', score: 41, vote_count: 48, ageMinutes: 4, parent_comment_id: 'demo-comment-softlaunch' },
-];
-
-export default function DemoClipPage({ clip, focusCommentId = null }) {
+export default function DemoClipPage({ clip }) {
   const [score, setScore] = useState(clip.score || 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
@@ -61,7 +54,6 @@ export default function DemoClipPage({ clip, focusCommentId = null }) {
         <button type="button" className={`post-action ${saved ? 'post-action-saved' : ''}`} onClick={() => setSaved(!saved)}>{saved ? '★ Saved' : '☆ Save'}</button>
       </div>
 
-      <CommentSection clipId={clip.id} postOwnerId={clip.profiles?.id} focusCommentId={focusCommentId} demoComments={DEMO_COMMENTS} />
     </article>
   );
 }

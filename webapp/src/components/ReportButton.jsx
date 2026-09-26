@@ -35,7 +35,10 @@ export default function ReportButton({ clipId }) {
 
   return (
     <div className="report-control">
-      <button type="button" className="post-action" onClick={() => setOpen((value) => !value)}>Report</button>
+      <button type="button" className="post-action" onClick={() => setOpen((value) => !value)}>
+        <svg className="post-action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5" /></svg>
+        <span>Report</span>
+      </button>
       {open && <form className="report-popover" onSubmit={submit}>
         <p className="text-xs text-text-secondary">What is wrong with this post?</p>
         <select className="input text-xs" value={reason} onChange={(event) => setReason(event.target.value)}>

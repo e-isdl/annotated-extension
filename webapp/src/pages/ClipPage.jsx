@@ -91,7 +91,7 @@ export default function ClipPage() {
     load();
   }, [id, demoClip]);
 
-  if (demoClip) return <DemoClipPage clip={demoClip} focusCommentId={commentId} />;
+  if (demoClip) return <DemoClipPage clip={demoClip} />;
 
   const handleDeleteClip = async () => {
     setDeleting(true);
@@ -137,12 +137,7 @@ export default function ClipPage() {
           <span>{formatDate(clip.created_at)}</span>
           {!annotation?.text_content && <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author no-underline">by {profile?.handle || 'anonymous'}</Link>}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="detail-overflow">
-            <button type="button" className="post-action overflow-trigger" aria-label="More post actions" aria-expanded={overflowOpen} onClick={() => setOverflowOpen((value) => !value)}>···</button>
-            {overflowOpen && <div className="overflow-menu"><FileClaimButton clipId={clip.id} /></div>}
-          </div>
-          {isOwner && (
+        {isOwner && (
           <div className="flex items-center gap-1">
             {confirmDelete ? (
               <>
@@ -172,7 +167,6 @@ export default function ClipPage() {
             )}
           </div>
         )}
-        </div>
       </div>
 
       <AnnotationLead text={annotation?.text_content || clip.title} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading />
@@ -213,10 +207,14 @@ export default function ClipPage() {
 
       <div className="detail-actions">
         <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
-        <a href="#comments" className="post-action no-underline">▱ {clip.comments_count ?? 0} comments</a>
+        <a href="#comments" className="post-action no-underline"><PostActionIcon name="comments" /><span>{clip.comments_count ?? 0} comments</span></a>
         <ReportButton clipId={clip.id} />
-        <button type="button" className="post-action" onClick={handleShare}>↗ <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span></button>
-        <button type="button" className={`post-action ${saved ? 'post-action-saved' : ''}`} onClick={handleSave}>{saved ? '★ Saved' : '☆ Save'}</button>
+        <button type="button" className="post-action" onClick={handleShare}><PostActionIcon name="share" /><span aria-live="polite">{shared ? 'Copied' : 'Share'}</span></button>
+        <button type="button" className={`post-action ${saved ? 'post-action-saved' : ''}`} onClick={handleSave}><PostActionIcon name="save" /><span>{saved ? 'Saved' : 'Save'}</span></button>
+        <div className="detail-overflow detail-overflow-end">
+          <button type="button" className="post-action overflow-trigger" aria-label="More post actions" aria-expanded={overflowOpen} onClick={() => setOverflowOpen((value) => !value)}><PostActionIcon name="more" /></button>
+          {overflowOpen && <div className="overflow-menu"><FileClaimButton clipId={clip.id} /></div>}
+        </div>
       </div>
 
       {clip.source_url && clip.source_type !== 'youtube' && <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link real-source-link">↗ {sourceDomain(clip.source_url)}</a>}
@@ -271,6 +269,16 @@ export default function ClipPage() {
       <CommentSection clipId={clip.id} postOwnerId={clip.user_id} communityId={clip.community_id} focusCommentId={commentId} />
     </article>
   );
+}
+
+function PostActionIcon({ name }) {
+  const paths = {
+    comments: <><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H5l-2 2v-10.5A8.5 8.5 0 0 1 11.5 3H12a9 9 0 0 1 9 8.5Z" /><path d="M8 11h8m-8 4h5" /></>,
+    share: <><path d="M12 16V4m-5 5 5-5 5 5" /><path d="M5 13v7h14v-7" /></>,
+    save: <path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-4-6 4V4.5Z" />,
+    more: <><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></>,
+  };
+  return <svg className="post-action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
 async function loadClip(column, value) {
