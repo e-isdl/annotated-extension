@@ -132,6 +132,53 @@ test('explains when a video has no captions available at all', async () => {
   await assert.rejects(() => runCaptionReader(sandbox), /no captions available/);
 });
 
+test('falls back to the next innertube client when the first returns no caption tracks', async () => {
+  const playerRequests = [];
+  const sandbox = pageSandbox({
+    tracks: undefined,
+    fetchImpl: async (url, init) => {
+      const target = String(url);
+      if (target.includes('/youtubei/v1/player')) {
+        playerRequests.push(init.body);
+        if (init.body.includes('"clientName":"IOS"')) {
+          return { ok: true, json: async () => ({ playabilityStatus: { status: 'LOGIN_REQUIRED' } }) };
+        }
+        assert.match(init.body, /"clientName":"TVHTML5"/);
+        return {
+          ok: true,
+          json: async () => ({ captions: { playerCaptionsTracklistRenderer: { captionTracks: [
+            { baseUrl: 'https://www.youtube.com/api/timedtext?v=abc123&lang=en', languageCode: 'en' },
+          ] } } }),
+        };
+      }
+      return { ok: true, text: async () => pageCaptionBody };
+    },
+  });
+
+  const result = await runCaptionReader(sandbox);
+
+  assert.equal(result.language, 'en');
+  assert.equal(JSON.parse(result.body).events[0].segs[0].utf8, 'Hello from captions.');
+  assert.equal(playerRequests.length, 2);
+  assert.match(playerRequests[0], /"clientName":"IOS"/);
+  assert.match(playerRequests[1], /"clientName":"TVHTML5"/);
+});
+
+test('reports where the caption lookup failed when every source comes back blank', async () => {
+  const sandbox = pageSandbox({
+    tracks: [{ baseUrl: 'https://www.youtube.com/api/timedtext?v=abc123', languageCode: 'en' }],
+    fetchImpl: async (url) => {
+      if (String(url).includes('/youtubei/v1/player')) return { ok: true, json: async () => ({}) };
+      return { ok: true, text: async () => '' };
+    },
+  });
+
+  await assert.rejects(
+    () => runCaptionReader(sandbox),
+    /empty caption track.*page=blank.*IOS:none/,
+  );
+});
+
 test('rejects when the YouTube tab has moved to a different video', async () => {
   const sandbox = pageSandbox({
     playerResponse: { videoDetails: { videoId: 'other123' } },

@@ -1,8 +1,18 @@
 /** Extract timed captions from the YouTube page the user is already viewing. */
 export async function readYouTubeCaptionTrack(videoId) {
   const FETCH_TIMEOUT_MS = 15000;
-  const MAX_TRACKS_PER_SOURCE = 3;
-  const FALLBACK_CLIENT = { name: 'IOS', version: '20.10.4' };
+  const PLAYER_TIMEOUT_MS = 10000;
+  const MAX_TRACKS_PER_SOURCE = 4;
+  const FALLBACK_CLIENTS = [
+    { name: 'IOS', version: '20.10.4', id: '5' },
+    { name: 'TVHTML5', version: '7.20250312.16.00', id: '7' },
+    { name: 'WEB_EMBEDDED_PLAYER', version: '1.20250310.01.00', id: '56', embedUrl: 'https://www.youtube.com/' },
+    { name: 'MWEB', version: '2.20250311.03.00', id: '2' },
+  ];
+  const notes = [];
+  const log = (message, detail) => {
+    if (typeof console !== 'undefined' && console.warn) console.warn(`[annotated] ${message}`, detail);
+  };
 
   const pagePlayer = window.ytInitialPlayerResponse
     || document.querySelector('ytd-player')?.getPlayerResponse?.()
@@ -19,6 +29,8 @@ export async function readYouTubeCaptionTrack(videoId) {
   const preferredLanguage = String(window.ytcfg?.get?.('HL') || navigator.language || 'en').toLowerCase();
   const preferredRegion = String(window.ytcfg?.get?.('GL') || 'US').toUpperCase();
   const languageBase = preferredLanguage.split('-')[0];
+  const visitorData = String(window.ytcfg?.get?.('VISITOR_DATA') || '');
+  const apiKey = String(window.ytcfg?.get?.('INNERTUBE_API_KEY') || '');
 
   const rankTracks = (tracks) => {
     const scoreFor = (track) => {
@@ -33,37 +45,46 @@ export async function readYouTubeCaptionTrack(videoId) {
     return [...tracks].sort((a, b) => scoreFor(a) - scoreFor(b));
   };
 
-  const requestInnertubeTracks = async () => {
-    const apiKey = window.ytcfg?.get?.('INNERTUBE_API_KEY');
+  const requestInnertubeTracks = async (client) => {
     const endpoint = `/youtubei/v1/player?prettyPrint=false${apiKey ? `&key=${encodeURIComponent(apiKey)}` : ''}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-YouTube-Client-Name': client.id,
+      'X-YouTube-Client-Version': client.version,
+    };
+    if (visitorData) headers['X-Goog-Visitor-Id'] = visitorData;
+    const clientContext = {
+      clientName: client.name,
+      clientVersion: client.version,
+      hl: preferredLanguage,
+      gl: preferredRegion,
+    };
+    if (visitorData) clientContext.visitorData = visitorData;
+    const payload = {
+      context: { client: clientContext },
+      videoId,
+      contentCheckOk: true,
+      racyCheckOk: true,
+    };
+    if (client.embedUrl) payload.context.thirdParty = { embedUrl: client.embedUrl };
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), PLAYER_TIMEOUT_MS);
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          context: {
-            client: {
-              clientName: FALLBACK_CLIENT.name,
-              clientVersion: FALLBACK_CLIENT.version,
-              hl: preferredLanguage,
-              gl: preferredRegion,
-            },
-          },
-          videoId,
-          contentCheckOk: true,
-          racyCheckOk: true,
-        }),
+        headers,
+        body: JSON.stringify(payload),
         credentials: 'include',
         cache: 'no-store',
         signal: controller.signal,
       });
-      if (!response.ok) return [];
+      if (!response.ok) return { tracks: [], note: `http${response.status}` };
       const data = await response.json();
-      return data?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+      const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+      if (!tracks.length) return { tracks: [], note: data?.playabilityStatus?.status || 'none' };
+      return { tracks, note: `${tracks.length}` };
     } catch {
-      return [];
+      return { tracks: [], note: 'unreachable' };
     } finally {
       clearTimeout(timer);
     }
@@ -91,34 +112,56 @@ export async function readYouTubeCaptionTrack(videoId) {
   };
 
   const readFromTracks = async (tracks) => {
-    if (!tracks?.length) return { status: 'none' };
-    for (const track of rankTracks(tracks).slice(0, MAX_TRACKS_PER_SOURCE)) {
-      if (!track?.baseUrl) continue;
+    const candidates = rankTracks((tracks || []).filter((track) => track?.baseUrl)).slice(0, MAX_TRACKS_PER_SOURCE);
+    if (!candidates.length) return { status: 'none' };
+    let status = 'none';
+    for (const track of candidates) {
       const outcome = await requestCaptionBody(track);
       if (outcome.status === 'ok') return { status: 'ok', language: track.languageCode || '', body: outcome.body };
-      if (outcome.status === 'error') return { status: 'error' };
-      if (outcome.status === 'blank') return { status: 'blank' };
+      if (outcome.status === 'empty') status = 'empty';
+      else if (outcome.status === 'blank' && status !== 'empty') status = 'blank';
+      else if (outcome.status === 'error' && status === 'none') status = 'error';
     }
-    return { status: 'empty' };
+    return { status };
   };
 
+  const detail = () => notes.join(', ');
+
   const pageTracks = pagePlayer?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-  const attempts = [];
   const pageOutcome = await readFromTracks(pageTracks);
-  if (pageOutcome.status === 'ok') return { language: pageOutcome.language, body: pageOutcome.body };
-  attempts.push(pageOutcome.status);
+  notes.push(`page=${pageOutcome.status}`);
+  if (pageOutcome.status === 'ok') return { language: pageOutcome.language, body: pageOutcome.body, diag: detail() };
 
-  const apiOutcome = await readFromTracks(await requestInnertubeTracks());
-  if (apiOutcome.status === 'ok') return { language: apiOutcome.language, body: apiOutcome.body };
-  attempts.push(apiOutcome.status);
+  let sawTracks = Boolean(pageTracks?.length);
+  const apiStatuses = [];
+  for (const client of FALLBACK_CLIENTS) {
+    const { tracks, note } = await requestInnertubeTracks(client);
+    if (!tracks.length) {
+      apiStatuses.push(`${client.name}:${note || 'none'}`);
+      continue;
+    }
+    sawTracks = true;
+    let outcome = await readFromTracks(tracks);
+    if (outcome.status !== 'ok') outcome = await readFromTracks(tracks);
+    apiStatuses.push(`${client.name}:${outcome.status}`);
+    if (outcome.status === 'ok') {
+      notes.push(...apiStatuses);
+      return { language: outcome.language, body: outcome.body, diag: detail() };
+    }
+  }
+  notes.push(...apiStatuses);
 
-  if (attempts.every((status) => status === 'none')) {
-    throw new Error('YouTube has no captions available for this video.');
+  const statuses = [pageOutcome.status, ...apiStatuses.map((entry) => entry.split(':').pop())];
+  if (!sawTracks) {
+    log('caption lookup found no tracks', detail());
+    throw new Error(`YouTube has no captions available for this video. (${detail()})`);
   }
-  if (attempts.includes('empty') || !attempts.includes('error')) {
-    throw new Error('YouTube returned an empty caption track for this video.');
+  if (statuses.includes('error')) {
+    log('caption lookup hit a request error', detail());
+    throw new Error(`Could not read captions from YouTube. Reload the video and try again. (${detail()})`);
   }
-  throw new Error('Could not read captions from YouTube. Reload the video and try again.');
+  log('caption lookup returned no caption text', detail());
+  throw new Error(`YouTube returned an empty caption track for this video. (${detail()})`);
 }
 
 export function parseYouTubeJson3(payload) {
@@ -165,22 +208,32 @@ export async function fetchYouTubeTranscript(videoId) {
     throw new Error('Return to the selected YouTube video tab to load its captions.');
   }
 
-  const [injection] = await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    world: 'MAIN',
-    func: readYouTubeCaptionTrack,
-    args: [videoId],
-  });
+  let injection;
+  try {
+    [injection] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      world: 'MAIN',
+      func: readYouTubeCaptionTrack,
+      args: [videoId],
+    });
+  } catch (error) {
+    const message = String(error?.message || error || '');
+    console.warn('[annotated] caption injection failed', message);
+    throw new Error(message || 'YouTube returned an empty caption track for this video.');
+  }
   const result = injection?.result;
+  const suffix = result?.diag ? ` (${result.diag})` : '';
   if (!result?.body) {
-    throw new Error('YouTube returned an empty caption track for this video.');
+    console.warn('[annotated] no caption body from the tab', suffix || result);
+    throw new Error(`YouTube returned an empty caption track for this video.${suffix}`);
   }
 
   let payload = null;
   try { payload = JSON.parse(result.body); } catch { payload = null; }
   const segments = payload ? parseYouTubeJson3(payload) : [];
   if (!segments.length) {
-    throw new Error('YouTube returned an empty caption track for this video.');
+    console.warn('[annotated] caption body had no readable events', suffix);
+    throw new Error(`YouTube returned an empty caption track for this video.${suffix}`);
   }
   return { language: result.language || '', segments };
 }
