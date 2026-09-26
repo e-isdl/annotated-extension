@@ -6,6 +6,7 @@ import { deleteComment } from '../lib/api';
 import { createComment } from '../lib/mutations';
 import { controversyScore, countReplies, nextCommentVote, wilsonScore } from '../lib/commentRanking';
 import Avatar from './Avatar';
+import VoteArrow from './VoteArrow';
 import { useToast } from './ToastProvider';
 
 export default function CommentSection({ clipId, postOwnerId = null, communityId = null, focusCommentId = null }) {
@@ -291,9 +292,9 @@ function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, 
             {replyCount > 0 && <button type="button" className="comment-collapse" aria-label={collapsed ? `Expand ${replyCount} replies` : `Collapse ${replyCount} replies`} aria-expanded={!collapsed} onClick={toggleCollapse}>{collapsed ? '⊕' : '⊖'}</button>}
             <div className="comment-action-items">
               <div className="comment-vote-control" aria-label={`Comment score ${vote.score ?? 0}`}>
-                <button type="button" className="comment-vote-up" aria-label="Upvote comment" aria-pressed={vote.direction === 1} onClick={() => voteComment(comment.id, 1)}><VoteChevron direction="up" /></button>
+                <button type="button" className="comment-vote-up" aria-label="Upvote comment" aria-pressed={vote.direction === 1} onClick={() => voteComment(comment.id, 1)}><VoteArrow direction="up" /></button>
                 <span className="comment-score">{vote.score ?? 0}</span>
-                <button type="button" className="comment-vote-down" aria-label="Downvote comment" aria-pressed={vote.direction === -1} onClick={() => voteComment(comment.id, -1)}><VoteChevron direction="down" /></button>
+                <button type="button" className="comment-vote-down" aria-label="Downvote comment" aria-pressed={vote.direction === -1} onClick={() => voteComment(comment.id, -1)}><VoteArrow direction="down" /></button>
               </div>
               <button type="button" className="comment-action-button" onClick={toggleReply}><CommentActionIcon name="reply" /><span>Reply</span></button>
               <button type="button" className="comment-action-button" onClick={() => push('Awards are not available yet.', 'info')}><CommentActionIcon name="award" /><span>Award</span></button>
@@ -351,16 +352,6 @@ function authProfile(user) {
     display_name: user.user_metadata?.full_name || null,
     avatar_url: user.user_metadata?.avatar_url || null,
   };
-}
-
-function VoteChevron({ direction }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      {direction === 'up'
-        ? <path d="m5 14 7-7 7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        : <path d="m5 10 7 7 7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
-    </svg>
-  );
 }
 
 function resizeCommentField(field) {

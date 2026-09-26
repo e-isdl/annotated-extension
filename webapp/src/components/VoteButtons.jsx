@@ -4,6 +4,8 @@ import { getCurrentUser } from '../lib/authUser';
 import { getUserVote } from '../lib/api';
 import { castVote } from '../lib/mutations';
 import { useToast } from './ToastProvider';
+import VoteArrow from './VoteArrow';
+import './VoteButtons.css';
 
 export default function VoteButtons({ clipId, score, setScore }) {
   const isDemo = String(clipId).startsWith('demo-');
@@ -57,50 +59,28 @@ export default function VoteButtons({ clipId, score, setScore }) {
   };
 
   return (
-    <div className="vote-pill" aria-label="Vote on this post">
+    <div className="vw-container" aria-label="Vote on this post">
       <button
         type="button"
         aria-label="Upvote post"
         aria-pressed={userVote === 1}
         onClick={() => handleVote(1)}
-        className={`vote-pill-button vote-up-button ${
-          userVote === 1
-            ? 'bg-accent text-bg-base scale-110'
-            : 'text-text-muted hover:text-accent hover:bg-accent/10'
-        }`}
+        className={`vw-btn up${userVote === 1 ? ' active' : ''}`}
       >
         <VoteArrow direction="up" />
       </button>
 
-      <span
-        className="vote-pill-score"
-      >
-        {score > 0 ? `+${score}` : score}
-      </span>
+      <span className="vw-count">{score}</span>
 
       <button
         type="button"
         aria-label="Downvote post"
         aria-pressed={userVote === -1}
         onClick={() => handleVote(-1)}
-        className={`vote-pill-button vote-down-button ${
-          userVote === -1
-            ? 'bg-bg-raised text-text-primary scale-110'
-            : 'text-text-muted hover:text-text-primary hover:bg-bg-raised'
-        }`}
+        className={`vw-btn down${userVote === -1 ? ' active' : ''}`}
       >
         <VoteArrow direction="down" />
       </button>
     </div>
-  );
-}
-
-function VoteArrow({ direction }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      {direction === 'up'
-        ? <path d="m5 14 7-7 7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        : <path d="m5 10 7 7 7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
-    </svg>
   );
 }
