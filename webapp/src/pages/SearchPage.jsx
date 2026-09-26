@@ -124,7 +124,7 @@ export default function SearchPage() {
               >
                 <Avatar profile={user} size="md" />
                 <div>
-                  <p className="text-sm font-medium text-text-primary">@{user.handle}</p>
+                  <p className="text-sm font-medium text-text-primary">{user.handle}</p>
                   {user.display_name && (
                     <p className="text-xs text-text-muted">{user.display_name}</p>
                   )}

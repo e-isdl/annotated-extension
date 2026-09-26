@@ -246,13 +246,13 @@ begin
   if p_annotation_type is null or p_annotation_type not in ('Reaction', 'Fact check', 'Explainer', 'Steelman', 'Found receipts') then
     raise exception 'Choose a valid annotation type';
   end if;
-  if length(trim(p_annotation)) > case p_annotation_type
+  if length(trim(p_annotation)) > (case p_annotation_type
     when 'Reaction' then 280
     when 'Fact check' then 500
     when 'Explainer' then 600
     when 'Steelman' then 800
     else 1000
-  end then
+  end) then
     raise exception 'Annotation exceeds its type-specific character limit';
   end if;
   if p_source_url is not null and p_source_url !~* '^https?://' then

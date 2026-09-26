@@ -70,7 +70,7 @@ export default function ClipCard({ clip }) {
           <span className="post-meta-separator">•</span>
         </>}
         <Link to={clip.profiles?.handle ? `/u/${clip.profiles.handle}` : '#'} className="post-author no-underline">
-          @{clip.profiles?.handle || 'anonymous'}
+          {clip.profiles?.handle || 'anonymous'}
         </Link>
         <span className="post-meta-separator">•</span>
         <span>{timeAgo(clip.created_at)}</span>

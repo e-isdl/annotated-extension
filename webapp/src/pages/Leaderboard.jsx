@@ -94,7 +94,7 @@ export default function Leaderboard() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <Avatar profile={clip.profiles} size="xs" />
-                  <span className="text-xs text-text-muted">@{clip.profiles?.handle}</span>
+                  <span className="text-xs text-text-muted">{clip.profiles?.handle}</span>
                   {clip.source_type !== 'youtube' && <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>}
                 </div>
                 <Link

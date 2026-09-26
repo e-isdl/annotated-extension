@@ -195,7 +195,7 @@ export default function Navbar() {
                         >
                           <span className="text-text-muted mt-0.5 shrink-0">{NOTIF_ICONS[n.type] || NOTIF_ICONS.clip}</span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-text-primary leading-relaxed">{n.message}</p>
+                            <p className="text-xs text-text-primary leading-relaxed">{n.message.replace(/^@(?=\S)/, '')}</p>
                             <p className="text-[10px] text-text-muted mt-1 font-mono">{timeAgo(n.created_at)}</p>
                           </div>
                           {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 mt-1.5" />}

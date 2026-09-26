@@ -135,7 +135,7 @@ export default function ClipPage() {
           {clip.community_slug && clip.community_name && <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>}
           <span>•</span>
           <span>{formatDate(clip.created_at)}</span>
-          {!annotation?.text_content && <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author no-underline">by @{profile?.handle || 'anonymous'}</Link>}
+          {!annotation?.text_content && <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author no-underline">by {profile?.handle || 'anonymous'}</Link>}
         </div>
         <div className="flex items-center gap-2">
           <div className="detail-overflow">

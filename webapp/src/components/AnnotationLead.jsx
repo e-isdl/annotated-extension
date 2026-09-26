@@ -16,7 +16,7 @@ export default function AnnotationLead({ text, profile, annotationType = 'Annota
           <Avatar profile={profile} size="sm" />
         </Link>
         <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="annotation-lead-handle no-underline">
-          @{profile?.handle || 'anonymous'}
+          {profile?.handle || 'anonymous'}
         </Link>
       </div>
       <Copy className="annotation-lead-copy">{text}</Copy>

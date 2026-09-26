@@ -30,6 +30,15 @@ export default function Profile() {
   const [viewerId, setViewerId] = useState(null);
   const [connectionView, setConnectionView] = useState('followers');
   const [commentView, setCommentView] = useState('comments');
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileHandleDraft, setProfileHandleDraft] = useState('');
+  const [profileNameDraft, setProfileNameDraft] = useState('');
+  const [profileBioDraft, setProfileBioDraft] = useState('');
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
+  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -79,10 +88,12 @@ export default function Profile() {
     load();
   }, [handle]);
 
+  const isOwner = viewerId && profile?.id === viewerId;
+
   useEffect(() => {
     if (!profile) return;
     loadTab(activeTab);
-  }, [activeTab, profile]);
+  }, [activeTab, profile, isOwner]);
 
   useEffect(() => {
     setActiveTab(routeTab === 'comments' ? 'comments' : 'clips');
@@ -94,7 +105,83 @@ export default function Profile() {
     else if (location.pathname.endsWith('/connections')) setActiveTab('connections');
   }, [location.pathname]);
 
-  const isOwner = viewerId && profile?.id === viewerId;
+  useEffect(() => {
+    if (avatarPreview.startsWith('blob:')) return () => URL.revokeObjectURL(avatarPreview);
+    return undefined;
+  }, [avatarPreview]);
+
+  function openProfileEditor() {
+    setProfileHandleDraft(profile.handle || '');
+    setProfileNameDraft(profile.display_name || '');
+    setProfileBioDraft(profile.bio || '');
+    setAvatarFile(null);
+    setAvatarPreview(profile.avatar_url || '');
+    setRemoveAvatar(false);
+    setProfileError('');
+    setEditingProfile(true);
+  }
+
+  async function saveProfile(event) {
+    event.preventDefault();
+    const nextHandle = profileHandleDraft.trim().toLowerCase();
+    if (!/^[a-z0-9_]{1,24}$/.test(nextHandle)) {
+      setProfileError('Username must be 1–24 characters using letters, numbers, and underscores.');
+      return;
+    }
+    if (avatarFile && (!['image/jpeg', 'image/png', 'image/webp'].includes(avatarFile.type) || avatarFile.size > 5 * 1024 * 1024)) {
+      setProfileError('Choose a JPG, PNG, or WebP photo under 5 MB.');
+      return;
+    }
+
+    setProfileSaving(true);
+    setProfileError('');
+    let avatarUrl = removeAvatar ? null : profile.avatar_url;
+    let uploadedPath = null;
+    try {
+      if (avatarFile) {
+        const extension = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' })[avatarFile.type];
+        uploadedPath = `${profile.id}/${crypto.randomUUID()}.${extension}`;
+        const { error: uploadError } = await supabase.storage.from('avatars').upload(uploadedPath, avatarFile, {
+          cacheControl: '31536000',
+          contentType: avatarFile.type,
+          upsert: false,
+        });
+        if (uploadError) throw uploadError;
+        avatarUrl = supabase.storage.from('avatars').getPublicUrl(uploadedPath).data.publicUrl;
+      }
+
+      const { data: updatedProfile, error } = await supabase
+        .from('profiles')
+        .update({
+          handle: nextHandle,
+          display_name: profileNameDraft.trim().slice(0, 60) || null,
+          bio: profileBioDraft.trim().slice(0, 240) || null,
+          avatar_url: avatarUrl,
+        })
+        .eq('id', profile.id)
+        .select('*')
+        .single();
+      if (error) throw error;
+
+      setProfile(updatedProfile);
+      const { error: authUpdateError } = await supabase.auth.updateUser({ data: {
+        user_name: updatedProfile.handle,
+        full_name: updatedProfile.display_name,
+        avatar_url: updatedProfile.avatar_url,
+      } });
+      if (authUpdateError) console.warn('Profile saved, but auth metadata could not be refreshed.', authUpdateError);
+      setEditingProfile(false);
+      navigate(`/u/${updatedProfile.handle}`, { replace: true });
+    } catch (error) {
+      if (uploadedPath) await supabase.storage.from('avatars').remove([uploadedPath]);
+      if (error.code === '23505') setProfileError('That username is already taken.');
+      else if (error.code === '42501' || error.code === 'PGRST301' || /bucket|storage|policy|permission/i.test(error.message || '')) setProfileError('Profile editing needs the latest Supabase migration.');
+      else setProfileError(error.message || 'Profile could not be saved. Try again.');
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
   useEffect(() => {
     if (!isOwner && activeTab === 'likes') setActiveTab('clips');
   }, [isOwner, activeTab]);
@@ -150,14 +237,47 @@ export default function Profile() {
           <div className="profile-avatar-shell"><Avatar profile={profile} size="lg" /></div>
           <div className="profile-copy">
             <h1 className="text-xl font-bold text-text-primary">{profile.display_name || profile.handle}</h1>
-            <p className="text-sm text-text-secondary">@{profile.handle}</p>
+            <p className="text-sm text-text-secondary">{profile.handle}</p>
             {profile.bio && (
               <p className="text-sm text-text-secondary mt-2">{profile.bio}</p>
             )}
           </div>
         </div>
-        <FollowButton profileId={profile.id} />
+        <div className="profile-header-actions">
+          {isOwner ? <button type="button" className="btn-ghost" onClick={openProfileEditor}>Edit profile</button> : <FollowButton profileId={profile.id} />}
+        </div>
       </div>
+
+      {editingProfile && <div className="profile-edit-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditingProfile(false); }}>
+        <section className="profile-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-edit-title">
+          <div className="profile-edit-heading">
+            <div><h2 id="profile-edit-title">Edit profile</h2><p>Choose the name and photo people see.</p></div>
+            <button type="button" className="profile-edit-close" aria-label="Close profile editor" onClick={() => setEditingProfile(false)}>×</button>
+          </div>
+          <form onSubmit={saveProfile} className="profile-edit-form">
+            <div className="profile-photo-editor">
+              <Avatar profile={{ ...profile, handle: profileHandleDraft || profile.handle, avatar_url: avatarPreview }} size="lg" />
+              <div>
+                <label className="profile-photo-button">Change photo<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  setAvatarFile(file);
+                  setAvatarPreview(URL.createObjectURL(file));
+                  setRemoveAvatar(false);
+                  setProfileError('');
+                }} /></label>
+                {(avatarPreview || avatarFile) && <button type="button" className="profile-remove-photo" onClick={() => { setAvatarFile(null); setAvatarPreview(''); setRemoveAvatar(true); }}>Remove</button>}
+                <small>JPG, PNG, or WebP · max 5 MB</small>
+              </div>
+            </div>
+            <label className="profile-edit-label">Username<input className="input" value={profileHandleDraft} onChange={(event) => setProfileHandleDraft(event.target.value)} maxLength={24} autoComplete="username" /></label>
+            <label className="profile-edit-label">Display name<input className="input" value={profileNameDraft} onChange={(event) => setProfileNameDraft(event.target.value)} maxLength={60} /></label>
+            <label className="profile-edit-label">Bio<textarea className="input profile-bio-input" value={profileBioDraft} onChange={(event) => setProfileBioDraft(event.target.value)} maxLength={240} rows={3} /></label>
+            {profileError && <p className="profile-edit-error" role="alert">{profileError}</p>}
+            <div className="profile-edit-actions"><button type="button" className="btn-ghost" onClick={() => setEditingProfile(false)}>Cancel</button><button type="submit" className="btn-primary" disabled={profileSaving}>{profileSaving ? 'Saving…' : 'Save changes'}</button></div>
+          </form>
+        </section>
+      </div>}
 
       <div className="profile-stats">
         <span><strong>{clips.length}</strong> posts</span>
@@ -192,7 +312,7 @@ export default function Profile() {
           <div className="profile-subtabs"><button className={connectionView === 'followers' ? 'profile-subtab-active' : ''} onClick={() => setConnectionView('followers')}>Followers · {followerCount}</button><button className={connectionView === 'following' ? 'profile-subtab-active' : ''} onClick={() => setConnectionView('following')}>Following · {followingCount}</button></div>
           <div className="profile-people-list">
             {(connectionView === 'followers' ? followers : following).length === 0 && <p className="text-sm text-text-secondary text-center py-8">{connectionView === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}</p>}
-            {(connectionView === 'followers' ? followers : following).map((user) => <Link key={user.id} to={`/u/${user.handle}`} className="profile-person no-underline"><Avatar profile={user} size="md" /><span><strong>@{user.handle}</strong>{user.display_name && <small>{user.display_name}</small>}</span></Link>)}
+            {(connectionView === 'followers' ? followers : following).map((user) => <Link key={user.id} to={`/u/${user.handle}`} className="profile-person no-underline"><Avatar profile={user} size="md" /><span><strong>{user.handle}</strong>{user.display_name && <small>{user.display_name}</small>}</span></Link>)}
           </div>
         </div>
       ) : activeTab === 'comments' ? (
@@ -210,7 +330,7 @@ export default function Profile() {
               >
                 {comment.clips?.title || 'Untitled clip'}
                 {comment.clips?.profiles?.handle && (
-                  <span className="text-text-muted"> by @{comment.clips.profiles.handle}</span>
+                  <span className="text-text-muted"> by {comment.clips.profiles.handle}</span>
                 )}
               </Link>
               <p className="text-sm text-text-primary">{comment.body}</p>

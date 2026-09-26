@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { deleteComment } from '../lib/api';
 import { createComment } from '../lib/mutations';
-import { countReplies, wilsonScore } from '../lib/commentRanking';
+import { countReplies, nextCommentVote, wilsonScore } from '../lib/commentRanking';
 import Avatar from './Avatar';
 import { useToast } from './ToastProvider';
 
@@ -16,10 +16,12 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState('best');
+  const [commentSearch, setCommentSearch] = useState('');
   const [commentVotes, setCommentVotes] = useState({});
   const [moderatorIds, setModeratorIds] = useState(new Set());
   const [deletingId, setDeletingId] = useState(null);
   const composerRef = useRef(null);
+  const pendingVotes = useRef(new Set());
   const { push } = useToast();
 
   useEffect(() => {
@@ -87,23 +89,35 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
   }, [body]);
 
   const visibleComments = useMemo(() => {
-    if (sort === 'new') return [...comments].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    if (sort === 'oldest') return comments;
-    return [...comments].sort((a, b) => wilsonScore(commentVotes[b.id]) - wilsonScore(commentVotes[a.id]));
-  }, [comments, commentVotes, sort]);
+    const sorted = sort === 'new'
+      ? [...comments].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      : sort === 'oldest'
+        ? comments
+        : [...comments].sort((a, b) => wilsonScore(commentVotes[b.id]) - wilsonScore(commentVotes[a.id]));
+    const query = commentSearch.trim().toLowerCase();
+    return query ? sorted.filter((comment) => `${comment.body} ${comment.profiles?.handle || ''}`.toLowerCase().includes(query)) : sorted;
+  }, [comments, commentVotes, sort, commentSearch]);
   const focusedCommentId = focusCommentId || (location.hash.startsWith('#comment-') ? location.hash.slice('#comment-'.length) : null);
   const commentTree = useMemo(() => buildTree(visibleComments, focusedCommentId), [visibleComments, focusedCommentId]);
 
   const voteComment = async (commentId, direction) => {
-    if (String(commentId).startsWith('temp-')) return;
-    if (!session?.user) { push('Sign in to vote on comments.', 'info'); return; }
-    const { error } = await supabase.rpc('toggle_comment_vote', { p_comment_id: commentId, p_direction: direction });
-    if (error) { push('Comment vote could not be saved.', 'error'); return; }
+    if (String(commentId).startsWith('temp-') || pendingVotes.current.has(commentId)) return;
+    if (!demoComments && !session?.user) { push('Sign in to vote on comments.', 'info'); return; }
     const current = commentVotes[commentId] || { score: 0, vote_count: 0, direction: null };
-    const nextScore = current.direction === direction ? current.score - direction : current.score + direction - (current.direction || 0);
-    const nextDirection = current.direction === direction ? null : direction;
-    const nextCount = current.vote_count + (current.direction === direction ? -1 : current.direction ? 0 : 1);
-    setCommentVotes((value) => ({ ...value, [commentId]: { score: nextScore, vote_count: nextCount, direction: nextDirection } }));
+    const nextVote = nextCommentVote(current, direction);
+    setCommentVotes((value) => ({ ...value, [commentId]: nextVote }));
+    if (demoComments) return;
+    pendingVotes.current.add(commentId);
+    try {
+      const { error } = await supabase.rpc('toggle_comment_vote', { p_comment_id: commentId, p_direction: direction });
+      if (error) throw error;
+    } catch (error) {
+      setCommentVotes((value) => ({ ...value, [commentId]: current }));
+      if (error.code === 'PGRST202' || error.code === '42883') push('Comment voting needs the latest Supabase migration.', 'error');
+      else push('Comment vote could not be saved. Try again.', 'error');
+    } finally {
+      pendingVotes.current.delete(commentId);
+    }
   };
 
   const submitComment = async ({ text, parentCommentId = null }) => {
@@ -163,11 +177,10 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
   return (
     <section className="comment-section" id="comments">
       <div className="comment-toolbar">
-        <select value={sort} onChange={(event) => setSort(event.target.value)} className="sort-chip">
-          <option value="best">Best</option>
-          <option value="new">New</option>
-          <option value="oldest">Old</option>
-        </select>
+        <label className="comment-sort-label">Sort by<select value={sort} onChange={(event) => setSort(event.target.value)} className="sort-chip">
+          <option value="best">Best</option><option value="new">New</option><option value="oldest">Old</option>
+        </select></label>
+        <input type="search" value={commentSearch} onChange={(event) => setCommentSearch(event.target.value)} placeholder="Search comments" aria-label="Search comments" className="comment-search" />
       </div>
 
       <div className="comment-composer">
@@ -199,7 +212,8 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
               voteComment={voteComment}
             />
           ))}
-          {comments.length === 0 && <p className="text-sm text-text-muted py-5">Be the first person to add context.</p>}
+          {comments.length === 0 && <p className="text-sm text-text-muted py-5">Be the first person to comment.</p>}
+          {comments.length > 0 && visibleComments.length === 0 && <p className="text-sm text-text-muted py-5">No comments match your search.</p>}
         </div>
       )}
     </section>
@@ -209,7 +223,8 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
 function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, setReplyBody, submitComment, handleDelete, deletingId, commentVotes, voteComment, postOwnerId, moderatorIds }) {
   const { push } = useToast();
   const [collapsed, setCollapsed] = useState(false);
-  const displayName = `@${comment.profiles?.handle || 'user'}`;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const displayName = comment.profiles?.handle || 'user';
   const canDelete = session?.user && session.user.id === comment.user_id;
   const children = comment.children || [];
   const replyCount = countReplies(children);
@@ -243,10 +258,10 @@ function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, 
   }, [replyIsOpen, replyBody, collapsed]);
 
   return (
-    <div className={`comment-node${isFocused ? ' comment-node-focused' : ''}`} id={`comment-${comment.id}`} data-depth={safeDepth} style={{ marginLeft: safeDepth ? `${safeDepth * 18}px` : 0 }}>
+    <div className={`comment-node${isFocused ? ' comment-node-focused' : ''}`} id={`comment-${comment.id}`} data-depth={safeDepth} style={{ marginLeft: safeDepth ? '18px' : 0 }}>
       {children.length > 0 && <button type="button" className="comment-thread-toggle" aria-label={collapsed ? 'Expand replies by clicking the thread line' : 'Collapse replies by clicking the thread line'} aria-expanded={!collapsed} onClick={() => collapsed ? setCollapsed(false) : collapseReplies()} />}
       <div className="flex items-start gap-2.5">
-        <Link to={comment.profiles?.handle ? `/u/${comment.profiles.handle}` : '#'} className="shrink-0"><Avatar profile={comment.profiles} size="sm" /></Link>
+        <Link to={comment.profiles?.handle ? `/u/${comment.profiles.handle}` : '#'} className="shrink-0"><Avatar profile={comment.profiles} size="md" /></Link>
         <div className="min-w-0 flex-1">
           {comment.focusContext?.length > 0 && <p className="comment-context">In reply to {comment.focusContext.map((name, index) => <span key={`${name}-${index}`}>{index ? ' › ' : ''}{name}</span>)}</p>}
           <div className="flex items-center gap-2 flex-wrap">
@@ -257,7 +272,10 @@ function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, 
             {comment.is_pinned && <span className="comment-role-badge comment-role-mod">⌖ Stickied comment</span>}
             <span className="text-[10px] text-text-muted font-mono">{timeAgo(comment.created_at)}</span>
             {edited && <span className="text-[10px] text-text-muted">(edited)</span>}
-            {canDelete && <button onClick={() => handleDelete(comment.id)} disabled={deletingId === comment.id} className="text-[10px] text-claim hover:text-claim/80">{deletingId === comment.id ? '…' : 'delete'}</button>}
+            {canDelete && <div className="comment-more-wrap">
+              <button type="button" className="comment-more-trigger" aria-label="More comment actions" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>···</button>
+              {menuOpen && <div className="comment-more-menu"><button type="button" onClick={() => { setMenuOpen(false); handleDelete(comment.id); }} disabled={deletingId === comment.id}>{deletingId === comment.id ? 'Deleting…' : 'Delete comment'}</button></div>}
+            </div>}
           </div>
           {!collapsed && <p className="comment-body">{comment.body}</p>}
           {collapsed ? (
@@ -267,11 +285,13 @@ function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, 
           ) : (
             <div className="comment-actions" aria-label="Comment actions">
               {children.length > 0 && <button type="button" className="comment-collapse" aria-label="Collapse replies" aria-expanded="true" onClick={collapseReplies}>⊖</button>}
-              <button type="button" className="comment-vote-up" aria-label="Upvote comment" aria-pressed={vote.direction === 1} onClick={() => voteComment(comment.id, 1)}><VoteChevron direction="up" /></button>
-              <span className="comment-score">{vote.score || ''}</span>
-              <button type="button" className="comment-vote-down" aria-label="Downvote comment" aria-pressed={vote.direction === -1} onClick={() => voteComment(comment.id, -1)}><VoteChevron direction="down" /></button>
-              <button type="button" onClick={toggleReply}>Reply</button>
-              <button type="button" onClick={async () => {
+              <div className="comment-vote-control" aria-label={`Comment score ${vote.score ?? 0}`}>
+                <button type="button" className="comment-vote-up" aria-label="Upvote comment" aria-pressed={vote.direction === 1} onClick={() => voteComment(comment.id, 1)}><VoteChevron direction="up" /></button>
+                <span className="comment-score">{vote.score ?? 0}</span>
+                <button type="button" className="comment-vote-down" aria-label="Downvote comment" aria-pressed={vote.direction === -1} onClick={() => voteComment(comment.id, -1)}><VoteChevron direction="down" /></button>
+              </div>
+              <button type="button" className="comment-action-reply" onClick={toggleReply}>Reply</button>
+              <button type="button" className="comment-action-share" onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(`${window.location.origin}${commentUrl}`);
                   push('Comment link copied.', 'info');
@@ -333,7 +353,7 @@ function buildTree(comments, focusId = null) {
     while (parentId && byId.has(parentId) && !seen.has(parentId)) {
       seen.add(parentId);
       const parent = byId.get(parentId);
-      context.unshift(`@${parent.profiles?.handle || 'user'}`);
+      context.unshift(parent.profiles?.handle || 'user');
       parentId = parent.parent_comment_id;
     }
     return attach([{ ...target, children: [], focusContext: context }]);
