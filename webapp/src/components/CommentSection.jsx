@@ -286,8 +286,8 @@ function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, 
             {edited && <span className="comment-edited">(edited)</span>}
           </div>
           <p className="comment-body">{comment.body}</p>
-          <div className="comment-actions" aria-label="Comment actions">
-            <button type="button" className="comment-collapse" aria-label={collapsed ? `Expand ${replyCount} replies` : `Collapse ${replyCount} replies`} aria-expanded={!collapsed} disabled={!replyCount} onClick={toggleCollapse}>{collapsed ? '⊕' : '⊖'}</button>
+          <div className={`comment-actions${replyCount > 0 ? ' comment-actions-has-replies' : ''}`} aria-label="Comment actions">
+            {replyCount > 0 && <button type="button" className="comment-collapse" aria-label={collapsed ? `Expand ${replyCount} replies` : `Collapse ${replyCount} replies`} aria-expanded={!collapsed} onClick={toggleCollapse}>{collapsed ? '⊕' : '⊖'}</button>}
             <div className="comment-action-items">
               <div className="comment-vote-control" aria-label={`Comment score ${vote.score ?? 0}`}>
                 <button type="button" className="comment-vote-up" aria-label="Upvote comment" aria-pressed={vote.direction === 1} onClick={() => voteComment(comment.id, 1)}><VoteChevron direction="up" /></button>
