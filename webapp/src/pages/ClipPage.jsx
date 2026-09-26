@@ -204,10 +204,10 @@ export default function ClipPage() {
 
       {annotation?.audio_url && <AnnotationBlock annotation={{ ...annotation, text_content: null }} />}
 
-      {(transcript || clip.article_text) && (
-        <section className="source-transcript" aria-label={transcript ? 'Transcript' : 'Source context'}>
-          <span className="source-transcript-label">{transcript ? 'Transcript' : 'Context'}</span>
-          <p className="source-transcript-text">{transcript || clip.article_text}</p>
+      {transcript && (
+        <section className="source-transcript" aria-label="Transcript">
+          <span className="source-transcript-label">Transcript</span>
+          <p className="source-transcript-text">{transcript}</p>
         </section>
       )}
 

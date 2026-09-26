@@ -13,6 +13,25 @@ export default function RightRail() {
   const [communities, setCommunities] = useState([]);
   const [joined, setJoined] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
+  const [authStateLoaded, setAuthStateLoaded] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
+      setSignedIn(Boolean(session?.user));
+      setAuthStateLoaded(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSignedIn(Boolean(session?.user));
+      setAuthStateLoaded(true);
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -111,13 +130,13 @@ export default function RightRail() {
           </div>
           {community.rules && <section className="community-rules"><h3>Community rules</h3><p>{community.rules}</p></section>}
         </section>
-      ) : (
+      ) : authStateLoaded && !signedIn ? (
         <Link to="/create" className="create-prompt no-underline">
           <p className="text-xs font-semibold text-text-muted">ANNOTATED</p>
           <h2 className="text-base font-semibold text-text-primary mt-2 leading-tight">Add context to a moment</h2>
           <p className="text-xs text-text-secondary leading-relaxed mt-2">Bring a source, add your perspective, and discuss it with the community.</p>
         </Link>
-      )}
+      ) : null}
 
       {communities.length > 0 && <section className="rail-card">
         <div className="flex items-center justify-between mb-4">
