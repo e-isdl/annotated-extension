@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
@@ -9,7 +10,7 @@ export default function NotificationsPage() {
   useEffect(() => {
     let active = true;
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) { setLoading(false); return; }
       const { data } = await supabase
         .from('notifications')

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import VoteButtons from './VoteButtons';
 import { useToast } from './ToastProvider';
 import { communityStyle } from '../lib/community';
@@ -21,7 +22,7 @@ export default function ClipCard({ clip }) {
   useEffect(() => {
     if (String(clip.id).startsWith('demo-')) return;
     let active = true;
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+    getCurrentUser().then(async (user) => {
       if (!user) return;
       const { data } = await supabase
         .from('post_saves')
@@ -49,7 +50,7 @@ export default function ClipCard({ clip }) {
     event.preventDefault();
     event.stopPropagation();
     const next = !saved;
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) { push('Sign in to save posts.', 'info'); return; }
     setSaved(next);
     if (String(clip.id).startsWith('demo-')) return;

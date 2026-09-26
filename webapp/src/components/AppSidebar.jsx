@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import { communityStyle } from '../lib/community';
 
 const NAV_ITEMS = [
@@ -23,7 +24,7 @@ export default function AppSidebar() {
   useEffect(() => {
     let active = true;
     async function loadCommunities() {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const currentUser = await getCurrentUser();
       if (!active) return;
       setUser(currentUser);
       const [{ data: allCommunities }, membershipResult, allMembershipsResult] = await Promise.all([

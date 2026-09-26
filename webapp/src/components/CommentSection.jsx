@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import { deleteComment } from '../lib/api';
 import { createComment } from '../lib/mutations';
 import { controversyScore, countReplies, nextCommentVote, wilsonScore } from '../lib/commentRanking';
@@ -113,7 +114,7 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
 
   const submitComment = async ({ text, parentCommentId = null }) => {
     if (!text.trim()) return;
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) { push('Sign in to join the discussion.', 'info'); return; }
     const commentBody = text.trim();
     const tempId = `temp-${Date.now()}`;

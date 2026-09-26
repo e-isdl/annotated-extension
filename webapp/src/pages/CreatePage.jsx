@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import { generateSlug } from '../lib/api';
 import { createAnnotatedPost } from '../lib/mutations';
 import { communityStyle } from '../lib/community';
@@ -28,8 +29,8 @@ export default function CreatePage() {
   useEffect(() => {
     let active = true;
     async function load() {
-      const [{ data: { user: currentUser } }, { data, error }] = await Promise.all([
-        supabase.auth.getUser(),
+      const [currentUser, { data, error }] = await Promise.all([
+        getCurrentUser(),
         supabase.from('communities').select('id, slug, name, description').order('name'),
       ]);
       if (!active) return;

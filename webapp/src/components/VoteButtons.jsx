@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import { getUserVote } from '../lib/api';
 import { castVote } from '../lib/mutations';
 import { useToast } from './ToastProvider';
@@ -12,7 +13,7 @@ export default function VoteButtons({ clipId, score, setScore }) {
 
   useEffect(() => {
     if (isDemo) return;
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getCurrentUser().then((user) => {
       if (user) {
         setUserId(user.id);
         getUserVote(supabase, clipId, user.id).then(setUserVote);

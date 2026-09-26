@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import ClipCard from '../components/ClipCard';
 import { useToast } from '../components/ToastProvider';
 import { communityStyle } from '../lib/community';
@@ -34,9 +35,9 @@ export default function CommunityPage() {
       if (communityRow && !communityError) {
         setCommunity(communityRow);
         setCommunityId(communityRow.id);
-        const [{ count }, { data: { user } }, clipsResponse] = await Promise.all([
+        const [{ count }, user, clipsResponse] = await Promise.all([
           supabase.from('community_members').select('user_id', { count: 'exact', head: true }).eq('community_id', communityRow.id),
-          supabase.auth.getUser(),
+          getCurrentUser(),
           communityClipsQuery(communityRow.id, sort),
         ]);
         if (user) {
@@ -57,7 +58,7 @@ export default function CommunityPage() {
 
   async function toggleJoin() {
     if (!communityId || joinLoading) return;
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) { push('Sign in to join this community.', 'info'); return; }
     setJoinLoading(true);
     const result = joined

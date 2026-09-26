@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import ClipCard from '../components/ClipCard';
 import FollowButton from '../components/FollowButton';
 import Avatar from '../components/Avatar';
@@ -43,7 +44,7 @@ export default function Profile() {
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const { data: { user: viewer } } = await supabase.auth.getUser();
+      const viewer = await getCurrentUser();
       setViewerId(viewer?.id || null);
       let { data: profileData } = await supabase
         .from('profiles')

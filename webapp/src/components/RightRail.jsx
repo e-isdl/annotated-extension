@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import { communityStyle } from '../lib/community';
 import { getDemoClip } from '../lib/demoData';
 import { useToast } from './ToastProvider';
@@ -60,9 +61,9 @@ export default function RightRail() {
       const { data: row } = await query.maybeSingle();
       if (!active) return;
       if (row) {
-        const [{ count }, { data: { user } }] = await Promise.all([
+        const [{ count }, user] = await Promise.all([
           supabase.from('community_members').select('user_id', { count: 'exact', head: true }).eq('community_id', row.id),
-          supabase.auth.getUser(),
+          getCurrentUser(),
         ]);
         let membership = null;
         if (user) membership = (await supabase.from('community_members').select('user_id').eq('community_id', row.id).eq('user_id', user.id).maybeSingle()).data;
@@ -91,7 +92,7 @@ export default function RightRail() {
 
   async function toggleJoin() {
     if (!community?.id || joinLoading) return;
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) { push('Sign in to join this community.', 'info'); return; }
     setJoinLoading(true);
     const result = joined

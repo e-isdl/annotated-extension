@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import ClipCard from '../components/ClipCard';
 
 export default function SavedPage() {
@@ -12,7 +13,7 @@ export default function SavedPage() {
   useEffect(() => {
     let active = true;
     async function load() {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const currentUser = await getCurrentUser();
       if (!active) return;
       setUser(currentUser);
       if (!currentUser) { setLoading(false); return; }

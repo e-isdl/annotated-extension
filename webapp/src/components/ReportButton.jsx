@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import { useToast } from './ToastProvider';
 
 const REASONS = ['Spam', 'Harassment', 'Off-topic', 'Misleading context', 'Other'];
@@ -13,7 +14,7 @@ export default function ReportButton({ clipId }) {
 
   async function submit(event) {
     event.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) { push('Sign in to report a post.', 'info'); return; }
     setSending(true);
     const { error } = await supabase.from('reports').insert({

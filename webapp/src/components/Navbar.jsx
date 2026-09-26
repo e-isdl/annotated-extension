@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCurrentUser } from '../lib/authUser';
 import Avatar from './Avatar';
 
 const NOTIF_ICONS = {
@@ -41,7 +42,7 @@ export default function Navbar() {
   const notifRef = useRef(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getCurrentUser().then((user) => {
       setUser(user);
       if (user) loadNotifications(user.id);
     });
