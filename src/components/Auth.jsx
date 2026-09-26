@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function Auth() {
   const [loadingProvider, setLoadingProvider] = useState(null);
   const [error, setError] = useState('');
+  const flowRef = useRef(false);
 
   const signInWithGoogle = async () => {
+    if (flowRef.current) return;
+    flowRef.current = true;
     setLoadingProvider('google');
     setError('');
 
@@ -62,36 +65,16 @@ export default function Auth() {
       }
     } catch (err) {
       console.error('Sign in error:', err);
-      setError(err.message || 'Failed to sign in. Please try again.');
+      const message = err.message || 'Failed to sign in. Please try again.';
+      setError(
+        /only one web auth flow/i.test(message)
+          ? 'Chrome still has a sign-in window open from an earlier attempt. Close any leftover Google/Annotated window — or restart Chrome — then try again.'
+          : message
+      );
     } finally {
+      flowRef.current = false;
       setLoadingProvider(null);
     }
-  };
-
-  const signInWithX = async () => {
-    setLoadingProvider('twitter');
-    setError('');
-    
-    try {
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'twitter',
-        options: {
-          redirectTo: `${supabase.supabaseUrl}/auth/v1/callback`,
-          skipBrowserRedirect: true,
-        }
-      });
-      
-      if (oauthError) throw oauthError;
-      
-      if (data?.url) {
-        chrome.tabs.create({ url: data.url });
-      }
-    } catch (err) {
-      console.error('Sign in error:', err);
-      setError('Failed to sign in. Please try again.');
-    }
-    
-    setLoadingProvider(null);
   };
 
   return (
@@ -119,14 +102,6 @@ export default function Auth() {
           <GoogleIcon />
           {loadingProvider === 'google' ? 'Signing in...' : 'Continue with Google'}
         </button>
-        <button 
-          onClick={signInWithX} 
-          disabled={loadingProvider !== null}
-          className="w-full flex items-center justify-center gap-3 bg-accent hover:bg-accent/90 rounded-lg py-3 px-4 text-sm font-medium text-white transition-colors disabled:opacity-50"
-        >
-          <XIcon />
-          {loadingProvider === 'twitter' ? 'Signing in... (opens new tab)' : 'Continue with X'}
-        </button>
       </div>
 
       <p className="text-xs text-text-muted text-center">
@@ -145,8 +120,3 @@ function GoogleIcon() {
   </svg>;
 }
 
-function XIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/>
-  </svg>;
-}
