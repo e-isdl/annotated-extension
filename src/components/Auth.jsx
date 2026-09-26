@@ -19,19 +19,27 @@ export default function Auth() {
         options: {
           redirectTo: redirectUri,
           skipBrowserRedirect: true,
+          queryParams: { prompt: 'select_account' },
         }
       });
       if (oauthError) throw oauthError;
       if (!data?.url) throw new Error('Supabase did not return a Google sign-in URL.');
 
-      const redirectUrl = await new Promise((resolve, reject) => {
-        chrome.identity.launchWebAuthFlow({ url: data.url, interactive: true }, (result) => {
-          const launchError = chrome.runtime.lastError;
-          if (launchError) reject(new Error(launchError.message));
-          else if (!result) reject(new Error('Google sign-in was cancelled before it completed.'));
-          else resolve(result);
-        });
-      });
+      const redirectUrl = await Promise.race([
+        new Promise((resolve, reject) => {
+          chrome.identity.launchWebAuthFlow({ url: data.url, interactive: true }, (result) => {
+            const launchError = chrome.runtime.lastError;
+            if (launchError) reject(new Error(launchError.message));
+            else if (!result) reject(new Error('Google sign-in was cancelled before it completed.'));
+            else resolve(result);
+          });
+        }),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error(
+            `The sign-in window never came back to the extension. Supabase almost certainly redirected to your website instead — add ${redirectUri} to Authentication → URL Configuration → Redirect URLs, then reload the extension.`
+          )), 120000);
+        }),
+      ]);
 
       const callback = new URL(redirectUrl);
       const callbackHash = new URLSearchParams(callback.hash.slice(1));
