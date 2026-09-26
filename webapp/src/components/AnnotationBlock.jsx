@@ -40,7 +40,7 @@ export default function AnnotationBlock({ annotation, transcript }) {
       {annotation && (annotation.text_content || annotation.audio_url) && (
         <div className="relative">
           <div className="absolute left-0 top-3 bottom-3 w-[2px] bg-accent rounded-full" />
-          <div className="ml-4 bg-gradient-to-br from-bg-surface/80 to-bg-surface/40 backdrop-blur-sm rounded-xl border border-accent/[0.08] overflow-hidden">
+          <div className="ml-4 annotation-audio-block overflow-hidden">
             <div className="p-5 sm:p-6 flex flex-col gap-4">
               {annotation.text_content && (
                 <p className="text-[15px] sm:text-base leading-[1.85] font-semibold" style={{ color: '#aaa' }}>

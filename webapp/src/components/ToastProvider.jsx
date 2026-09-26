@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 const ToastContext = createContext(null);
 
@@ -11,8 +12,12 @@ export function ToastProvider({ children }) {
 
   const push = useCallback((message, tone = 'neutral') => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    setToasts((current) => [...current, { id, message, tone }].slice(-3));
-    window.setTimeout(() => dismiss(id), 3600);
+    const action = /^Sign in\b/i.test(message) ? {
+      label: 'Sign in',
+      run: () => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback` } }),
+    } : null;
+    setToasts((current) => [...current, { id, message, tone, action }].slice(-3));
+    window.setTimeout(() => dismiss(id), 2400);
     return id;
   }, [dismiss]);
 
@@ -25,6 +30,7 @@ export function ToastProvider({ children }) {
         {toasts.map((toast) => (
           <div key={toast.id} className={`toast toast-${toast.tone}`} role="status">
             <span>{toast.message}</span>
+            {toast.action && <button type="button" className="toast-action" onClick={() => { toast.action.run(); dismiss(toast.id); }}>{toast.action.label}</button>}
             <button type="button" onClick={() => dismiss(toast.id)} aria-label="Dismiss notification">×</button>
           </div>
         ))}

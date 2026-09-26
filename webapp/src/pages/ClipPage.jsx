@@ -6,6 +6,7 @@ import YouTubeEmbed from '../components/YouTubeEmbed';
 import AudioPlayer from '../components/AudioPlayer';
 import AnnotationBlock from '../components/AnnotationBlock';
 import FileClaimButton from '../components/FileClaimButton';
+import ReportButton from '../components/ReportButton';
 import CommentSection from '../components/CommentSection';
 import VoteButtons from '../components/VoteButtons';
 import AnnotationLead from '../components/AnnotationLead';
@@ -14,7 +15,7 @@ import DemoClipPage from './DemoClipPage';
 import { useToast } from '../components/ToastProvider';
 
 export default function ClipPage() {
-  const { id } = useParams();
+  const { id, commentId } = useParams();
   const navigate = useNavigate();
   const [clip, setClip] = useState(null);
   const [annotation, setAnnotation] = useState(null);
@@ -29,6 +30,7 @@ export default function ClipPage() {
   const [claims, setClaims] = useState([]);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
+  const [overflowOpen, setOverflowOpen] = useState(false);
   const { push } = useToast();
 
   const demoClip = getDemoClip(id);
@@ -57,12 +59,7 @@ export default function ClipPage() {
         setClip(clipData);
         setProfile(clipData.profiles);
 
-        const { data: votesData } = await supabase
-          .from('votes')
-          .select('direction')
-          .eq('clip_id', clipData.id);
-        const computedScore = votesData?.reduce((sum, v) => sum + v.direction, 0) || 0;
-        setScore(computedScore);
+        setScore(clipData.score || 0);
 
         const { data: ann } = await supabase
           .from('annotations')
@@ -94,7 +91,7 @@ export default function ClipPage() {
     load();
   }, [id, demoClip]);
 
-  if (demoClip) return <DemoClipPage clip={demoClip} />;
+  if (demoClip) return <DemoClipPage clip={demoClip} focusCommentId={commentId} />;
 
   const handleDeleteClip = async () => {
     setDeleting(true);
@@ -134,13 +131,17 @@ export default function ClipPage() {
     <article className="detail-page real-detail-page">
       <div className="detail-author-row">
         <div className="detail-post-context">
-          <Link to={`/c/${clip.community_slug || 'annotated'}`} className="community-pill no-underline"><span className="community-dot">{(clip.community_name || 'Annotated')[0]}</span> c/{clip.community_name || 'Annotated'}</Link>
+          <Link to="/" className="detail-back-button" aria-label="Back to home">←</Link>
+          {clip.community_slug && clip.community_name && <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>}
           <span>•</span>
           <span>{formatDate(clip.created_at)}</span>
           {!annotation?.text_content && <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author no-underline">by @{profile?.handle || 'anonymous'}</Link>}
         </div>
         <div className="flex items-center gap-2">
-          <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
+          <div className="detail-overflow">
+            <button type="button" className="post-action overflow-trigger" aria-label="More post actions" aria-expanded={overflowOpen} onClick={() => setOverflowOpen((value) => !value)}>···</button>
+            {overflowOpen && <div className="overflow-menu"><FileClaimButton clipId={clip.id} /></div>}
+          </div>
           {isOwner && (
           <div className="flex items-center gap-1">
             {confirmDelete ? (
@@ -174,30 +175,18 @@ export default function ClipPage() {
         </div>
       </div>
 
-      <AnnotationLead text={annotation?.text_content} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading={Boolean(annotation?.text_content)} />
+      <AnnotationLead text={annotation?.text_content || clip.title} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading />
 
-      <h2 className={`${annotation?.text_content ? 'detail-source-title' : 'detail-title'} text-text-primary leading-tight tracking-tight`}>
-        {clip.title}
-      </h2>
-
-      {clip.source_type === 'youtube' && clip.start_sec !== undefined && clip.end_sec !== undefined && (
-        <div className="flex items-center gap-1">
-          <span className="timestamp">{formatTime(clip.start_sec)}</span>
-          <span className="text-text-muted text-xs mx-1">&rarr;</span>
-          <span className="timestamp">{formatTime(clip.end_sec)}</span>
-        </div>
-      )}
-
-      <section className="source-post" aria-label="Original source post">
-        <div className="source-post-header">
+      {clip.source_url && <section className="source-post" aria-label="Original source post">
+        {clip.source_type !== 'youtube' && <div className="source-post-header">
           <div>
-            <p className="source-post-kicker">SOURCE POST</p>
             <p className="source-post-domain">{clip.source_domain || sourceDomain(clip.source_url)}</p>
+          {(clip.source_title || clip.title) && (clip.source_title || clip.title) !== (annotation?.text_content || clip.title) && <p className="source-post-caption">{clip.source_title || clip.title}</p>}
           </div>
           <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
-        </div>
+        </div>}
         {clip.source_type === 'youtube' && (
-          <div className="source-media"><YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted={false} autoplay={false} /></div>
+          <div className="source-media"><YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted autoplay /></div>
         )}
         {clip.source_type === 'podcast' && (
           <div className="source-media"><AudioPlayer src={clip.audio_url} /></div>
@@ -211,36 +200,30 @@ export default function ClipPage() {
         {clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && !clip.source_image_url && !clip.thumbnail && (
           <div className="source-text-placeholder">This post is anchored to a source conversation. Open the original or expand the context below.</div>
         )}
-      </section>
+      </section>}
 
       {annotation?.audio_url && <AnnotationBlock annotation={{ ...annotation, text_content: null }} />}
 
       {(transcript || clip.article_text) && (
-        <details className="transcript-drawer">
-          <summary>
-            <span>Show transcript &amp; context</span>
-            <span className="transcript-drawer-hint">Read the exact source moment</span>
-          </summary>
-          <div className="transcript-drawer-body">
-            <div className="detail-quote-wrap"><span className="quote-mark">“</span><p>{transcript || clip.article_text}</p></div>
-            {clip.source_url && <div className="source-post-footer"><p>{clip.source_title || sourceDomain(clip.source_url)}</p><a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link">Open original ↗</a></div>}
-          </div>
-        </details>
+        <section className="source-transcript" aria-label={transcript ? 'Transcript' : 'Source context'}>
+          <span className="source-transcript-label">{transcript ? 'Transcript' : 'Context'}</span>
+          <p className="source-transcript-text">{transcript || clip.article_text}</p>
+        </section>
       )}
 
       <div className="detail-actions">
         <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
-        <FileClaimButton clipId={clip.id} />
+        <a href="#comments" className="post-action no-underline">▱ {clip.comments_count ?? 0} comments</a>
+        <ReportButton clipId={clip.id} />
         <button type="button" className="post-action" onClick={handleShare}>↗ <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span></button>
         <button type="button" className={`post-action ${saved ? 'post-action-saved' : ''}`} onClick={handleSave}>{saved ? '★ Saved' : '☆ Save'}</button>
-        <span className="detail-comment-count">Join the discussion below</span>
       </div>
 
-      {clip.source_url && <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link real-source-link">↗ View original source <span>{sourceDomain(clip.source_url)}</span></a>}
+      {clip.source_url && clip.source_type !== 'youtube' && <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link real-source-link">↗ {sourceDomain(clip.source_url)}</a>}
 
       {isOwner && claims.length > 0 && (
         <div className="flex flex-col gap-3">
-          <p className="text-xs text-text-muted font-medium uppercase tracking-wide">Claims ({claims.length})</p>
+              <p className="text-xs text-text-muted font-medium uppercase tracking-wide">Claims ({claims.length})</p>
           {claims.map((claim) => (
             <div key={claim.id} className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
@@ -254,7 +237,7 @@ export default function ClipPage() {
                   </a>
                 )}
               </div>
-              <p className="text-sm text-text-primary">{claim.reason}</p>
+              <Link to={`/claims/${claim.id}`} className="text-sm text-text-primary no-underline hover:text-accent-text">{claim.reason}</Link>
               {claim.claimant_email && (
                 <p className="text-[11px] text-text-muted">From: {claim.claimant_email}</p>
               )}
@@ -272,7 +255,7 @@ export default function ClipPage() {
                 <div className="w-px flex-1 bg-border" />
               </div>
               <Link
-                to={`/clip/${threadClip.slug || threadClip.id}`}
+                to={`/post/${threadClip.slug || threadClip.id}`}
                 className="flex-1 annotation-mark bg-bg-surface rounded-r-lg p-3 hover:bg-bg-raised transition-colors block"
               >
                 <p className="text-sm text-text-secondary leading-relaxed line-clamp-3">
@@ -285,14 +268,14 @@ export default function ClipPage() {
         </div>
       )}
 
-      <CommentSection clipId={clip.id} />
+      <CommentSection clipId={clip.id} postOwnerId={clip.user_id} communityId={clip.community_id} focusCommentId={commentId} />
     </article>
   );
 }
 
 async function loadClip(column, value) {
   const withCommunity = await supabase
-    .from('clips')
+    .from('clips_with_scores')
     .select('*, profiles(*), communities(slug, name)')
     .eq(column, value)
     .single();
@@ -312,12 +295,6 @@ function formatDate(dateStr) {
     day: 'numeric',
     year: 'numeric',
   });
-}
-
-function formatTime(s) {
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 function sourceDomain(url) {

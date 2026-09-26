@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import Avatar from './Avatar';
 
 const NOTIF_ICONS = {
   comment: (
@@ -111,7 +112,7 @@ export default function Navbar() {
       const match = n.message.match(/^@(\S+)/);
       return match ? `/u/${match[1]}` : '/';
     }
-    if (n.clip_id) return `/clip/${n.clip_id}`;
+    if (n.clip_id) return `/post/${n.clip_id}`;
     return '#';
   }
 
@@ -126,8 +127,8 @@ export default function Navbar() {
     <nav className="border-b border-border-subtle bg-bg-base sticky top-0 z-10">
       <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between gap-5">
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-6 h-6 rounded bg-accent flex items-center justify-center">
-            <span className="text-bg-base font-bold text-xs">A</span>
+          <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
+            <span className="text-white font-bold text-xs">A</span>
           </div>
           <span className="font-semibold text-sm text-text-primary">Annotated</span>
         </Link>
@@ -205,14 +206,11 @@ export default function Navbar() {
                 )}
               </div>
 
-              <Link to={`/u/${user.user_metadata?.user_name || user.id}`} aria-label="Open your profile">
-                {user.user_metadata?.avatar_url ? <img
-                  src={user.user_metadata.avatar_url}
-                  alt=""
-                  className="w-7 h-7 rounded-full border border-border"
-                /> : <span className="w-7 h-7 rounded-full border border-border bg-accent text-white text-xs font-semibold flex items-center justify-center">
-                  {(user.user_metadata?.user_name || user.email || 'A')[0].toUpperCase()}
-                </span>}
+              <Link to={`/u/${user.user_metadata?.user_name || user.id}`} aria-label="Open your profile" className="flex items-center">
+                <Avatar profile={{
+                  handle: user.user_metadata?.user_name || user.email?.split('@')[0],
+                  avatar_url: user.user_metadata?.avatar_url,
+                }} size="sm" />
               </Link>
             </>
           ) : (

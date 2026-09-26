@@ -37,7 +37,7 @@ export default function NotificationsPage() {
       {!notifications.length ? <p className="empty-state text-sm text-text-muted">Nothing new here yet.</p> : (
         <div className="notification-list">
           {notifications.map((notification) => (
-            <Link key={notification.id} to={notification.clip_id ? `/clip/${notification.clip_id}` : '/'} className="notification-row no-underline">
+            <Link key={notification.id} to={notification.clip_id ? `/post/${notification.clip_id}` : '/'} className="notification-row no-underline">
               <span className="notification-type">{notification.type}</span>
               <span className="notification-message">{notification.message}</span>
               <span className="notification-time">{timeAgo(notification.created_at)}</span>

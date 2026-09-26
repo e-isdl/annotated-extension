@@ -36,18 +36,6 @@ export async function getClipsByUser(userId) {
   return data || [];
 }
 
-export async function getCommentCounts(clipIds) {
-  if (!clipIds?.length) return {};
-  const { data } = await supabase
-    .from('comments')
-    .select('clip_id')
-    .in('clip_id', clipIds);
-  return (data || []).reduce((counts, comment) => {
-    counts[comment.clip_id] = (counts[comment.clip_id] || 0) + 1;
-    return counts;
-  }, {});
-}
-
 export async function getComments(clipId) {
   const { data } = await supabase
     .from('comments')
@@ -96,15 +84,6 @@ export async function fileClaim(clipId, reason, email) {
   const { data } = await supabase
     .from('claims')
     .insert({ clip_id: clipId, reason, claimant_email: email });
-  return data;
-}
-
-export async function castVote(supabase, clipId, userId, direction) {
-  const { data, error } = await supabase.rpc('toggle_vote', {
-    p_clip_id: clipId,
-    p_direction: direction,
-  });
-  if (error) throw error;
   return data;
 }
 

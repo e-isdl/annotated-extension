@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { castVote, getUserVote } from '../lib/api';
+import { getUserVote } from '../lib/api';
+import { castVote } from '../lib/mutations';
 import { useToast } from './ToastProvider';
 
 export default function VoteButtons({ clipId, score, setScore }) {
@@ -55,36 +56,50 @@ export default function VoteButtons({ clipId, score, setScore }) {
   };
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="vote-pill" aria-label="Vote on this post">
       <button
+        type="button"
+        aria-label="Upvote post"
+        aria-pressed={userVote === 1}
         onClick={() => handleVote(1)}
-        className={`w-8 h-8 flex items-center justify-center rounded-md text-sm transition-all duration-75 ${
+        className={`vote-pill-button vote-up-button ${
           userVote === 1
             ? 'bg-accent text-bg-base scale-110'
             : 'text-text-muted hover:text-accent hover:bg-accent/10'
         }`}
       >
-        &#9650;
+        <VoteArrow direction="up" />
       </button>
 
       <span
-        className={`font-mono text-sm font-semibold min-w-[28px] text-center tabular-nums ${
-          score > 0 ? 'text-accent-text' : score < 0 ? 'text-claim' : 'text-text-muted'
-        }`}
+        className="vote-pill-score"
       >
         {score > 0 ? `+${score}` : score}
       </span>
 
       <button
+        type="button"
+        aria-label="Downvote post"
+        aria-pressed={userVote === -1}
         onClick={() => handleVote(-1)}
-        className={`w-8 h-8 flex items-center justify-center rounded-md text-sm transition-all duration-75 ${
+        className={`vote-pill-button vote-down-button ${
           userVote === -1
-            ? 'bg-claim/20 text-claim scale-110'
-            : 'text-text-muted hover:text-claim hover:bg-claim/10'
+            ? 'bg-bg-raised text-text-primary scale-110'
+            : 'text-text-muted hover:text-text-primary hover:bg-bg-raised'
         }`}
       >
-        &#9660;
+        <VoteArrow direction="down" />
       </button>
     </div>
+  );
+}
+
+function VoteArrow({ direction }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {direction === 'up'
+        ? <path d="m5 14 7-7 7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        : <path d="m5 10 7 7 7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+    </svg>
   );
 }

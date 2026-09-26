@@ -2,14 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { generateSlug } from '../lib/api';
-import { DEMO_COMMUNITIES } from '../lib/demoData';
+import { createAnnotatedPost } from '../lib/mutations';
+import { communityStyle } from '../lib/community';
 
 const TYPES = ['Reaction', 'Fact check', 'Explainer', 'Steelman', 'Found receipts'];
 const ANNOTATION_LIMITS = { Reaction: 280, 'Fact check': 500, Explainer: 600, Steelman: 800, 'Found receipts': 1000 };
 const POST_MODES = [
   { label: 'Source', value: 'source', helper: 'Share a source and your point of view.' },
   { label: 'Text', value: 'text', helper: 'Start with an idea when there is no external source.' },
-  { label: 'Moment', value: 'moment', helper: 'Point to the exact moment people should inspect.' },
+  { label: 'Moment', value: 'moment', helper: 'Point to an exact time in a YouTube source.' },
 ];
 
 export default function CreatePage() {
@@ -18,6 +19,7 @@ export default function CreatePage() {
   const [mode, setMode] = useState('source');
   const [communities, setCommunities] = useState([]);
   const [communitiesReady, setCommunitiesReady] = useState(false);
+  const [communityLoadError, setCommunityLoadError] = useState(false);
   const [form, setForm] = useState({ community: '', type: 'Reaction', url: '', title: '', quote: '', commentary: '', startSec: '', endSec: '' });
   const [status, setStatus] = useState('');
   const [publishing, setPublishing] = useState(false);
@@ -36,9 +38,8 @@ export default function CreatePage() {
         setCommunities(data);
         setForm((current) => ({ ...current, community: current.community || data[0].slug }));
       } else {
-        const fallback = DEMO_COMMUNITIES.map((community) => ({ ...community, id: null }));
-        setCommunities(fallback);
-        setForm((current) => ({ ...current, community: current.community || fallback[0].slug }));
+        setCommunities([]);
+        setCommunityLoadError(true);
       }
       setCommunitiesReady(true);
     }
@@ -88,30 +89,28 @@ export default function CreatePage() {
     if (commentary.length > annotationLimit) { setStatus(`This ${form.type.toLowerCase()} annotation is limited to ${annotationLimit} characters.`); return; }
     if (needsSource && !url) { setStatus(mode === 'moment' ? 'Add the video or podcast URL for this moment.' : 'Add the source URL, or switch to Text.'); return; }
     if (url && !isValidUrl(url)) { setStatus('Use a complete source URL, including https://.'); return; }
+    if (mode === 'moment' && sourceType !== 'youtube') { setStatus('Moment posts currently need a YouTube source so the selected times can be played back.'); return; }
     if (mode === 'moment' && (!Number.isFinite(startSec) || !Number.isFinite(endSec) || startSec < 0 || endSec <= startSec)) { setStatus('Add a valid start and end time for the moment.'); return; }
     if (!user) { setStatus('Sign in to publish. Your draft is ready when you are.'); return; }
 
     setPublishing(true);
     setStatus('');
     try {
-      const { data: clip, error: clipError } = await supabase.from('clips').insert({
-        user_id: user.id,
+      const clip = await createAnnotatedPost(supabase, {
         community_id: selectedCommunity.id,
         source_url: url || null,
         source_type: sourceType,
         source_domain: url ? domain : null,
         title,
+        source_title: needsSource ? title : null,
         annotation_type: form.type,
         article_text: form.quote.trim() || null,
         start_sec: mode === 'moment' ? startSec : null,
         end_sec: mode === 'moment' ? endSec : null,
         slug: generateSlug(title),
-      }).select().single();
-      if (clipError) throw clipError;
-
-      const { error: annotationError } = await supabase.from('annotations').insert({ clip_id: clip.id, user_id: user.id, text_content: commentary });
-      if (annotationError) throw annotationError;
-      navigate(`/clip/${clip.slug || clip.id}`);
+        annotation: commentary,
+      });
+      navigate(`/post/${clip.slug || clip.id}`);
     } catch (error) {
       setStatus(error.message || 'We could not publish this thread yet.');
     } finally {
@@ -140,9 +139,10 @@ export default function CreatePage() {
 
           <label className="form-label">Community
             <select className="input" value={form.community} onChange={(event) => update('community', event.target.value)} disabled={!communitiesReady}>
-              {!communities.length && <option value="">Loading communities…</option>}
+              {!communities.length && <option value="">{communitiesReady ? 'No communities available' : 'Loading communities…'}</option>}
               {communities.map((community) => <option key={community.slug} value={community.slug}>c/{community.name}</option>)}
             </select>
+            {communityLoadError && <span className="field-hint field-error">Communities are temporarily unavailable. Try again in a moment.</span>}
           </label>
 
           <fieldset>
@@ -163,8 +163,8 @@ export default function CreatePage() {
             <label className="form-label">End time<input className="input" type="number" min="1" step="1" value={form.endSec} onChange={(event) => update('endSec', event.target.value)} placeholder="132" /></label>
           </div>}
 
-          <label className="form-label">Title
-            <input className="input" value={form.title} onChange={(event) => update('title', event.target.value)} placeholder="What is the conversation about?" maxLength={180} />
+          <label className="form-label">{needsSource ? 'Source title' : 'Post title'}
+            <input className="input" value={form.title} onChange={(event) => update('title', event.target.value)} placeholder={needsSource ? 'The original source title' : 'What is the conversation about?'} maxLength={180} />
             <span className="field-counter">{form.title.length}/180</span>
           </label>
           <label className="form-label">The context <span className="text-text-muted font-normal">(quote, timestamp, or excerpt)</span>
@@ -182,10 +182,9 @@ export default function CreatePage() {
         <div className="create-preview-wrap">
           <p className="eyebrow">LIVE PREVIEW</p>
           <div className="create-preview">
-            <p className="post-meta"><span className="community-pill"><span className="community-dot">{selectedCommunity?.name?.[0] || 'C'}</span> c/{selectedCommunity?.name || 'community'}</span><span>• just now</span></p>
-            <p className="post-annotation-preview">{form.commentary || 'Your point of view will be the center of the post.'}</p>
-            <h2 className="post-title post-source-title">{form.title || 'Your source title will appear here'}</h2>
-            <div className="source-preview source-preview-preview"><div className="source-preview-copy"><div className="source-label">↗ {form.url ? domain : 'your source'}</div><p className="source-quote">{form.quote ? `“${form.quote}”` : 'Add a quote or source context so people know what you are discussing.'}</p></div></div>
+            <p className="post-meta"><span className="community-pill"><span className="community-dot" style={communityStyle(selectedCommunity?.slug)}>{selectedCommunity?.name?.[0] || 'C'}</span> c/{selectedCommunity?.name || 'community'}</span><span>• just now</span></p>
+            <h2 className="post-annotation-preview">{form.commentary || 'Your point of view will be the center of the post.'}</h2>
+            {mode !== 'text' && <div className="source-preview source-preview-preview"><div className="source-preview-copy"><div className="source-label">↗ {form.url ? domain : 'your source'}</div><p className="source-title">{form.title || 'Your source title will appear here'}</p><p className="source-quote">{form.quote ? `“${form.quote}”` : 'Add a quote or source context so people know what you are discussing.'}</p></div></div>}
             {mode === 'moment' && form.startSec !== '' && form.endSec !== '' && <div className="post-timestamp-row"><span className="timestamp">{formatTime(form.startSec)}</span><span className="text-text-muted text-xs">→</span><span className="timestamp">{formatTime(form.endSec)}</span></div>}
             <div className="post-actions"><span className="post-action">▲ 0</span><span className="post-action">▱ 0 comments</span><span className="post-action">↗ Share</span></div>
           </div>

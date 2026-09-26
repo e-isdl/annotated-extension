@@ -5,10 +5,10 @@ import ClipCard from '../components/ClipCard';
 import { DEMO_CLIPS } from '../lib/demoData';
 
 const SORT_OPTIONS = [
-  { label: 'Best', value: 'best', helper: 'The strongest conversations right now' },
-  { label: 'Hot', value: 'hot', helper: 'What is picking up momentum' },
-  { label: 'New', value: 'new', helper: 'Fresh from the community' },
-  { label: 'Top', value: 'top', helper: 'Highest-signal posts' },
+  { label: 'Best', value: 'best' },
+  { label: 'Hot', value: 'hot' },
+  { label: 'New', value: 'new' },
+  { label: 'Top', value: 'top' },
 ];
 
 export default function Feed({ sortOverride = null }) {
@@ -76,9 +76,7 @@ export default function Feed({ sortOverride = null }) {
             <h1>{sort === 'best' ? 'Home' : activeSort.label}</h1>
             {usingDemo && <span className="demo-badge">DEMO FEED</span>}
           </div>
-          <p>{activeSort.helper}. Every post keeps the source in view.</p>
         </div>
-        <Link to="/create" className="btn-primary text-xs py-2 px-3">Create post</Link>
       </section>
 
       <Link to="/create" className="create-post-bar no-underline">
@@ -124,8 +122,8 @@ export default function Feed({ sortOverride = null }) {
 
 function normalizeClip(clip) {
   const sourceDomain = clip.source_domain || getDomain(clip.source_url);
-  const communityName = clip.community_name || clip.communities?.name || 'Community';
-  const communitySlug = clip.community_slug || clip.communities?.slug || 'annotated';
+  const communityName = clip.community_name || clip.communities?.name || null;
+  const communitySlug = clip.community_slug || clip.communities?.slug || null;
   return { ...clip, source_domain: sourceDomain, community_name: communityName, community_slug: communitySlug };
 }
 

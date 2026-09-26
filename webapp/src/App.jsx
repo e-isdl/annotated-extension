@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import AppSidebar from './components/AppSidebar';
 import RightRail from './components/RightRail';
@@ -13,6 +14,10 @@ import CreatePage from './pages/CreatePage';
 import SavedPage from './pages/SavedPage';
 import CommunityPage from './pages/CommunityPage';
 import NotificationsPage from './pages/NotificationsPage';
+import ClaimPage from './pages/ClaimPage';
+import SourcePage from './pages/SourcePage';
+import MobileNav from './components/MobileNav';
+import { supabase } from './lib/supabase';
 import { ToastProvider } from './components/ToastProvider';
 
 export default function App() {
@@ -22,6 +27,7 @@ export default function App() {
         <div className="min-h-screen bg-bg-base text-text-primary font-ui">
           <Navbar />
           <AppShell />
+          <MobileNav />
         </div>
       </ToastProvider>
     </BrowserRouter>
@@ -31,9 +37,10 @@ export default function App() {
 function AppShell() {
   const location = useLocation();
   const isFeedSurface = location.pathname === '/' || location.pathname === '/popular' || location.pathname === '/latest' || location.pathname.startsWith('/c/');
+  const hasRightRail = isFeedSurface || location.pathname.startsWith('/post/') || location.pathname.startsWith('/clip/');
 
   return (
-    <div className={`app-shell ${isFeedSurface ? '' : 'app-shell-focused'}`}>
+    <div className={`app-shell ${hasRightRail ? '' : 'app-shell-focused'}`}>
       <AppSidebar />
       <main className="app-main">
         <Routes>
@@ -41,9 +48,13 @@ function AppShell() {
           <Route path="/popular" element={<Feed sortOverride="top" />} />
           <Route path="/latest" element={<Feed sortOverride="new" />} />
           <Route path="/clip/:id" element={<ClipPage />} />
+          <Route path="/post/:id/comment/:commentId" element={<ClipPage />} />
+          <Route path="/post/:id" element={<ClipPage />} />
           <Route path="/u/:handle" element={<Profile />} />
+          <Route path="/u" element={<ProfileEntry />} />
           <Route path="/u/:handle/annotations" element={<Profile />} />
           <Route path="/u/:handle/comments" element={<Profile />} />
+          <Route path="/u/:handle/connections" element={<Profile />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/search" element={<SearchPage />} />
@@ -51,13 +62,29 @@ function AppShell() {
           <Route path="/create" element={<CreatePage />} />
           <Route path="/saved" element={<SavedPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/claims/:id" element={<ClaimPage />} />
+          <Route path="/source/:domain" element={<SourcePage />} />
+          <Route path="/c" element={<ExplorePage />} />
           <Route path="/c/:slug" element={<CommunityPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      {isFeedSurface && <RightRail />}
+      {hasRightRail && <RightRail />}
     </div>
   );
+}
+
+function ProfileEntry() {
+  const [target, setTarget] = useState(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      const handle = user?.user_metadata?.user_name || user?.email?.split('@')[0] || user?.id;
+      setTarget(handle || false);
+    });
+  }, []);
+  if (target) return <Navigate to={`/u/${target}`} replace />;
+  if (target === false) return <div className="empty-state"><h1 className="text-xl font-semibold">Sign in to open your profile.</h1><p className="text-sm text-text-secondary">Use the sign-in button in the top bar, then return here.</p></div>;
+  return <div className="empty-state"><p className="text-sm text-text-muted">Loading profile…</p></div>;
 }
 
 function NotFound() {

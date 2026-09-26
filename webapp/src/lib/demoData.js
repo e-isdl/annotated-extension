@@ -65,7 +65,6 @@ export const DEMO_CLIPS = [
     annotation_type: 'Hot take',
     title: 'The best part of a video is rarely the headline',
     transcript: 'The thing that changes your mind is usually a ninety-second aside buried halfway through the conversation.',
-    source_title: 'A conversation about making things people want',
     source_domain: 'youtube.com',
     source_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     youtube_id: 'dQw4w9WgXcQ',

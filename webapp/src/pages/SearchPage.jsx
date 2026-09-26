@@ -3,7 +3,6 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ClipCard from '../components/ClipCard';
 import Avatar from '../components/Avatar';
-import { getCommentCounts } from '../lib/api';
 
 const TABS = [
   { label: 'Clips', value: 'clips' },
@@ -28,8 +27,8 @@ export default function SearchPage() {
 
     Promise.all([
       supabase
-        .from('clips')
-        .select('*, profiles(*), annotations(id, text_content, audio_url)')
+        .from('clips_with_scores')
+        .select('*, profiles(*), annotations(id, text_content, audio_url), communities(slug, name)')
         .ilike('title', pattern)
         .order('created_at', { ascending: false })
         .limit(30),
@@ -40,20 +39,12 @@ export default function SearchPage() {
         .limit(20),
     ]).then(async ([clipsRes, usersRes]) => {
       if (clipsRes.data) {
-        const clipIds = clipsRes.data.map(c => c.id);
-        const { data: votesData } = await supabase
-          .from('votes')
-          .select('clip_id, direction')
-          .in('clip_id', clipIds);
-        const scores = {};
-        votesData?.forEach(v => { scores[v.clip_id] = (scores[v.clip_id] || 0) + v.direction; });
-        const commentCounts = await getCommentCounts(clipIds);
-        const scoredClips = clipsRes.data.map((clip) => ({
+        setClips(clipsRes.data.map((clip) => ({
           ...clip,
-          score: scores[clip.id] || 0,
-          comments_count: commentCounts[clip.id] || 0,
-        }));
-        setClips(scoredClips);
+          community_name: clip.community_name || clip.communities?.name,
+          community_slug: clip.community_slug || clip.communities?.slug,
+          source_domain: clip.source_domain || getDomain(clip.source_url),
+        })));
       }
       if (usersRes.data) setUsers(usersRes.data);
       setLoading(false);
@@ -148,4 +139,8 @@ export default function SearchPage() {
       )}
     </div>
   );
+}
+
+function getDomain(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'source'; }
 }

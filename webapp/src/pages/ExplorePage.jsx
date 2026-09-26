@@ -1,22 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { DEMO_COMMUNITIES, DEMO_CLIPS } from '../lib/demoData';
+import { communityStyle } from '../lib/community';
 
 export default function ExplorePage() {
-  const [communities, setCommunities] = useState(DEMO_COMMUNITIES);
+  const [communities, setCommunities] = useState([]);
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase.from('communities').select('*').order('name');
+      const [{ data, error }, { data: memberships }, { data: posts }] = await Promise.all([
+        supabase.from('communities').select('*').order('name'),
+        supabase.from('community_members').select('community_id'),
+        supabase.from('clips').select('community_id'),
+      ]);
       if (error || !data?.length) return;
-      const hydrated = await Promise.all(data.map(async (community) => {
-        const [{ count: members }, { count: posts }] = await Promise.all([
-          supabase.from('community_members').select('user_id', { count: 'exact', head: true }).eq('community_id', community.id),
-          supabase.from('clips').select('id', { count: 'exact', head: true }).eq('community_id', community.id),
-        ]);
-        return { ...community, members: members || 0, postCount: posts || 0 };
-      }));
+      const memberCounts = countBy(memberships || [], 'community_id');
+      const postCounts = countBy(posts || [], 'community_id');
+      const hydrated = data.map((community) => ({ ...community, members: memberCounts[community.id] || 0, postCount: postCounts[community.id] || 0 }));
       setCommunities(hydrated);
     }
     load();
@@ -30,11 +30,11 @@ export default function ExplorePage() {
 
       <div className="explore-grid">
         {communities.map((community) => {
-          const postCount = community.postCount ?? DEMO_CLIPS.filter((clip) => clip.community_slug === community.slug).length;
+          const postCount = community.postCount ?? 0;
           return (
             <Link key={community.slug} to={`/c/${community.slug}`} className="explore-community no-underline">
               <div className="flex items-center justify-between">
-                <span className="community-dot community-dot-lg">{community.name[0]}</span>
+                <span className="community-dot community-dot-lg" style={communityStyle(community.slug)}>{community.name[0]}</span>
                 <span className="text-text-muted text-lg">↗</span>
               </div>
               <h2>{community.name}</h2>
@@ -59,4 +59,11 @@ export default function ExplorePage() {
       </div>
     </div>
   );
+}
+
+function countBy(rows, key) {
+  return rows.reduce((counts, row) => {
+    if (row[key]) counts[row[key]] = (counts[row[key]] || 0) + 1;
+    return counts;
+  }, {});
 }

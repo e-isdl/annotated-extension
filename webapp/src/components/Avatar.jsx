@@ -12,7 +12,7 @@ export default function Avatar({ profile, size = 'md' }) {
 
   return (
     <div
-      className={`${sizeClasses[size]} rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold shrink-0 overflow-hidden`}
+      className={`${sizeClasses[size]} rounded-full bg-accent/30 flex items-center justify-center text-accent-text font-bold shrink-0 overflow-hidden`}
     >
       {showImage ? (
         <img src={profile.avatar_url} alt="" onError={() => setShowImage(false)} className="w-full h-full object-cover" />

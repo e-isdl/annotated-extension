@@ -1,74 +1,141 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { DEMO_COMMUNITIES } from '../lib/demoData';
+import { communityStyle } from '../lib/community';
+import { getDemoClip } from '../lib/demoData';
+import { useToast } from './ToastProvider';
 
 export default function RightRail() {
-  const [communities, setCommunities] = useState(DEMO_COMMUNITIES);
+  const location = useLocation();
+  const { push } = useToast();
+  const postRef = location.pathname.match(/^\/(?:post|clip)\/([^/]+)/)?.[1] || null;
+  const [community, setCommunity] = useState(null);
+  const [communities, setCommunities] = useState([]);
+  const [joined, setJoined] = useState(false);
+  const [joinLoading, setJoinLoading] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      const { data, error } = await supabase.from('communities').select('*').order('name').limit(3);
-      if (error || !data?.length) return;
-      const hydrated = await Promise.all(data.map(async (community) => {
-        const { count } = await supabase.from('community_members').select('user_id', { count: 'exact', head: true }).eq('community_id', community.id);
-        return { ...community, members: count || 0 };
-      }));
-      setCommunities(hydrated);
+    let active = true;
+    const demoClip = postRef ? getDemoClip(postRef) : null;
+
+    async function loadPostCommunity() {
+      setCommunity(demoClip?.community_slug ? {
+        id: null,
+        slug: demoClip.community_slug,
+        name: demoClip.community_name,
+        description: '',
+        rules: '',
+        members: null,
+      } : null);
+      setJoined(false);
+      if (!postRef) return;
+
+      let clip = demoClip ? null : (await supabase.from('clips').select('community_id').eq('slug', postRef).maybeSingle()).data;
+      if (!clip && !demoClip) clip = (await supabase.from('clips').select('community_id').eq('id', postRef).maybeSingle()).data;
+      const communityId = clip?.community_id;
+      const slug = demoClip?.community_slug;
+      if (!communityId && !slug) return;
+
+      let query = supabase.from('communities').select('*');
+      query = communityId ? query.eq('id', communityId) : query.eq('slug', slug);
+      const { data: row } = await query.maybeSingle();
+      if (!active) return;
+      if (row) {
+        const [{ count }, { data: { user } }] = await Promise.all([
+          supabase.from('community_members').select('user_id', { count: 'exact', head: true }).eq('community_id', row.id),
+          supabase.auth.getUser(),
+        ]);
+        let membership = null;
+        if (user) membership = (await supabase.from('community_members').select('user_id').eq('community_id', row.id).eq('user_id', user.id).maybeSingle()).data;
+        if (active) {
+          setCommunity({ ...row, members: count ?? 0 });
+          setJoined(Boolean(membership));
+        }
+      }
     }
-    load();
-  }, []);
+
+    async function loadTrending() {
+      const [{ data, error }, { data: membershipRows }] = await Promise.all([
+        supabase.from('communities').select('id, slug, name').order('name'),
+        supabase.from('community_members').select('community_id'),
+      ]);
+      if (!active || error || !data?.length) return;
+      const counts = {};
+      (membershipRows || []).forEach((row) => { counts[row.community_id] = (counts[row.community_id] || 0) + 1; });
+      setCommunities(data.map((item) => ({ ...item, members: counts[item.id] || 0 })).sort((a, b) => b.members - a.members).slice(0, 3));
+    }
+
+    loadPostCommunity();
+    loadTrending();
+    return () => { active = false; };
+  }, [postRef]);
+
+  async function toggleJoin() {
+    if (!community?.id || joinLoading) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { push('Sign in to join this community.', 'info'); return; }
+    setJoinLoading(true);
+    const result = joined
+      ? await supabase.from('community_members').delete().eq('community_id', community.id).eq('user_id', user.id)
+      : await supabase.from('community_members').insert({ community_id: community.id, user_id: user.id });
+    if (result.error) push(result.error.message || 'Community membership could not be updated.', 'error');
+    else {
+      setJoined(!joined);
+      setCommunity((current) => ({ ...current, members: Math.max(0, (current.members || 0) + (joined ? -1 : 1)) }));
+    }
+    setJoinLoading(false);
+  }
 
   return (
     <aside className="right-rail">
-      <Link to="/create" className="create-prompt no-underline">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-text">Start a thread</p>
-            <h2 className="text-lg font-semibold text-text-primary mt-2 leading-tight">What did you find worth arguing with?</h2>
+      {community ? (
+        <section className="community-info-card">
+          <div className="community-info-heading">
+            <span className="community-dot community-dot-lg" style={communityStyle(community.slug)}>{community.name?.[0]}</span>
+            <div className="min-w-0 flex-1">
+              <p className="community-info-prefix">c/{community.slug}</p>
+              <h2>{community.name}</h2>
+            </div>
+            {community.id
+              ? <button type="button" className={joined ? 'btn-ghost community-join-button' : 'btn-primary community-join-button'} onClick={toggleJoin} disabled={joinLoading}>{joinLoading ? '…' : joined ? 'Joined' : 'Join'}</button>
+              : <Link to={`/c/${community.slug}`} className="btn-primary community-join-button">Open</Link>}
           </div>
-          <span className="text-2xl text-accent">↗</span>
-        </div>
-        <p className="text-xs text-text-secondary leading-relaxed mt-3">Share the source, point to the moment, and let the community add context.</p>
-      </Link>
+          {community.description && <p className="community-info-description">{community.description}</p>}
+          <div className="community-stats">
+            <span><strong>{community.members ?? '—'}</strong> members</span>
+            <span>Public community</span>
+          </div>
+          <div className="community-info-actions">
+            <Link to={`/c/${community.slug}`} className="community-info-link">Community home</Link>
+            <Link to="/create" className="community-info-link">Create a post</Link>
+          </div>
+          {community.rules && <section className="community-rules"><h3>Community rules</h3><p>{community.rules}</p></section>}
+        </section>
+      ) : (
+        <Link to="/create" className="create-prompt no-underline">
+          <p className="text-xs font-semibold text-text-muted">ANNOTATED</p>
+          <h2 className="text-base font-semibold text-text-primary mt-2 leading-tight">Add context to a moment</h2>
+          <p className="text-xs text-text-secondary leading-relaxed mt-2">Bring a source, add your perspective, and discuss it with the community.</p>
+        </Link>
+      )}
 
-      <section className="rail-card">
+      {communities.length > 0 && <section className="rail-card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="rail-heading">Trending communities</h2>
+          <h2 className="rail-heading">Communities to explore</h2>
           <Link to="/explore" className="text-[11px] text-accent-text hover:text-accent">See all</Link>
         </div>
         <div className="flex flex-col gap-3">
-          {communities.slice(0, 3).map((community, index) => (
-            <Link key={community.slug} to={`/c/${community.slug}`} className="flex items-center gap-3 no-underline group">
-              <span className="text-xs font-mono text-text-muted w-4">0{index + 1}</span>
-              <span className="community-dot community-dot-lg">{community.name[0]}</span>
+          {communities.slice(0, 3).map((item) => (
+            <Link key={item.slug} to={`/c/${item.slug}`} className="flex items-center gap-3 no-underline group">
+              <span className="community-dot community-dot-lg" style={communityStyle(item.slug)}>{item.name[0]}</span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm text-text-primary group-hover:text-accent-text truncate">{community.name}</span>
-                <span className="block text-[11px] text-text-muted mt-0.5">{community.members} members</span>
+                <span className="block text-sm text-text-primary group-hover:text-accent-text truncate">c/{item.slug}</span>
+                <span className="block text-[11px] text-text-muted mt-0.5">{item.members} members</span>
               </span>
             </Link>
           ))}
         </div>
-      </section>
-
-      <section className="rail-card">
-        <h2 className="rail-heading mb-3">How Annotated works</h2>
-        <div className="flex flex-col gap-3">
-          {[
-            ['01', 'Find the moment', 'A sentence, screenshot, or timestamp worth keeping.'],
-            ['02', 'Add your angle', 'React, explain, fact-check, or steelman it.'],
-            ['03', 'Open the floor', 'Let other people bring the missing context.'],
-          ].map(([number, title, text]) => (
-            <div key={number} className="flex gap-3">
-              <span className="step-number">{number}</span>
-              <div>
-                <p className="text-xs font-semibold text-text-primary">{title}</p>
-                <p className="text-[11px] text-text-secondary leading-relaxed mt-0.5">{text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      </section>}
 
       <footer className="rail-footer">
         <span>Open source community notes</span>

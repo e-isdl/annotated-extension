@@ -1,23 +1,21 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ClipCard from '../components/ClipCard';
 import FollowButton from '../components/FollowButton';
 import Avatar from '../components/Avatar';
-import { getCommentCounts } from '../lib/api';
 
 const TABS = [
-  { label: 'Clips', value: 'clips' },
+  { label: 'Posts', value: 'clips' },
   { label: 'Likes', value: 'likes' },
-  { label: 'Followers', value: 'followers' },
-  { label: 'Following', value: 'following' },
+  { label: 'Connections', value: 'connections' },
   { label: 'Comments', value: 'comments' },
-  { label: 'Claims', value: 'claims' },
 ];
 
 export default function Profile() {
   const { handle, tab: routeTab } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState(routeTab === 'comments' ? 'comments' : 'clips');
   const [loading, setLoading] = useState(true);
@@ -29,10 +27,15 @@ export default function Profile() {
   const [claims, setClaims] = useState([]);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [viewerId, setViewerId] = useState(null);
+  const [connectionView, setConnectionView] = useState('followers');
+  const [commentView, setCommentView] = useState('comments');
 
   useEffect(() => {
     async function load() {
       setLoading(true);
+      const { data: { user: viewer } } = await supabase.auth.getUser();
+      setViewerId(viewer?.id || null);
       let { data: profileData } = await supabase
         .from('profiles')
         .select('*')
@@ -53,8 +56,8 @@ export default function Profile() {
 
         const [clipsRes, followerRes, followingRes] = await Promise.all([
           supabase
-            .from('clips')
-            .select('*, profiles(*), annotations(id, text_content, audio_url)')
+            .from('clips_with_scores')
+            .select('*, profiles(*), annotations(id, text_content, audio_url), communities(slug, name)')
             .eq('user_id', profileData.id)
             .order('created_at', { ascending: false }),
           supabase
@@ -67,26 +70,7 @@ export default function Profile() {
             .eq('follower_id', profileData.id),
         ]);
 
-        if (clipsRes.data) {
-          const clipIds = clipsRes.data.map(c => c.id);
-          const { data: votesData } = await supabase
-            .from('votes')
-            .select('clip_id, direction')
-            .in('clip_id', clipIds);
-
-          const scores = {};
-          votesData?.forEach(v => {
-            scores[v.clip_id] = (scores[v.clip_id] || 0) + v.direction;
-          });
-
-          const commentCounts = await getCommentCounts(clipIds);
-          const clipsWithCounts = clipsRes.data.map((clip) => ({
-            ...clip,
-            score: scores[clip.id] || 0,
-            comments_count: commentCounts[clip.id] || 0,
-          }));
-          setClips(clipsWithCounts);
-        }
+        if (clipsRes.data) setClips(clipsRes.data.map(enrichClip));
         setFollowerCount(followerRes.count || 0);
         setFollowingCount(followingRes.count || 0);
       }
@@ -104,6 +88,17 @@ export default function Profile() {
     setActiveTab(routeTab === 'comments' ? 'comments' : 'clips');
   }, [routeTab]);
 
+  useEffect(() => {
+    if (location.pathname.endsWith('/comments')) setActiveTab('comments');
+    else if (location.pathname.endsWith('/annotations')) setActiveTab('clips');
+    else if (location.pathname.endsWith('/connections')) setActiveTab('connections');
+  }, [location.pathname]);
+
+  const isOwner = viewerId && profile?.id === viewerId;
+  useEffect(() => {
+    if (!isOwner && activeTab === 'likes') setActiveTab('clips');
+  }, [isOwner, activeTab]);
+
   async function loadTab(tab) {
     if (!profile) return;
     if (tab === 'likes') {
@@ -113,65 +108,31 @@ export default function Profile() {
         .eq('user_id', profile.id)
         .eq('direction', 1);
       if (votesData?.length) {
-        const { data } = await supabase
-          .from('clips')
-          .select('*, profiles(*), annotations(id, text_content, audio_url)')
+      const { data } = await supabase
+          .from('clips_with_scores')
+          .select('*, profiles(*), annotations(id, text_content, audio_url), communities(slug, name)')
           .in('id', votesData.map(v => v.clip_id))
           .order('created_at', { ascending: false });
-        if (data) {
-          const clipIds = data.map(c => c.id);
-          const { data: votesData2 } = await supabase
-            .from('votes')
-            .select('clip_id, direction')
-            .in('clip_id', clipIds);
-          const scores = {};
-          votesData2?.forEach(v => {
-            scores[v.clip_id] = (scores[v.clip_id] || 0) + v.direction;
-          });
-          const commentCounts = await getCommentCounts(clipIds);
-          const likedWithCounts = data.map((clip) => ({
-            ...clip,
-            score: scores[clip.id] || 0,
-            comments_count: commentCounts[clip.id] || 0,
-          }));
-          setLikedClips(likedWithCounts);
-        }
+        if (data) setLikedClips(data.map(enrichClip));
       } else {
         setLikedClips([]);
       }
-    } else if (tab === 'followers') {
-      const { data } = await supabase
-        .from('follows')
-        .select('profiles!follows_follower_id_fkey(*)')
-        .eq('following_id', profile.id);
-      if (data) setFollowers(data.map(f => f.profiles).filter(Boolean));
-    } else if (tab === 'following') {
-      const { data } = await supabase
-        .from('follows')
-        .select('profiles!follows_following_id_fkey(*)')
-        .eq('follower_id', profile.id);
-      if (data) setFollowing(data.map(f => f.profiles).filter(Boolean));
+    } else if (tab === 'connections') {
+      const [followersRes, followingRes] = await Promise.all([
+        supabase.from('follows').select('profiles!follows_follower_id_fkey(*)').eq('following_id', profile.id),
+        supabase.from('follows').select('profiles!follows_following_id_fkey(*)').eq('follower_id', profile.id),
+      ]);
+      if (followersRes.data) setFollowers(followersRes.data.map((f) => f.profiles).filter(Boolean));
+      if (followingRes.data) setFollowing(followingRes.data.map((f) => f.profiles).filter(Boolean));
     } else if (tab === 'comments') {
-      const { data } = await supabase
-        .from('comments')
-        .select('*, clips(id, slug, title, profiles!clips_user_id_fkey(handle))')
-        .eq('user_id', profile.id)
-        .order('created_at', { ascending: false });
+      const { data } = await supabase.from('comments').select('*, clips(id, slug, title, profiles!clips_user_id_fkey(handle))').eq('user_id', profile.id).order('created_at', { ascending: false });
       if (data) setComments(data);
-    } else if (tab === 'claims') {
-      const { data: userClips } = await supabase
-        .from('clips')
-        .select('id')
-        .eq('user_id', profile.id);
-      if (userClips?.length) {
-        const { data } = await supabase
-          .from('claims')
-          .select('*, clips(id, slug, title)')
-          .in('clip_id', userClips.map(c => c.id))
-          .order('created_at', { ascending: false });
-        if (data) setClaims(data);
-      } else {
-        setClaims([]);
+      if (isOwner) {
+        const { data: userClips } = await supabase.from('clips').select('id').eq('user_id', profile.id);
+        if (userClips?.length) {
+          const { data: claimRows } = await supabase.from('claims').select('*, clips(id, slug, title)').in('clip_id', userClips.map((clip) => clip.id)).order('created_at', { ascending: false });
+          if (claimRows) setClaims(claimRows);
+        } else setClaims([]);
       }
     }
   }
@@ -205,13 +166,14 @@ export default function Profile() {
       </div>
 
       <div className="profile-tabs">
-        {TABS.map((tab) => (
+        {TABS.filter((tab) => tab.value !== 'likes' || isOwner).map((tab) => (
           <button
             key={tab.value}
             onClick={() => {
               setActiveTab(tab.value);
               if (tab.value === 'clips') navigate(`/u/${handle}/annotations`);
               else if (tab.value === 'comments') navigate(`/u/${handle}/comments`);
+              else if (tab.value === 'connections') navigate(`/u/${handle}/connections`);
             }}
             className={`profile-tab ${
               activeTab === tab.value
@@ -225,57 +187,25 @@ export default function Profile() {
       </div>
 
       <div className="profile-content">
-      {activeTab === 'followers' ? (
-        <div className="flex flex-col gap-3">
-          {followers.length === 0 && (
-            <p className="text-sm text-text-secondary text-center py-8">No followers yet.</p>
-          )}
-          {followers.map((user) => (
-            <Link
-              key={user.id}
-              to={`/u/${user.handle}`}
-              className="flex items-center gap-3 p-3 bg-bg-surface border border-border rounded-lg hover:bg-bg-raised transition-colors no-underline"
-            >
-              <Avatar profile={user} size="md" />
-              <div>
-                <p className="text-sm font-medium text-text-primary">@{user.handle}</p>
-                {user.display_name && (
-                  <p className="text-xs text-text-muted">{user.display_name}</p>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-      ) : activeTab === 'following' ? (
-        <div className="flex flex-col gap-3">
-          {following.length === 0 && (
-            <p className="text-sm text-text-secondary text-center py-8">Not following anyone yet.</p>
-          )}
-          {following.map((user) => (
-            <Link
-              key={user.id}
-              to={`/u/${user.handle}`}
-              className="flex items-center gap-3 p-3 bg-bg-surface border border-border rounded-lg hover:bg-bg-raised transition-colors no-underline"
-            >
-              <Avatar profile={user} size="md" />
-              <div>
-                <p className="text-sm font-medium text-text-primary">@{user.handle}</p>
-                {user.display_name && (
-                  <p className="text-xs text-text-muted">{user.display_name}</p>
-                )}
-              </div>
-            </Link>
-          ))}
+      {activeTab === 'connections' ? (
+        <div>
+          <div className="profile-subtabs"><button className={connectionView === 'followers' ? 'profile-subtab-active' : ''} onClick={() => setConnectionView('followers')}>Followers · {followerCount}</button><button className={connectionView === 'following' ? 'profile-subtab-active' : ''} onClick={() => setConnectionView('following')}>Following · {followingCount}</button></div>
+          <div className="profile-people-list">
+            {(connectionView === 'followers' ? followers : following).length === 0 && <p className="text-sm text-text-secondary text-center py-8">{connectionView === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}</p>}
+            {(connectionView === 'followers' ? followers : following).map((user) => <Link key={user.id} to={`/u/${user.handle}`} className="profile-person no-underline"><Avatar profile={user} size="md" /><span><strong>@{user.handle}</strong>{user.display_name && <small>{user.display_name}</small>}</span></Link>)}
+          </div>
         </div>
       ) : activeTab === 'comments' ? (
         <div className="flex flex-col gap-3">
+          <div className="profile-subtabs"><button className={commentView === 'comments' ? 'profile-subtab-active' : ''} onClick={() => setCommentView('comments')}>Comments</button>{isOwner && <button className={commentView === 'claims' ? 'profile-subtab-active' : ''} onClick={() => setCommentView('claims')}>Claims · {claims.length}</button>}</div>
+          {commentView === 'comments' && <>
           {comments.length === 0 && (
             <p className="text-sm text-text-secondary text-center py-8">No comments yet.</p>
           )}
           {comments.map((comment) => (
             <div key={comment.id} className="bg-bg-surface border border-border rounded-lg p-3">
               <Link
-                to={`/clip/${comment.clips?.slug || comment.clips?.id}`}
+                to={`/post/${comment.clips?.slug || comment.clips?.id}`}
                 className="text-xs text-accent-text hover:text-accent transition-colors no-underline block mb-2"
               >
                 {comment.clips?.title || 'Untitled clip'}
@@ -287,9 +217,8 @@ export default function Profile() {
               <p className="text-[11px] text-text-muted mt-2 font-mono">{timeAgo(comment.created_at)}</p>
             </div>
           ))}
-        </div>
-      ) : activeTab === 'claims' ? (
-        <div className="flex flex-col gap-3">
+          </>}
+          {commentView === 'claims' && <>
           {claims.length === 0 && (
             <p className="text-sm text-text-secondary text-center py-8">No claims on your clips yet.</p>
           )}
@@ -297,7 +226,7 @@ export default function Profile() {
             <div key={claim.id} className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <Link
-                  to={`/clip/${claim.clips?.slug || claim.clips?.id}`}
+                  to={`/post/${claim.clips?.slug || claim.clips?.id}`}
                   className="text-xs text-accent-text hover:text-accent transition-colors no-underline"
                 >
                   {claim.clips?.title || 'Untitled clip'}
@@ -317,6 +246,7 @@ export default function Profile() {
               </div>
             </div>
           ))}
+          </>}
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -342,6 +272,19 @@ function timeAgo(dateStr) {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h`;
   return `${Math.floor(hrs / 24)}d`;
+}
+
+function enrichClip(clip) {
+  return {
+    ...clip,
+    source_domain: clip.source_domain || getDomain(clip.source_url),
+    community_name: clip.community_name || clip.communities?.name,
+    community_slug: clip.community_slug || clip.communities?.slug,
+  };
+}
+
+function getDomain(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'source'; }
 }
 
 function LoadingState() {

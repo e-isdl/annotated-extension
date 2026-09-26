@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Avatar from './Avatar';
 import VoteButtons from './VoteButtons';
+import { useToast } from './ToastProvider';
+import { communityStyle } from '../lib/community';
 
 export default function ClipCard({ clip }) {
+  const navigate = useNavigate();
+  const { push } = useToast();
   const annotation = clip.annotations?.[0];
   const commentary = clip.annotation || annotation?.text_content;
   const commentaryPreview = annotationPreview(commentary);
+  const sourceTitle = clip.source_type === 'youtube' ? null : clip.source_title || clip.title;
   const [score, setScore] = useState(clip.score ?? 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
-  const href = `/clip/${clip.slug || clip.id}`;
+  const href = `/post/${clip.slug || clip.id}`;
   const sourceImage = clip.source_image_url || clip.thumbnail || (clip.youtube_id ? `https://img.youtube.com/vi/${clip.youtube_id}/hqdefault.jpg` : null);
 
   useEffect(() => {
@@ -33,7 +38,10 @@ export default function ClipCard({ clip }) {
   const handleShare = async (event) => {
     event.preventDefault();
     event.stopPropagation();
-    try { await navigator.clipboard.writeText(`${window.location.origin}${href}`); } catch {}
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${href}`);
+      push('Post link copied.', 'info');
+    } catch { push('Could not copy the post link.', 'error'); }
     setShared(true);
     window.setTimeout(() => setShared(false), 1600);
   };
@@ -42,10 +50,10 @@ export default function ClipCard({ clip }) {
     event.preventDefault();
     event.stopPropagation();
     const next = !saved;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { push('Sign in to save posts.', 'info'); return; }
     setSaved(next);
     if (String(clip.id).startsWith('demo-')) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
     const result = next
       ? await supabase.from('post_saves').insert({ clip_id: clip.id, user_id: user.id })
       : await supabase.from('post_saves').delete().eq('clip_id', clip.id).eq('user_id', user.id);
@@ -55,11 +63,13 @@ export default function ClipCard({ clip }) {
   return (
     <article className="post-card">
       <div className="post-meta">
-        <Link to={`/c/${clip.community_slug || 'annotated'}`} className="community-pill no-underline">
-          <span className="community-dot">{(clip.community_name || 'A')[0]}</span>
-          <span>c/{clip.community_name || 'Annotated'}</span>
-        </Link>
-        <span className="post-meta-separator">•</span>
+        {clip.community_slug && clip.community_name && <>
+          <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline">
+            <span className="community-dot" style={communityStyle(clip.community_slug)}>{clip.community_name[0]}</span>
+            <span>c/{clip.community_name}</span>
+          </Link>
+          <span className="post-meta-separator">•</span>
+        </>}
         <Link to={clip.profiles?.handle ? `/u/${clip.profiles.handle}` : '#'} className="post-author no-underline">
           @{clip.profiles?.handle || 'anonymous'}
         </Link>
@@ -69,12 +79,11 @@ export default function ClipCard({ clip }) {
       </div>
 
       <Link to={href} className="block no-underline group">
-        {commentary && <p className="post-annotation-preview">{commentaryPreview.text}{commentaryPreview.truncated && <span className="post-commentary-more">…</span>}</p>}
-        <h2 className="post-title post-source-title">{clip.title}</h2>
+        {commentary && <h2 className="post-annotation-preview">{commentaryPreview.text}{commentaryPreview.truncated && <span className="post-commentary-more">…</span>}</h2>}
 
         <div className="source-preview">
           <div className="source-preview-copy">
-            <div className="source-label"><span className="source-icon">↗</span> {clip.source_domain || sourceDomain(clip.source_url)}</div>
+            {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
             {clip.source_preview_text ? (
               <p className="source-quote">{clip.source_preview_text}</p>
             ) : clip.article_text || clip.transcript ? (
@@ -82,7 +91,7 @@ export default function ClipCard({ clip }) {
             ) : (
               <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
             )}
-            {clip.source_title && clip.source_title !== clip.title && <p className="source-title">{clip.source_title}</p>}
+            {sourceTitle && sourceTitle !== commentary && <p className="source-title">{sourceTitle}</p>}
           </div>
           {sourceImage && <img src={sourceImage} alt="" className="source-preview-image" loading="lazy" />}
         </div>

@@ -95,10 +95,10 @@ export default function Leaderboard() {
                 <div className="flex items-center gap-2 mb-1">
                   <Avatar profile={clip.profiles} size="xs" />
                   <span className="text-xs text-text-muted">@{clip.profiles?.handle}</span>
-                  <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
+                  {clip.source_type !== 'youtube' && <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>}
                 </div>
                 <Link
-                  to={`/clip/${clip.slug || clip.id}`}
+                  to={`/post/${clip.slug || clip.id}`}
                   className="text-sm font-medium text-text-primary hover:text-accent-text transition-colors line-clamp-2"
                 >
                   {clip.title}

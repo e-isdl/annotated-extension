@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { DEMO_CLIPS, getDemoCommunity } from '../lib/demoData';
 import ClipCard from '../components/ClipCard';
 import { useToast } from '../components/ToastProvider';
+import { communityStyle } from '../lib/community';
 
 const SORTS = [
   { label: 'Best', value: 'best' },
@@ -17,9 +17,8 @@ export default function CommunityPage() {
   const { push } = useToast();
   const requestedSort = searchParams.get('sort');
   const sort = SORTS.some((option) => option.value === requestedSort) ? requestedSort : 'best';
-  const demoCommunity = getDemoCommunity(slug);
-  const [community, setCommunity] = useState(demoCommunity || { slug, name: slug.replace(/-/g, ' '), members: 'New', description: 'A new place for thoughtful source-based conversations.' });
-  const [clips, setClips] = useState(demoCommunity ? DEMO_CLIPS.filter((clip) => clip.community_slug === slug) : []);
+  const [community, setCommunity] = useState({ slug, name: slug.replace(/-/g, ' '), members: 0, description: '' });
+  const [clips, setClips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [communityId, setCommunityId] = useState(null);
   const [joined, setJoined] = useState(false);
@@ -38,7 +37,7 @@ export default function CommunityPage() {
         const [{ count }, { data: { user } }, clipsResponse] = await Promise.all([
           supabase.from('community_members').select('user_id', { count: 'exact', head: true }).eq('community_id', communityRow.id),
           supabase.auth.getUser(),
-          supabase.from('clips_with_scores').select('*, profiles(*), annotations(id, text_content, audio_url)').eq('community_id', communityRow.id).limit(50),
+          communityClipsQuery(communityRow.id, sort),
         ]);
         if (user) {
           const { data: membership } = await supabase.from('community_members').select('user_id').eq('community_id', communityRow.id).eq('user_id', user.id).maybeSingle();
@@ -46,10 +45,7 @@ export default function CommunityPage() {
         }
         if (!active) return;
         setCommunity((current) => ({ ...current, members: count ?? current.members ?? 'New' }));
-        setClips(sortClips((clipsResponse.data || []).map((clip) => ({ ...clip, community_name: communityRow.name, community_slug: communityRow.slug })), sort));
-      } else if (demoCommunity) {
-        setCommunity(demoCommunity);
-        setClips(sortClips(DEMO_CLIPS.filter((clip) => clip.community_slug === slug), sort));
+        setClips((clipsResponse.data || []).map((clip) => ({ ...clip, community_name: communityRow.name, community_slug: communityRow.slug, source_domain: clip.source_domain || getDomain(clip.source_url) })));
       } else {
         setClips([]);
       }
@@ -57,7 +53,7 @@ export default function CommunityPage() {
     }
     load();
     return () => { active = false; };
-  }, [slug, sort, demoCommunity]);
+  }, [slug, sort]);
 
   async function toggleJoin() {
     if (!communityId || joinLoading) return;
@@ -75,7 +71,7 @@ export default function CommunityPage() {
   return (
     <div className="section-page community-page">
       <div className="community-hero">
-        <div className="community-hero-mark">{community.name[0]}</div>
+        <div className="community-hero-mark" style={communityStyle(slug)}>{community.name[0]}</div>
         <div className="flex-1 min-w-0">
           <p className="eyebrow">COMMUNITY</p>
           <h1>c/{community.name}</h1>
@@ -98,11 +94,11 @@ export default function CommunityPage() {
       </div>
 
       <div className="feed-list">
-        {loading ? <div className="post-card post-skeleton" /> : clips.length ? clips.map((clip) => <ClipCard key={clip.id} clip={clip} />) : (
+        {loading ? <div className="post-card post-skeleton" /> : communityId && clips.length ? clips.map((clip) => <ClipCard key={clip.id} clip={clip} />) : (
           <div className="empty-state compact-empty">
             <span className="text-3xl">✎</span>
-            <h2 className="text-lg font-semibold text-text-primary">Be the first to start this conversation.</h2>
-            <Link to="/create" className="btn-primary">Create a thread</Link>
+            <h2 className="text-lg font-semibold text-text-primary">{communityId ? 'Be the first to start this conversation.' : 'This community could not be found.'}</h2>
+            {communityId && <Link to="/create" className="btn-primary">Create a thread</Link>}
           </div>
         )}
       </div>
@@ -110,8 +106,14 @@ export default function CommunityPage() {
   );
 }
 
-function sortClips(items, sort) {
-  if (sort === 'new') return [...items].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  if (sort === 'top') return [...items].sort((a, b) => (b.score || 0) - (a.score || 0));
-  return [...items].sort((a, b) => ((b.score || 0) + (b.comments_count || 0) * 3) - ((a.score || 0) + (a.comments_count || 0) * 3));
+function communityClipsQuery(communityId, sort) {
+  let query = supabase.from('clips_with_scores').select('*, profiles(*), annotations(id, text_content, audio_url), communities(slug, name)').eq('community_id', communityId);
+  if (sort === 'new') query = query.order('created_at', { ascending: false });
+  else if (sort === 'top') query = query.order('score', { ascending: false, nullsFirst: false });
+  else query = query.order('best_score', { ascending: false, nullsFirst: false });
+  return query.limit(50);
+}
+
+function getDomain(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'source'; }
 }
