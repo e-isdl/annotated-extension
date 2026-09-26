@@ -1,16 +1,16 @@
 import { Link } from 'react-router-dom';
 import Avatar from './Avatar';
 
-export default function AnnotationLead({ text, profile, annotationType = 'Annotation', asHeading = false }) {
+export default function AnnotationLead({ text, profile, annotationType = 'Annotation', asHeading = false, showType = true }) {
   if (!text) return null;
 
   const Copy = asHeading ? 'h1' : 'p';
 
   return (
     <section className="annotation-lead" aria-label="Author annotation">
-      <div className="annotation-lead-kicker">
+      {showType && <div className="annotation-lead-kicker">
         <span className="badge badge-article">{annotationType}</span>
-      </div>
+      </div>}
       <div className="annotation-lead-author">
         <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="no-underline">
           <Avatar profile={profile} size="sm" />

@@ -137,39 +137,42 @@ export default function ClipPage() {
           <span>{formatDate(clip.created_at)}</span>
           {!annotation?.text_content && <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author no-underline">by {profile?.handle || 'anonymous'}</Link>}
         </div>
-        {isOwner && (
-          <div className="flex items-center gap-1">
-            {confirmDelete ? (
-              <>
-                <span className="text-[11px] text-red-400 mr-1">Delete?</span>
+        <div className="detail-header-actions">
+          <span className="badge badge-article">{clip.annotation_type || 'Annotation'}</span>
+          {isOwner && (
+            <div className="flex items-center gap-1">
+              {confirmDelete ? (
+                <>
+                  <span className="text-[11px] text-red-400 mr-1">Delete?</span>
+                  <button
+                    onClick={handleDeleteClip}
+                    disabled={deleting}
+                    className="text-[11px] px-2 py-1 rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-40"
+                  >
+                    {deleting ? '...' : 'Yes'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={deleting}
+                    className="text-[11px] px-2 py-1 rounded-md text-text-muted bg-bg-raised hover:bg-bg-surface transition-colors"
+                  >
+                    No
+                  </button>
+                </>
+              ) : (
                 <button
-                  onClick={handleDeleteClip}
-                  disabled={deleting}
-                  className="text-[11px] px-2 py-1 rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-40"
+                  onClick={() => setConfirmDelete(true)}
+                  className="text-[11px] px-2 py-1 rounded-md text-red-400 bg-red-400/10 hover:bg-red-400/20 transition-colors"
                 >
-                  {deleting ? '...' : 'Yes'}
+                  Delete
                 </button>
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  disabled={deleting}
-                  className="text-[11px] px-2 py-1 rounded-md text-text-muted bg-bg-raised hover:bg-bg-surface transition-colors"
-                >
-                  No
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="text-[11px] px-2 py-1 rounded-md text-red-400 bg-red-400/10 hover:bg-red-400/20 transition-colors"
-              >
-                Delete
-              </button>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      <AnnotationLead text={annotation?.text_content || clip.title} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading />
+      <AnnotationLead text={annotation?.text_content || clip.title} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} />
 
       {clip.source_url && <section className="source-post" aria-label="Original source post">
         {clip.source_type !== 'youtube' && <div className="source-post-header">
