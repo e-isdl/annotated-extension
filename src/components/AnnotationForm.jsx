@@ -1,89 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { excerptYouTubeTranscript, fetchYouTubeTranscript, formatYouTubeTranscript } from '../lib/youtubeTranscript';
 
-const APIFY_ACTOR_URL = 'https://api.apify.com/v2/actors/akash9078~youtube-transcript-extractor/run-sync-get-dataset-items';
 const ANNOTATION_LIMITS = { Reaction: 280, 'Fact check': 500, Explainer: 600, Steelman: 800, 'Found receipts': 1000 };
 const ANNOTATION_TYPES = Object.keys(ANNOTATION_LIMITS);
 
-async function getApifyToken() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get('apify_api_key', (result) => resolve(result.apify_api_key || ''));
-  });
-}
-
 async function fetchTranscriptDirect(videoId, startSec, endSec) {
-  const s = Number(startSec);
-  const e = Number(endSec);
-
-  const token = await getApifyToken();
-  if (!token) throw new Error('No Apify API key. Open Settings to add one.');
-
-  const res = await fetch(`${APIFY_ACTOR_URL}?token=${token}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ videoUrl: `https://www.youtube.com/watch?v=${videoId}` }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Apify HTTP ${res.status}: ${errText}`);
-  }
-
-  const items = await res.json();
-  if (!items?.length) throw new Error('Apify returned no results');
-  const item = items[0];
-  if (!item.success) throw new Error(`Apify failed: ${item.error || 'unknown'}`);
-
-  const full = item.transcript || '';
-  const segments = item.transcript_segments;
-
-  if (segments?.length > 0 && !isNaN(s) && !isNaN(e)) {
-    const filtered = segments.filter(seg => {
-      const t = Number(seg.start);
-      return t >= s && t <= e;
-    });
-    if (filtered.length > 0) {
-      let joined = filtered.map(seg => seg.text.replace(/>>\s*/g, '')).join(' ');
-
-      // Trim to start after a sentence boundary (., !, ?)
-      const sentenceStart = joined.search(/[.!?]\s+[A-Z]/);
-      if (sentenceStart !== -1) {
-        joined = joined.slice(sentenceStart + 2).trim();
-      }
-
-      // Trim to end at a sentence boundary
-      const lastPeriod = joined.search(/[.!?](?:\s|$)/g);
-      if (lastPeriod !== -1) {
-        // Find the last sentence boundary
-        let lastIdx = -1;
-        const re = /[.!?]/g;
-        let m;
-        while ((m = re.exec(joined)) !== null) {
-          lastIdx = m.index;
-        }
-        if (lastIdx !== -1 && lastIdx < joined.length - 1) {
-          joined = joined.slice(0, lastIdx + 1).trim();
-        }
-      }
-
-      if (joined.trim()) return { filtered: joined, full: full.replace(/>>\s*/g, ''), segments };
-    }
-  }
-
-  if (full) {
-    if (!isNaN(s) && !isNaN(e) && e > s) {
-      const words = full.split(/\s+/).filter(Boolean);
-      const wordsPerSecond = 2.5;
-      const estimatedTotalDuration = words.length / wordsPerSecond;
-      const startWord = Math.floor((s / estimatedTotalDuration) * words.length);
-      const endWord = Math.min(Math.ceil((e / estimatedTotalDuration) * words.length), words.length);
-      const snippet = words.slice(startWord, endWord).join(' ');
-      if (snippet.trim()) return { filtered: snippet, full: full.replace(/>>\s*/g, ''), segments: null };
-    }
-    return { filtered: full.replace(/>>\s*/g, ''), full: full.replace(/>>\s*/g, ''), segments: null };
-  }
-
-  throw new Error('No transcript available');
+  const { segments } = await fetchYouTubeTranscript(videoId);
+  const full = formatYouTubeTranscript(segments);
+  const filtered = excerptYouTubeTranscript(segments, startSec, endSec);
+  if (!full) throw new Error('YouTube returned an empty caption track for this video.');
+  if (!filtered) throw new Error('No captions cover the selected time range.');
+  return { filtered, full, segments };
 }
 
 function expandTranscript(currentText, fullTranscript, words = 5) {
@@ -151,48 +79,13 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
   useEffect(() => {
     if (isYouTube && clipData.youtube_id && clipData.start_sec !== undefined && clipData.end_sec !== undefined) {
       if (transcriptCache && transcriptCache.key === cacheKey) {
-        const s = Number(clipData.start_sec);
-        const e = Number(clipData.end_sec);
         const full = transcriptCache.full;
         const segments = transcriptCache.segments;
 
-        if (segments?.length > 0 && !isNaN(s) && !isNaN(e)) {
-          const filtered = segments.filter(seg => {
-            const t = Number(seg.start);
-            return t >= s && t <= e;
-          });
-          if (filtered.length > 0) {
-            let joined = filtered.map(seg => seg.text.replace(/>>\s*/g, '')).join(' ');
-
-            // Trim to start after a sentence boundary
-            const sentenceStart = joined.search(/[.!?]\s+[A-Z]/);
-            if (sentenceStart !== -1) {
-              joined = joined.slice(sentenceStart + 2).trim();
-            }
-
-            // Trim to end at a sentence boundary
-            let lastIdx = -1;
-            const re = /[.!?]/g;
-            let m;
-            while ((m = re.exec(joined)) !== null) {
-              lastIdx = m.index;
-            }
-            if (lastIdx !== -1 && lastIdx < joined.length - 1) {
-              joined = joined.slice(0, lastIdx + 1).trim();
-            }
-
-            setTranscript(joined);
-          } else if (full) {
-            const words = full.split(/\s+/).filter(Boolean);
-            const wordsPerSecond = 2.5;
-            const estimatedTotalDuration = words.length / wordsPerSecond;
-            const startWord = Math.floor((s / estimatedTotalDuration) * words.length);
-            const endWord = Math.min(Math.ceil((e / estimatedTotalDuration) * words.length), words.length);
-            setTranscript(words.slice(startWord, endWord).join(' '));
-          }
-        } else if (full) {
-          setTranscript(full.replace(/>>\s*/g, ''));
-        }
+        const excerpt = segments?.length
+          ? excerptYouTubeTranscript(segments, clipData.start_sec, clipData.end_sec)
+          : full;
+        setTranscript(excerpt || '');
 
         setFullTranscript(full);
         return;
