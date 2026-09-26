@@ -69,14 +69,36 @@ function notifySidePanel(message) {
   chrome.runtime.sendMessage(message).catch(() => {});
 }
 
+// The side panel follows one tab at a time: the tab the user last switched to.
+// Anything else updating in the background must not overwrite the panel's page.
+let currentTabId = null;
+
+async function pushTabInfo(tabId) {
+  try {
+    const info = await getPageInfoFromTab(tabId);
+    if (info) notifySidePanel({ type: 'PAGE_INFO', data: info });
+  } catch (e) {}
+}
+
 async function getActiveTab() {
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tabs[0] || null;
+  if (currentTabId != null) {
+    try {
+      const tab = await chrome.tabs.get(currentTabId);
+      if (tab) return tab;
+    } catch (e) {}
+    currentTabId = null;
+  }
+  const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  const tab = tabs[0] || (await chrome.tabs.query({ active: true }))[0] || null;
+  if (tab?.id != null) currentTabId = tab.id;
+  return tab;
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PAGE_INFO' && sender.tab) {
-    notifySidePanel({ type: 'PAGE_INFO', data: message.data });
+    if (currentTabId == null || sender.tab.id === currentTabId) {
+      notifySidePanel({ type: 'PAGE_INFO', data: message.data });
+    }
   }
   if (message.type === 'SELECTION_CHANGED') {
     notifySidePanel({ type: 'SELECTION_CHANGED', data: message.data });
@@ -95,19 +117,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  currentTabId = tabId;
+  await pushTabInfo(tabId);
+});
+
+chrome.windows.onFocusChanged.addListener(async (windowId) => {
+  if (windowId === chrome.windows.WINDOW_ID_NONE) return;
   try {
-    const tab = await chrome.tabs.get(tabId);
-    if (!tab || !tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) return;
-    const info = await getPageInfoFromTab(tabId);
-    chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: info }).catch(() => {});
+    const [tab] = await chrome.tabs.query({ active: true, windowId });
+    if (!tab) return;
+    currentTabId = tab.id;
+    await pushTabInfo(tab.id);
   } catch (e) {}
 });
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' || changeInfo.title) {
-    if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
-      const info = await getPageInfoFromTab(tabId);
-      chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: info }).catch(() => {});
-    }
+  if (tabId !== currentTabId || !tab.active) return;
+  if (changeInfo.status === 'complete' || changeInfo.title || changeInfo.url) {
+    await pushTabInfo(tabId);
   }
 });
+
+chrome.tabs.query({ active: true, lastFocusedWindow: true }).then((tabs) => {
+  if (tabs[0]?.id != null) currentTabId = tabs[0].id;
+}).catch(() => {});

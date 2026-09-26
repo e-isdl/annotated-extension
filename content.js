@@ -6,9 +6,8 @@ function detectPageInfo() {
     const params = new URLSearchParams(window.location.search);
     const videoId = params.get('v');
     const title = document.title.replace(' - YouTube', '').replace(/^\(\d+\)\s*/, '');
-    const duration = getDurationFromPage();
     info.type = 'youtube';
-    info.data = { videoId, title, duration };
+    info.data = { videoId, title, duration: getDurationFromPage(), adPlaying: isAdPlaying() };
     return info;
   }
 
@@ -16,7 +15,7 @@ function detectPageInfo() {
     const parts = url.split('/');
     const videoId = parts[parts.length - 1];
     info.type = 'youtube';
-    info.data = { videoId, title: document.title, duration: 0 };
+    info.data = { videoId, title: document.title, duration: getDurationFromPage(), adPlaying: isAdPlaying() };
     return info;
   }
 
@@ -48,19 +47,57 @@ function detectPageInfo() {
   return info;
 }
 
+function isAdPlaying() {
+  const player = document.querySelector('.html5-video-player');
+  if (!player) return false;
+  return player.classList.contains('ad-showing') || player.classList.contains('ad-interrupting');
+}
+
+function getVideoDetails() {
+  try {
+    const live = document.querySelector('#movie_player')?.getPlayerResponse?.();
+    if (live?.videoDetails?.videoId) return live.videoDetails;
+  } catch (e) {}
+  return window.ytInitialPlayerResponse?.videoDetails || null;
+}
+
 function getDurationFromPage() {
-  const durationEl = document.querySelector('.ytp-time-duration');
-  if (durationEl) {
-    const parts = durationEl.textContent.split(':').map(Number);
-    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    if (parts.length === 2) return parts[0] * 60 + parts[1];
-    return parts[0] || 0;
-  }
-  const video = document.querySelector('video');
-  if (video && video.duration && isFinite(video.duration)) {
-    return Math.floor(video.duration);
+  const fromDetails = Math.floor(Number(getVideoDetails()?.lengthSeconds || 0));
+  if (fromDetails > 0) return fromDetails;
+
+  if (!isAdPlaying()) {
+    const durationEl = document.querySelector('.ytp-time-duration');
+    if (durationEl) {
+      const parts = durationEl.textContent.split(':').map(Number);
+      if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      if (parts.length === 2) return parts[0] * 60 + parts[1];
+      if (parts[0]) return parts[0];
+    }
+    const video = document.querySelector('video');
+    if (video && video.duration && isFinite(video.duration)) {
+      return Math.floor(video.duration);
+    }
   }
   return 0;
+}
+
+function getVideoState() {
+  const video = document.querySelector('video');
+  let duration = Math.floor(Number(getVideoDetails()?.lengthSeconds || 0));
+  if (!duration && video && isFinite(video.duration)) duration = Math.floor(video.duration);
+  return {
+    currentTime: video ? Math.floor(video.currentTime) : 0,
+    duration: duration || 0,
+    paused: video ? Boolean(video.paused) : true,
+    adPlaying: isAdPlaying(),
+  };
+}
+
+function seekVideo(seconds) {
+  const video = document.querySelector('video');
+  if (!video || !isFinite(seconds)) return false;
+  video.currentTime = Math.max(0, seconds);
+  return true;
 }
 
 if (!window.__annotatedContentLoaded) {
@@ -78,11 +115,26 @@ if (!window.__annotatedContentLoaded) {
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'GET_PAGE_INFO') {
-      const info = detectPageInfo();
-      sendResponse(info);
+      sendResponse(detectPageInfo());
+      return true;
+    }
+    if (message.type === 'GET_VIDEO_STATE') {
+      sendResponse(getVideoState());
+      return true;
+    }
+    if (message.type === 'SEEK_VIDEO') {
+      sendResponse({ ok: seekVideo(Number(message.time)) });
       return true;
     }
   });
 
-  chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: detectPageInfo() }).catch(() => {});
+  const pushPageInfo = () => {
+    chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: detectPageInfo() }).catch(() => {});
+  };
+
+  document.addEventListener('yt-navigate-finish', pushPageInfo);
+  document.addEventListener('yt-page-data-updated', pushPageInfo);
+  window.addEventListener('popstate', pushPageInfo);
+
+  pushPageInfo();
 }

@@ -6,6 +6,7 @@ import AnnotationForm from './AnnotationForm';
 import SuccessScreen from './SuccessScreen';
 import { supabase } from '../lib/supabase';
 import { createExtensionPost } from '../lib/postPublishing';
+import { pageIdentity } from '../lib/pageInfo';
 
 function generateSlug(title) {
   if (!title) return Math.random().toString(36).slice(2, 10);
@@ -37,6 +38,15 @@ export default function ClipCreator({ pageInfo, session }) {
       .catch(() => { if (active) setCommunities([]); });
     return () => { active = false; };
   }, []);
+
+  const pageKey = pageIdentity(pageInfo);
+
+  useEffect(() => {
+    setStep('clip');
+    setClipData(null);
+    setPublishedClip(null);
+    setCurrentTranscript(null);
+  }, [pageKey]);
 
   const handleClipReady = useCallback((data) => {
     setClipData(data);
@@ -75,9 +85,9 @@ export default function ClipCreator({ pageInfo, session }) {
   const renderClipper = () => {
     if (!pageInfo) return <div className="p-4 text-text-muted text-sm">Navigate to a page to start clipping.</div>;
     switch (pageInfo.type) {
-      case 'youtube': return <YouTubeClipper pageInfo={pageInfo} onReady={handleClipReady} />;
-      case 'article': return <ArticleClipper pageInfo={pageInfo} onReady={handleClipReady} />;
-      case 'podcast': return <PodcastClipper pageInfo={pageInfo} onReady={handleClipReady} />;
+      case 'youtube': return <YouTubeClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
+      case 'article': return <ArticleClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
+      case 'podcast': return <PodcastClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
       default: return <UnsupportedPage />;
     }
   };
