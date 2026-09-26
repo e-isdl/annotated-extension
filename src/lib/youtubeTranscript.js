@@ -1,42 +1,124 @@
 /** Extract timed captions from the YouTube page the user is already viewing. */
 export async function readYouTubeCaptionTrack(videoId) {
-  const player = window.ytInitialPlayerResponse
+  const FETCH_TIMEOUT_MS = 15000;
+  const MAX_TRACKS_PER_SOURCE = 3;
+  const FALLBACK_CLIENT = { name: 'IOS', version: '20.10.4' };
+
+  const pagePlayer = window.ytInitialPlayerResponse
     || document.querySelector('ytd-player')?.getPlayerResponse?.()
     || (() => {
       const raw = window.ytplayer?.config?.args?.player_response;
       if (!raw) return null;
       try { return JSON.parse(raw); } catch { return null; }
     })();
-  if (player?.videoDetails?.videoId && player.videoDetails.videoId !== videoId) {
+
+  if (pagePlayer?.videoDetails?.videoId && pagePlayer.videoDetails.videoId !== videoId) {
     throw new Error('The YouTube tab changed videos. Reopen the clip form and try again.');
   }
-  const tracks = player?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-  if (!tracks?.length) {
+
+  const preferredLanguage = String(window.ytcfg?.get?.('HL') || navigator.language || 'en').toLowerCase();
+  const preferredRegion = String(window.ytcfg?.get?.('GL') || 'US').toUpperCase();
+  const languageBase = preferredLanguage.split('-')[0];
+
+  const rankTracks = (tracks) => {
+    const scoreFor = (track) => {
+      const code = String(track?.languageCode || '').toLowerCase();
+      let score = 3;
+      if (code === preferredLanguage) score = 0;
+      else if (code && code.split('-')[0] === languageBase) score = 1;
+      else if (code === 'en' || code.startsWith('en-')) score = 2;
+      if (track?.kind === 'asr') score += 0.5;
+      return score;
+    };
+    return [...tracks].sort((a, b) => scoreFor(a) - scoreFor(b));
+  };
+
+  const requestInnertubeTracks = async () => {
+    const apiKey = window.ytcfg?.get?.('INNERTUBE_API_KEY');
+    const endpoint = `/youtubei/v1/player?prettyPrint=false${apiKey ? `&key=${encodeURIComponent(apiKey)}` : ''}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: FALLBACK_CLIENT.name,
+              clientVersion: FALLBACK_CLIENT.version,
+              hl: preferredLanguage,
+              gl: preferredRegion,
+            },
+          },
+          videoId,
+          contentCheckOk: true,
+          racyCheckOk: true,
+        }),
+        credentials: 'include',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+    } catch {
+      return [];
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  const requestCaptionBody = async (track) => {
+    const url = new URL(track.baseUrl, location.origin);
+    url.searchParams.set('fmt', 'json3');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const response = await fetch(url, { credentials: 'include', cache: 'no-store', signal: controller.signal });
+      if (!response.ok) return { status: 'error' };
+      const body = await response.text();
+      if (!body.trim()) return { status: 'blank' };
+      let payload = null;
+      try { payload = JSON.parse(body); } catch { return { status: 'blank' }; }
+      if (!payload?.events?.length) return { status: 'empty' };
+      return { status: 'ok', body };
+    } catch {
+      return { status: 'error' };
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  const readFromTracks = async (tracks) => {
+    if (!tracks?.length) return { status: 'none' };
+    for (const track of rankTracks(tracks).slice(0, MAX_TRACKS_PER_SOURCE)) {
+      if (!track?.baseUrl) continue;
+      const outcome = await requestCaptionBody(track);
+      if (outcome.status === 'ok') return { status: 'ok', language: track.languageCode || '', body: outcome.body };
+      if (outcome.status === 'error') return { status: 'error' };
+      if (outcome.status === 'blank') return { status: 'blank' };
+    }
+    return { status: 'empty' };
+  };
+
+  const pageTracks = pagePlayer?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+  const attempts = [];
+  const pageOutcome = await readFromTracks(pageTracks);
+  if (pageOutcome.status === 'ok') return { language: pageOutcome.language, body: pageOutcome.body };
+  attempts.push(pageOutcome.status);
+
+  const apiOutcome = await readFromTracks(await requestInnertubeTracks());
+  if (apiOutcome.status === 'ok') return { language: apiOutcome.language, body: apiOutcome.body };
+  attempts.push(apiOutcome.status);
+
+  if (attempts.every((status) => status === 'none')) {
     throw new Error('YouTube has no captions available for this video.');
   }
-
-  const track = tracks.find((candidate) => candidate.isDefault)
-    || tracks.find((candidate) => candidate.kind !== 'asr')
-    || tracks[0];
-  if (!track?.baseUrl) throw new Error('YouTube did not provide a usable caption track.');
-
-  const url = new URL(track.baseUrl, location.origin);
-  url.searchParams.set('fmt', 'json3');
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-  let response;
-  try {
-    response = await fetch(url, { credentials: 'include', cache: 'no-store', signal: controller.signal });
-  } catch (error) {
-    if (error.name === 'AbortError') throw new Error('YouTube took too long to return captions. Try again.');
-    throw new Error('Could not read captions from YouTube. Reload the video and try again.');
-  } finally {
-    clearTimeout(timeout);
+  if (attempts.includes('empty') || !attempts.includes('error')) {
+    throw new Error('YouTube returned an empty caption track for this video.');
   }
-  if (!response.ok) throw new Error(`YouTube caption request failed (${response.status}).`);
-
-  const payload = await response.json();
-  return { language: track.languageCode || '', segments: parseYouTubeJson3(payload) };
+  throw new Error('Could not read captions from YouTube. Reload the video and try again.');
 }
 
 export function parseYouTubeJson3(payload) {
@@ -90,8 +172,15 @@ export async function fetchYouTubeTranscript(videoId) {
     args: [videoId],
   });
   const result = injection?.result;
-  if (!result?.segments?.length) {
+  if (!result?.body) {
     throw new Error('YouTube returned an empty caption track for this video.');
   }
-  return result;
+
+  let payload = null;
+  try { payload = JSON.parse(result.body); } catch { payload = null; }
+  const segments = payload ? parseYouTubeJson3(payload) : [];
+  if (!segments.length) {
+    throw new Error('YouTube returned an empty caption track for this video.');
+  }
+  return { language: result.language || '', segments };
 }
