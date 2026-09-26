@@ -92,7 +92,7 @@ export default function ClipCard({ clip }) {
             )}
             {sourceTitle && sourceTitle !== commentary && <p className="source-title">{sourceTitle}</p>}
           </div>
-          {sourceImage && <img src={sourceImage} alt="" className="source-preview-image" loading="lazy" />}
+          {sourceImage && <img src={sourceImage} alt="" className={`source-preview-image${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />}
         </div>
         {clip.start_sec !== undefined && clip.end_sec !== undefined && (
           <div className="post-timestamp-row" aria-label={`Source moment from ${formatTime(clip.start_sec)} to ${formatTime(clip.end_sec)}`}>

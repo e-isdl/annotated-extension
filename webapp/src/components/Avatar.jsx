@@ -16,7 +16,7 @@ export default function Avatar({ profile, size = 'md' }) {
   return (
     <div
       className={`${sizeClasses[size]} avatar-circle flex items-center justify-center rounded-full font-bold shrink-0 overflow-hidden`}
-      style={{ '--avatar-color': `hsl(${hue} 76% 36%)` }}
+      style={{ '--avatar-color': `hsl(${hue} 82% 26%)` }}
     >
       {showImage ? (
         <img src={profile.avatar_url} alt="" onError={() => setShowImage(false)} className="w-full h-full object-cover" />

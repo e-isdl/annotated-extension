@@ -6,9 +6,9 @@ export default {
       colors: {
         bg: { base: '#0E1113', surface: '#181C1F', raised: '#24292D' },
         border: { DEFAULT: '#343A3E', subtle: 'rgba(255,255,255,0.09)' },
-        text: { primary: '#F2F4F5', secondary: '#B8C5CC', muted: '#8B969C' },
-        accent: { DEFAULT: '#D59A56', dim: 'rgba(213,154,86,0.14)', text: '#E4B16D' },
-        claim: { DEFAULT: '#D59A56', dim: 'rgba(213,154,86,0.14)' },
+        text: { primary: '#F7F8F9', secondary: '#D3D9DD', muted: '#AAB5BC' },
+        accent: { DEFAULT: '#E53935', hover: '#C62828', dim: 'rgba(229,57,53,0.16)', text: '#EF5350' },
+        claim: { DEFAULT: '#E53935', dim: 'rgba(229,57,53,0.16)' },
         success: '#8EB59B',
         podcast: '#B8C5CC',
       },
