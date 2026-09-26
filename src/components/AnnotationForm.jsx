@@ -10,7 +10,7 @@ async function fetchTranscriptDirect(videoId, startSec, endSec) {
   const full = formatYouTubeTranscript(segments);
   const filtered = excerptYouTubeTranscript(segments, startSec, endSec);
   if (!full) throw new Error('YouTube returned an empty caption track for this video.');
-  if (!filtered) throw new Error('No captions cover the selected time range.');
+  if (!filtered) throw new Error('No complete sentences in the selected time range.');
   return { filtered, full, segments };
 }
 

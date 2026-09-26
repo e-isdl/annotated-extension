@@ -65,6 +65,31 @@ test('returns empty text for invalid ranges or ranges without captions', () => {
   assert.equal(excerptYouTubeTranscript(segments, Number.NaN, 12), '');
 });
 
+test('keeps whole sentences by trimming the fragments the timer cut off', () => {
+  const captionLines = [
+    { start: 0, end: 1, text: 'It was a dark' },
+    { start: 1, end: 3, text: 'and stormy night. Then the' },
+    { start: 3, end: 5, text: 'storm finally cleared. After that' },
+  ];
+  assert.equal(excerptYouTubeTranscript(captionLines, 1.5, 4), 'Then the storm finally cleared.');
+});
+
+test('drops a trailing fragment cut off by the timer', () => {
+  const captionLines = [
+    { start: 0, end: 2, text: 'Hello there.' },
+    { start: 2, end: 4, text: 'This sentence gets cut off' },
+  ];
+  assert.equal(excerptYouTubeTranscript(captionLines, 0, 3), 'Hello there.');
+});
+
+test('keeps text that has no sentence punctuation to trim against', () => {
+  const captionLines = [
+    { start: 0, end: 1, text: 'It was a dark' },
+    { start: 1, end: 3, text: 'and stormy night' },
+  ];
+  assert.equal(excerptYouTubeTranscript(captionLines, 1.5, 3), 'and stormy night');
+});
+
 test('reads captions from the page player without calling any module scope helper', async () => {
   const requests = [];
   const sandbox = pageSandbox({

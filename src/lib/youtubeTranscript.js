@@ -211,13 +211,50 @@ export function formatYouTubeTranscript(segments) {
   return segments.map(({ text }) => text).filter(Boolean).join(' ').replace(/>>\s*/g, '').trim();
 }
 
+const SENTENCE_END_GLOBAL = /[.!?][)"'’”]*/g;
+const SENTENCE_END_AT_FINISH = /[.!?][)"'’”]*$/;
+
+function selectionStartsMidSentence(segments, firstIndex) {
+  for (let i = firstIndex - 1; i >= 0; i -= 1) {
+    const previous = String(segments[i]?.text || '').replace(/>>\s*/g, '').trim();
+    if (previous) return !SENTENCE_END_AT_FINISH.test(previous);
+  }
+  return false;
+}
+
+function trimToSentenceBoundaries(text, startsMidSentence) {
+  let out = String(text || '').trim();
+  if (!out) return '';
+
+  if (startsMidSentence) {
+    SENTENCE_END_GLOBAL.lastIndex = 0;
+    const firstEnd = SENTENCE_END_GLOBAL.exec(out);
+    if (firstEnd) out = out.slice(firstEnd.index + firstEnd[0].length).trim();
+  }
+
+  let lastEnd = null;
+  SENTENCE_END_GLOBAL.lastIndex = 0;
+  for (let match = SENTENCE_END_GLOBAL.exec(out); match; match = SENTENCE_END_GLOBAL.exec(out)) {
+    lastEnd = match;
+  }
+  if (lastEnd) out = out.slice(0, lastEnd.index + lastEnd[0].length).trim();
+
+  return out;
+}
+
 export function excerptYouTubeTranscript(segments, startSec, endSec) {
   const start = Number(startSec);
   const end = Number(endSec);
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return '';
-  return formatYouTubeTranscript(segments.filter((segment) => (
+  const selected = segments.filter((segment) => (
     segment.start < end && (segment.end > start || segment.end === segment.start)
-  )));
+  ));
+  if (!selected.length) return '';
+  const firstIndex = segments.indexOf(selected[0]);
+  return trimToSentenceBoundaries(
+    formatYouTubeTranscript(selected),
+    selectionStartsMidSentence(segments, firstIndex),
+  );
 }
 
 export async function fetchYouTubeTranscript(videoId) {
