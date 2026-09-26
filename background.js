@@ -38,25 +38,35 @@ function detectPageInfoFromUrl(url, title) {
 }
 
 async function getPageInfoFromTab(tabId) {
-  try {
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      files: ['content.js']
-    });
-  } catch (e) {}
-
-  return new Promise((resolve) => {
+  const requestPageInfo = () => new Promise((resolve) => {
     chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_INFO' }, (response) => {
-      if (chrome.runtime.lastError || !response) {
-        chrome.tabs.get(tabId, (tab) => {
-          if (tab) resolve(detectPageInfoFromUrl(tab.url, tab.title));
-          else resolve(null);
-        });
-      } else {
-        resolve(response);
-      }
+      const error = chrome.runtime.lastError;
+      resolve(error || !response ? null : response);
     });
   });
+
+  let response = await requestPageInfo();
+  if (!response) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content.js']
+      });
+      response = await requestPageInfo();
+    } catch (e) {}
+  }
+  if (response) return response;
+
+  return new Promise((resolve) => {
+    chrome.tabs.get(tabId, (tab) => {
+      if (chrome.runtime.lastError || !tab) resolve(null);
+      else resolve(detectPageInfoFromUrl(tab.url, tab.title));
+    });
+  });
+}
+
+function notifySidePanel(message) {
+  chrome.runtime.sendMessage(message).catch(() => {});
 }
 
 async function getActiveTab() {
@@ -66,10 +76,10 @@ async function getActiveTab() {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PAGE_INFO' && sender.tab) {
-    chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: message.data });
+    notifySidePanel({ type: 'PAGE_INFO', data: message.data });
   }
   if (message.type === 'SELECTION_CHANGED') {
-    chrome.runtime.sendMessage({ type: 'SELECTION_CHANGED', data: message.data });
+    notifySidePanel({ type: 'SELECTION_CHANGED', data: message.data });
   }
   if (message.type === 'GET_PAGE_INFO') {
     getActiveTab().then(async (tab) => {

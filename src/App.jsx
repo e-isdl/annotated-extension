@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { supabase } from './lib/supabase';
+import { supabase, supabaseConfigError } from './lib/supabase';
 import Auth from './components/Auth';
 import ClipCreator from './components/ClipCreator';
 
@@ -10,6 +10,10 @@ export default function App() {
   const retryRef = useRef(null);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
@@ -18,6 +22,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (supabaseConfigError) return;
     const listener = (message) => {
       if (message.type === 'PAGE_INFO') {
         setPageInfo(message.data);
@@ -54,6 +59,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (supabaseConfigError) return;
     fetchPageInfo();
     retryRef.current = setInterval(fetchPageInfo, 1000);
     return () => clearInterval(retryRef.current);
@@ -62,6 +68,15 @@ export default function App() {
   if (loading) return <div className="flex items-center justify-center h-screen bg-bg-base">
     <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
   </div>;
+
+  if (supabaseConfigError) return (
+    <main className="min-h-screen bg-bg-base text-text-primary font-ui flex items-center justify-center p-6">
+      <section className="max-w-sm rounded-xl border border-border bg-bg-surface p-5 text-center">
+        <h1 className="text-base font-semibold">Extension setup needed</h1>
+        <p className="mt-2 text-sm text-text-secondary">{supabaseConfigError}</p>
+      </section>
+    </main>
+  );
 
   return (
     <div className="min-h-screen bg-bg-base text-text-primary font-ui">

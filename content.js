@@ -63,22 +63,26 @@ function getDurationFromPage() {
   return 0;
 }
 
-document.addEventListener('mouseup', () => {
-  const selected = window.getSelection()?.toString().trim();
-  if (selected) {
-    chrome.runtime.sendMessage({
-      type: 'SELECTION_CHANGED',
-      data: { selectedText: selected }
-    }).catch(() => {});
-  }
-});
+if (!window.__annotatedContentLoaded) {
+  window.__annotatedContentLoaded = true;
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'GET_PAGE_INFO') {
-    const info = detectPageInfo();
-    sendResponse(info);
-    return true;
-  }
-});
+  document.addEventListener('mouseup', () => {
+    const selected = window.getSelection()?.toString().trim();
+    if (selected) {
+      chrome.runtime.sendMessage({
+        type: 'SELECTION_CHANGED',
+        data: { selectedText: selected }
+      }).catch(() => {});
+    }
+  });
 
-chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: detectPageInfo() }).catch(() => {});
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'GET_PAGE_INFO') {
+      const info = detectPageInfo();
+      sendResponse(info);
+      return true;
+    }
+  });
+
+  chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: detectPageInfo() }).catch(() => {});
+}

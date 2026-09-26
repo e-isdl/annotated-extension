@@ -8,9 +8,9 @@ export default function Auth() {
   const signInWithGoogle = async () => {
     setLoadingProvider('google');
     setError('');
-    
+
     try {
-      const redirectUri = `https://${chrome.runtime.id}.chromiumapp.org/`;
+      const redirectUri = chrome.identity.getRedirectURL();
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -18,50 +18,52 @@ export default function Auth() {
           skipBrowserRedirect: true,
         }
       });
-      
       if (oauthError) throw oauthError;
-      
-      if (data?.url) {
-        chrome.identity.launchWebAuthFlow(
-          { url: data.url, interactive: true },
-          async (redirectUrl) => {
-            if (chrome.runtime.lastError || !redirectUrl) {
-              setError('Sign in was cancelled or failed.');
-              setLoadingProvider(null);
-              return;
-            }
-            
-            try {
-              const url = new URL(redirectUrl);
-              const accessToken = url.hash
-                ? new URLSearchParams(url.hash.substring(1)).get('access_token')
-                : null;
-              const refreshToken = url.hash
-                ? new URLSearchParams(url.hash.substring(1)).get('refresh_token')
-                : null;
-              const code = url.searchParams.get('code');
-              
-              if (accessToken && refreshToken) {
-                await supabase.auth.setSession({
-                  access_token: accessToken,
-                  refresh_token: refreshToken,
-                });
-              } else if (code) {
-                await supabase.auth.exchangeCodeForSession(code);
-              }
-              
-              setLoadingProvider(null);
-            } catch (err) {
-              console.error('Session error:', err);
-              setError('Failed to complete sign in.');
-              setLoadingProvider(null);
-            }
-          }
-        );
+      if (!data?.url) throw new Error('Supabase did not return a Google sign-in URL.');
+
+      const redirectUrl = await new Promise((resolve, reject) => {
+        chrome.identity.launchWebAuthFlow({ url: data.url, interactive: true }, (result) => {
+          const launchError = chrome.runtime.lastError;
+          if (launchError) reject(new Error(launchError.message));
+          else if (!result) reject(new Error('Google sign-in was cancelled before it completed.'));
+          else resolve(result);
+        });
+      });
+
+      const callback = new URL(redirectUrl);
+      const callbackHash = new URLSearchParams(callback.hash.slice(1));
+      const callbackParams = new URLSearchParams(callback.search);
+      const providerError = callbackParams.get('error_description')
+        || callbackParams.get('error')
+        || callbackHash.get('error_description')
+        || callbackHash.get('error');
+      if (providerError) {
+        const message = providerError;
+        if (/redirect_to.*not allowed|redirect url.*not allowed/i.test(message)) {
+          throw new Error(`Supabase is blocking this extension's OAuth callback. Add ${redirectUri} to Authentication → URL Configuration → Redirect URLs.`);
+        }
+        throw new Error(message);
+      }
+
+      const accessToken = callbackHash.get('access_token') || callbackParams.get('access_token');
+      const refreshToken = callbackHash.get('refresh_token') || callbackParams.get('refresh_token');
+      const code = callbackParams.get('code');
+      if (accessToken && refreshToken) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (sessionError) throw sessionError;
+      } else if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) throw exchangeError;
+      } else {
+        throw new Error(`Google returned to Chrome without a session code. Check that ${redirectUri} is allowed in Supabase Auth URL Configuration.`);
       }
     } catch (err) {
       console.error('Sign in error:', err);
-      setError('Failed to sign in. Please try again.');
+      setError(err.message || 'Failed to sign in. Please try again.');
+    } finally {
       setLoadingProvider(null);
     }
   };
