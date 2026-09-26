@@ -39,7 +39,10 @@ npm run build
 1. Build the extension with `npm run build`.
 2. Open `chrome://extensions`.
 3. Enable Developer mode.
-4. Select **Load unpacked** and choose this repository directory.
+4. Select **Load unpacked** and choose this repository's `dist/` directory.
+
+After rebuilding, click **Reload** for Annotated on `chrome://extensions` so
+Chrome picks up the refreshed `dist/` files.
 
 ## Deployment
 
