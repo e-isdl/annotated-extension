@@ -54,11 +54,13 @@ export default function PodcastClipper({ pageInfo, onReady }) {
     setRecorded(true);
 
     setUploading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setUploading(false); return; }
-    const filename = `clips/podcasts/${user.id}/${Date.now()}.webm`;
-    const { error } = await supabase.storage.from('clips').upload(filename, blob);
-    if (!error) {
+    setError('');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Sign in again before uploading this audio clip.');
+      const filename = `clips/podcasts/${user.id}/${Date.now()}.webm`;
+      const { error } = await supabase.storage.from('clips').upload(filename, blob, { contentType: 'audio/webm' });
+      if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('clips').getPublicUrl(filename);
       onReady({
         source_url: pageInfo.url,
@@ -66,8 +68,11 @@ export default function PodcastClipper({ pageInfo, onReady }) {
         title: pageInfo.data.title,
         audio_url: publicUrl,
       });
+    } catch (uploadError) {
+      setError(uploadError.message || 'Audio upload failed. Please try recording again.');
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   return (
@@ -101,6 +106,14 @@ export default function PodcastClipper({ pageInfo, onReady }) {
         )}
         {uploading && <p className="text-xs text-text-muted">Uploading...</p>}
         {error && <p className="text-xs text-claim text-center" role="alert">{error}</p>}
+        {error && (
+          <button
+            onClick={() => { if (audioUrl) URL.revokeObjectURL(audioUrl); setAudioUrl(null); setRecorded(false); setError(''); }}
+            className="text-xs text-accent-text hover:text-accent transition-colors"
+          >
+            Record again
+          </button>
+        )}
       </div>
     </div>
   );

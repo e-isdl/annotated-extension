@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 const APIFY_ACTOR_URL = 'https://api.apify.com/v2/actors/akash9078~youtube-transcript-extractor/run-sync-get-dataset-items';
+const ANNOTATION_LIMITS = { Reaction: 280, 'Fact check': 500, Explainer: 600, Steelman: 800, 'Found receipts': 1000 };
+const ANNOTATION_TYPES = Object.keys(ANNOTATION_LIMITS);
 
 async function getApifyToken() {
   return new Promise((resolve) => {
@@ -123,8 +125,9 @@ function contractTranscript(currentText, words = 5) {
   return currentWords.slice(0, -words).join(' ');
 }
 
-export default function AnnotationForm({ clipData, onBack, onPublish, transcriptCache, setTranscriptCache, onTranscriptChange }) {
+export default function AnnotationForm({ clipData, onBack, onPublish, transcriptCache, setTranscriptCache, onTranscriptChange, communities = [], communityId = '', onCommunityChange }) {
   const [text, setText] = useState('');
+  const [annotationType, setAnnotationType] = useState('Reaction');
   const [audioUrl, setAudioUrl] = useState(null);
   const [mode, setMode] = useState('text');
   const [publishing, setPublishing] = useState(false);
@@ -143,6 +146,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
   const isYouTube = clipData?.source_type === 'youtube';
   const isArticle = clipData?.source_type === 'article';
   const cacheKey = isYouTube ? clipData.youtube_id : null;
+  const annotationLimit = ANNOTATION_LIMITS[annotationType];
 
   useEffect(() => {
     if (isYouTube && clipData.youtube_id && clipData.start_sec !== undefined && clipData.end_sec !== undefined) {
@@ -223,7 +227,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
     setPublishing(true);
     setPublishError('');
     try {
-      await onPublish({ text_content: text || null, audio_url: audioUrl });
+      await onPublish({ text_content: text.trim() || null, audio_url: audioUrl, annotation_type: annotationType });
     } catch (err) {
       setPublishError(err.message || 'Failed to publish. Please try again.');
     }
@@ -278,6 +282,21 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
           )}
         </div>
       </div>
+
+      <label className="flex flex-col gap-1.5 text-xs text-text-secondary">
+        Community <span className="text-text-muted">Optional</span>
+        <select value={communityId} onChange={(event) => onCommunityChange?.(event.target.value)} className="input">
+          <option value="">No community</option>
+          {communities.map((community) => <option key={community.id} value={community.id}>c/{community.name}</option>)}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1.5 text-xs text-text-secondary">
+        Post type
+        <select value={annotationType} onChange={(event) => setAnnotationType(event.target.value)} className="input">
+          {ANNOTATION_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+        </select>
+      </label>
 
       {isYouTube && (
         <div className="bg-bg-surface border border-border rounded-lg p-3">
@@ -423,13 +442,17 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
       </div>
 
       {mode === 'text' ? (
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={isArticle ? "What's your take on this?" : "What's your take on this clip?"}
-          rows={5}
-          className="input resize-none text-sm leading-relaxed"
-        />
+        <div className="flex flex-col gap-1">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={isArticle ? "What's your take on this?" : "What's your take on this clip?"}
+            rows={5}
+            maxLength={annotationLimit}
+            className="input resize-none text-sm leading-relaxed"
+          />
+          <p className="text-[10px] text-text-muted text-right">{text.length}/{annotationLimit}</p>
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
           {audioUrl ? (

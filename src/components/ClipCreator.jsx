@@ -6,6 +6,7 @@ import AnnotationForm from './AnnotationForm';
 import SuccessScreen from './SuccessScreen';
 import Settings from './Settings';
 import { supabase } from '../lib/supabase';
+import { createExtensionPost } from '../lib/postPublishing';
 
 function generateSlug(title) {
   if (!title) return Math.random().toString(36).slice(2, 10);
@@ -26,6 +27,18 @@ export default function ClipCreator({ pageInfo, session }) {
   const [transcriptCache, setTranscriptCache] = useState(null);
   const [currentTranscript, setCurrentTranscript] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [communities, setCommunities] = useState([]);
+  const [communityId, setCommunityId] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    supabase.from('communities').select('id, slug, name').order('name')
+      .then(({ data, error }) => {
+        if (active && !error) setCommunities(data || []);
+      })
+      .catch(() => { if (active) setCommunities([]); });
+    return () => { active = false; };
+  }, []);
 
   const handleClipReady = useCallback((data) => {
     setClipData(data);
@@ -34,29 +47,27 @@ export default function ClipCreator({ pageInfo, session }) {
   }, []);
 
   const handlePublish = async (annotationData) => {
-    const { data: defaultCommunity } = await supabase
-      .from('communities')
-      .select('id')
-      .eq('slug', 'media-literacy')
-      .single();
-    const { data: clip, error: clipErr } = await supabase
-      .from('clips')
-      .insert({
-        user_id: session.user.id,
-        community_id: defaultCommunity?.id || null,
-        annotation_type: 'Reaction',
-        ...clipData,
-        slug: generateSlug(clipData.title),
-        transcript: currentTranscript || null,
-      })
-      .select()
-      .single();
-    if (clipErr) { console.error(clipErr); return; }
-
-    await supabase.from('annotations').insert({
-      clip_id: clip.id,
-      user_id: session.user.id,
-      ...annotationData,
+    const sourceUrl = clipData.source_url;
+    const sourceDomain = sourceUrl ? new URL(sourceUrl).hostname.replace(/^www\./, '') : null;
+    const clip = await createExtensionPost(supabase, {
+      community_id: communityId || null,
+      title: clipData.title,
+      source_url: sourceUrl,
+      source_type: clipData.source_type,
+      source_domain: sourceDomain,
+      source_title: clipData.title,
+      author: clipData.author || null,
+      thumbnail: clipData.thumbnail || null,
+      youtube_id: clipData.youtube_id || null,
+      source_audio_url: clipData.source_type === 'podcast' ? clipData.audio_url : null,
+      transcript: currentTranscript || null,
+      annotation_type: annotationData.annotation_type,
+      article_text: clipData.article_text || null,
+      start_sec: clipData.start_sec ?? null,
+      end_sec: clipData.end_sec ?? null,
+      slug: generateSlug(clipData.title),
+      annotation_text: annotationData.text_content,
+      annotation_audio_url: annotationData.audio_url,
     });
 
     setPublishedClip(clip);
@@ -127,7 +138,7 @@ export default function ClipCreator({ pageInfo, session }) {
           {renderClipper()}
         </div>
         <div style={{ display: step === 'annotate' ? 'block' : 'none' }}>
-          {clipData && <AnnotationForm clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} />}
+          {clipData && <AnnotationForm clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} communities={communities} communityId={communityId} onCommunityChange={setCommunityId} />}
         </div>
         {step === 'success' && <SuccessScreen clip={publishedClip} onReset={() => { setStep('clip'); setClipData(null); }} />}
       </div>
