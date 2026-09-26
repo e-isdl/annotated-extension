@@ -22,6 +22,13 @@ test('post creation surfaces database errors without claiming success', async ()
   await assert.rejects(createAnnotatedPost(client, {}), /insert rejected/);
 });
 
+test('post creation explicitly allows an unfiled post', async () => {
+  let call;
+  const client = { rpc: async (...args) => { call = args; return { data: { id: 'clip-id', slug: 'unfiled-post' }, error: null }; } };
+  await createAnnotatedPost(client, { title: 'Standalone post' });
+  assert.equal(call[1].p_community_id, null);
+});
+
 test('post votes use the database toggle RPC', async () => {
   let call;
   const client = { rpc: async (...args) => { call = args; return { data: 'switched', error: null }; } };

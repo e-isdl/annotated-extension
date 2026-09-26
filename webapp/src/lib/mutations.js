@@ -1,6 +1,6 @@
 export async function createAnnotatedPost(client, payload) {
   const { data, error } = await client.rpc('create_annotated_post', {
-    p_community_id: payload.community_id,
+    p_community_id: payload.community_id ?? null,
     p_title: payload.title,
     p_source_url: payload.source_url,
     p_source_type: payload.source_type,

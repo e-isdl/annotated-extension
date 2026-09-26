@@ -34,9 +34,8 @@ export default function CreatePage() {
       ]);
       if (!active) return;
       setUser(currentUser);
-      if (!error && data?.length) {
-        setCommunities(data);
-        setForm((current) => ({ ...current, community: current.community || data[0].slug }));
+      if (!error) {
+        setCommunities(data || []);
       } else {
         setCommunities([]);
         setCommunityLoadError(true);
@@ -84,7 +83,6 @@ export default function CreatePage() {
     const startSec = form.startSec === '' ? null : Number(form.startSec);
     const endSec = form.endSec === '' ? null : Number(form.endSec);
 
-    if (!selectedCommunity?.id) { setStatus('Choose a real community before publishing. Community setup must be applied before posts can be filed correctly.'); return; }
     if (!title || !commentary) { setStatus('Add a title and your point of view first.'); return; }
     if (commentary.length > annotationLimit) { setStatus(`This ${form.type.toLowerCase()} annotation is limited to ${annotationLimit} characters.`); return; }
     if (needsSource && !url) { setStatus(mode === 'moment' ? 'Add the video or podcast URL for this moment.' : 'Add the source URL, or switch to Text.'); return; }
@@ -97,7 +95,7 @@ export default function CreatePage() {
     setStatus('');
     try {
       const clip = await createAnnotatedPost(supabase, {
-        community_id: selectedCommunity.id,
+        community_id: selectedCommunity?.id || null,
         source_url: url || null,
         source_type: sourceType,
         source_domain: url ? domain : null,
@@ -137,12 +135,12 @@ export default function CreatePage() {
             ))}
           </div>
 
-          <label className="form-label">Community
+          <label className="form-label">Community <span className="text-text-muted font-normal">(optional)</span>
             <select className="input" value={form.community} onChange={(event) => update('community', event.target.value)} disabled={!communitiesReady}>
-              {!communities.length && <option value="">{communitiesReady ? 'No communities available' : 'Loading communities…'}</option>}
+              <option value="">{communitiesReady ? 'No community' : 'Loading communities…'}</option>
               {communities.map((community) => <option key={community.slug} value={community.slug}>c/{community.name}</option>)}
             </select>
-            {communityLoadError && <span className="field-hint field-error">Communities are temporarily unavailable. Try again in a moment.</span>}
+            {communityLoadError && <span className="field-hint">Communities could not be loaded, but you can still post without one.</span>}
           </label>
 
           <fieldset>
@@ -176,13 +174,13 @@ export default function CreatePage() {
             <span className={`field-counter ${form.commentary.length > annotationLimit * 0.9 ? 'field-counter-warning' : ''}`}>{form.commentary.length}/{annotationLimit}</span>
           </label>
           {status && <p className="form-status" role="alert">{status}</p>}
-          <button type="submit" className="btn-primary w-full" disabled={publishing || !communitiesReady}>{publishing ? 'Publishing…' : user ? `Post to c/${selectedCommunity?.name || 'community'}` : 'Sign in to post ↗'}</button>
+          <button type="submit" className="btn-primary w-full" disabled={publishing || !communitiesReady}>{publishing ? 'Publishing…' : user ? selectedCommunity ? `Post to c/${selectedCommunity.name}` : 'Post' : 'Sign in to post ↗'}</button>
         </div>
 
         <div className="create-preview-wrap">
           <p className="eyebrow">LIVE PREVIEW</p>
           <div className="create-preview">
-            <p className="post-meta"><span className="community-pill"><span className="community-dot" style={communityStyle(selectedCommunity?.slug)}>{selectedCommunity?.name?.[0] || 'C'}</span> c/{selectedCommunity?.name || 'community'}</span><span>• just now</span></p>
+            <p className="post-meta">{selectedCommunity ? <span className="community-pill"><span className="community-dot" style={communityStyle(selectedCommunity.slug)}>{selectedCommunity.name[0]}</span> c/{selectedCommunity.name}</span> : <span>Post</span>}<span>• just now</span></p>
             <h2 className="post-annotation-preview">{form.commentary || 'Your point of view will be the center of the post.'}</h2>
             {mode !== 'text' && <div className="source-preview source-preview-preview"><div className="source-preview-copy"><div className="source-label">↗ {form.url ? domain : 'your source'}</div><p className="source-title">{form.title || 'Your source title will appear here'}</p><p className="source-quote">{form.quote ? `“${form.quote}”` : 'Add a quote or source context so people know what you are discussing.'}</p></div></div>}
             {mode === 'moment' && form.startSec !== '' && form.endSec !== '' && <div className="post-timestamp-row"><span className="timestamp">{formatTime(form.startSec)}</span><span className="text-text-muted text-xs">→</span><span className="timestamp">{formatTime(form.endSec)}</span></div>}
