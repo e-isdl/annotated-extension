@@ -14,15 +14,25 @@ export async function readYouTubeCaptionTrack(videoId) {
     if (typeof console !== 'undefined' && console.warn) console.warn(`[annotated] ${message}`, detail);
   };
 
-  const pagePlayer = window.ytInitialPlayerResponse
-    || document.querySelector('ytd-player')?.getPlayerResponse?.()
-    || (() => {
-      const raw = window.ytplayer?.config?.args?.player_response;
-      if (!raw) return null;
-      try { return JSON.parse(raw); } catch { return null; }
-    })();
+  const livePlayer = (() => {
+    try { return document.querySelector('#movie_player')?.getPlayerResponse?.() || null; } catch { return null; }
+  })();
+  const initialPlayer = window.ytInitialPlayerResponse || null;
+  const embeddedPlayer = (() => {
+    try { return document.querySelector('ytd-player')?.getPlayerResponse?.() || null; } catch { return null; }
+  })();
+  const configPlayer = (() => {
+    const raw = window.ytplayer?.config?.args?.player_response;
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
+  })();
+  const players = [livePlayer, initialPlayer, embeddedPlayer, configPlayer].filter(Boolean);
 
-  if (pagePlayer?.videoDetails?.videoId && pagePlayer.videoDetails.videoId !== videoId) {
+  // Prefer the source that describes the video the panel is clipping. The live
+  // player response tracks in-page navigation and ads; ytInitialPlayerResponse
+  // is frozen at first page load and can describe an older video.
+  const pagePlayer = players.find((player) => player?.videoDetails?.videoId === videoId) || null;
+  if (!pagePlayer && players.some((player) => player?.videoDetails?.videoId)) {
     throw new Error('The YouTube tab changed videos. Reopen the clip form and try again.');
   }
 
@@ -126,42 +136,60 @@ export async function readYouTubeCaptionTrack(videoId) {
   };
 
   const detail = () => notes.join(', ');
+  const fail = (message) => {
+    log('caption lookup failed', detail());
+    const error = new Error(`${message} (${detail()})`);
+    error.diag = detail();
+    return error;
+  };
 
   const pageTracks = pagePlayer?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
   const pageOutcome = await readFromTracks(pageTracks);
   notes.push(`page=${pageOutcome.status}`);
   if (pageOutcome.status === 'ok') return { language: pageOutcome.language, body: pageOutcome.body, diag: detail() };
 
-  let sawTracks = Boolean(pageTracks?.length);
-  const apiStatuses = [];
-  for (const client of FALLBACK_CLIENTS) {
-    const { tracks, note } = await requestInnertubeTracks(client);
-    if (!tracks.length) {
-      apiStatuses.push(`${client.name}:${note || 'none'}`);
-      continue;
+  const runClients = async () => {
+    const statuses = [];
+    let sawTracks = Boolean(pageTracks?.length);
+    for (const client of FALLBACK_CLIENTS) {
+      const { tracks, note } = await requestInnertubeTracks(client);
+      if (!tracks.length) {
+        statuses.push(`${client.name}:${note || 'none'}`);
+        continue;
+      }
+      sawTracks = true;
+      let outcome = await readFromTracks(tracks);
+      if (outcome.status !== 'ok') outcome = await readFromTracks(tracks);
+      statuses.push(`${client.name}:${outcome.status}`);
+      if (outcome.status === 'ok') {
+        return { ok: true, language: outcome.language, body: outcome.body, statuses, sawTracks };
+      }
     }
-    sawTracks = true;
-    let outcome = await readFromTracks(tracks);
-    if (outcome.status !== 'ok') outcome = await readFromTracks(tracks);
-    apiStatuses.push(`${client.name}:${outcome.status}`);
-    if (outcome.status === 'ok') {
-      notes.push(...apiStatuses);
-      return { language: outcome.language, body: outcome.body, diag: detail() };
-    }
-  }
-  notes.push(...apiStatuses);
+    return { ok: false, statuses, sawTracks };
+  };
 
-  const statuses = [pageOutcome.status, ...apiStatuses.map((entry) => entry.split(':').pop())];
-  if (!sawTracks) {
-    log('caption lookup found no tracks', detail());
-    throw new Error(`YouTube has no captions available for this video. (${detail()})`);
+  const isWalled = (result) => (
+    !result.ok && result.statuses.length > 0 && result.statuses.every((entry) => entry.endsWith(':LOGIN_REQUIRED'))
+  );
+
+  let result = await runClients();
+  if (isWalled(result)) {
+    // Bot walls usually clear once the burst of player requests settles.
+    await new Promise((resolve) => setTimeout(resolve, 750));
+    notes.push('retry');
+    result = await runClients();
   }
-  if (statuses.includes('error')) {
-    log('caption lookup hit a request error', detail());
-    throw new Error(`Could not read captions from YouTube. Reload the video and try again. (${detail()})`);
+  notes.push(...result.statuses);
+
+  if (result.ok) return { language: result.language, body: result.body, diag: detail() };
+
+  const statuses = [pageOutcome.status, ...result.statuses.map((entry) => entry.split(':').pop())];
+  if (isWalled(result)) {
+    throw fail('YouTube wants confirmation that you are not a bot. Reload the video tab, make sure you are signed in, and try again.');
   }
-  log('caption lookup returned no caption text', detail());
-  throw new Error(`YouTube returned an empty caption track for this video. (${detail()})`);
+  if (!result.sawTracks) throw fail('YouTube has no captions available for this video.');
+  if (statuses.includes('error')) throw fail('Could not read captions from YouTube. Reload the video and try again.');
+  throw fail('YouTube returned an empty caption track for this video.');
 }
 
 export function parseYouTubeJson3(payload) {

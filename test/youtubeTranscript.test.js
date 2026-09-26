@@ -179,6 +179,76 @@ test('reports where the caption lookup failed when every source comes back blank
   );
 });
 
+test('explains when YouTube demands a bot check instead of captions', async () => {
+  const sandbox = pageSandbox({
+    tracks: [{ baseUrl: 'https://www.youtube.com/api/timedtext?v=abc123', languageCode: 'en' }],
+    fetchImpl: async (url) => {
+      if (String(url).includes('/youtubei/v1/player')) {
+        return { ok: true, json: async () => ({ playabilityStatus: { status: 'LOGIN_REQUIRED' } }) };
+      }
+      return { ok: true, text: async () => '' };
+    },
+  });
+
+  await assert.rejects(
+    () => runCaptionReader(sandbox),
+    /not a bot.*page=blank.*IOS:LOGIN_REQUIRED/,
+  );
+});
+
+test('retries the player API once when a bot wall clears', async () => {
+  let playerCalls = 0;
+  const sandbox = pageSandbox({
+    tracks: undefined,
+    fetchImpl: async (url) => {
+      if (!String(url).includes('/youtubei/v1/player')) return { ok: true, text: async () => pageCaptionBody };
+      playerCalls += 1;
+      if (playerCalls <= 4) {
+        return { ok: true, json: async () => ({ playabilityStatus: { status: 'LOGIN_REQUIRED' } }) };
+      }
+      return {
+        ok: true,
+        json: async () => ({ captions: { playerCaptionsTracklistRenderer: { captionTracks: [
+          { baseUrl: 'https://www.youtube.com/api/timedtext?v=abc123&lang=en', languageCode: 'en' },
+        ] } } }),
+      };
+    },
+  });
+
+  const result = await runCaptionReader(sandbox);
+
+  assert.equal(JSON.parse(result.body).events[0].segs[0].utf8, 'Hello from captions.');
+  assert.equal(playerCalls, 5);
+  assert.match(result.diag, /retry/);
+});
+
+test('reads captions from the live player response after in-page navigation', async () => {
+  const tracks = [{ baseUrl: 'https://www.youtube.com/api/timedtext?v=abc123', languageCode: 'en' }];
+  const requests = [];
+  const sandbox = pageSandbox({
+    playerResponse: { videoDetails: { videoId: 'stale99' } },
+    fetchImpl: async (url) => {
+      requests.push(String(url));
+      return { ok: true, text: async () => pageCaptionBody };
+    },
+  });
+  sandbox.document.querySelector = (selector) => (
+    selector === '#movie_player'
+      ? {
+        getPlayerResponse: () => ({
+          videoDetails: { videoId: 'abc123' },
+          captions: { playerCaptionsTracklistRenderer: { captionTracks: tracks } },
+        }),
+      }
+      : null
+  );
+
+  const result = await runCaptionReader(sandbox);
+
+  assert.equal(result.language, 'en');
+  assert.equal(requests.length, 1);
+});
+
 test('rejects when the YouTube tab has moved to a different video', async () => {
   const sandbox = pageSandbox({
     playerResponse: { videoDetails: { videoId: 'other123' } },
