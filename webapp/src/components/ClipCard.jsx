@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import Avatar from './Avatar';
 import VoteButtons from './VoteButtons';
 import { useToast } from './ToastProvider';
 import { communityStyle } from '../lib/community';
@@ -82,18 +81,18 @@ export default function ClipCard({ clip }) {
         {commentary && <h2 className="post-annotation-preview">{commentaryPreview.text}{commentaryPreview.truncated && <span className="post-commentary-more">…</span>}</h2>}
 
         <div className="source-preview">
-          <div className="source-preview-copy">
-            {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
-            {clip.source_preview_text ? (
-              <p className="source-quote">{clip.source_preview_text}</p>
-            ) : clip.article_text || clip.transcript ? (
-              <p className="source-quote">“{clip.article_text || clip.transcript}”</p>
-            ) : (
-              <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
-            )}
-            {sourceTitle && sourceTitle !== commentary && <p className="source-title">{sourceTitle}</p>}
-          </div>
           {sourceImage && <img src={sourceImage} alt="" className="source-preview-image" loading="lazy" />}
+          {!sourceImage && <div className="source-preview-copy">
+              {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
+              {clip.source_preview_text ? (
+                <p className="source-quote">{clip.source_preview_text}</p>
+              ) : clip.article_text || clip.transcript ? (
+                <p className="source-quote">“{clip.article_text || clip.transcript}”</p>
+              ) : (
+                <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
+              )}
+              {sourceTitle && sourceTitle !== commentary && <p className="source-title">{sourceTitle}</p>}
+            </div>}
         </div>
         {clip.start_sec !== undefined && clip.end_sec !== undefined && (
           <div className="post-timestamp-row" aria-label={`Source moment from ${formatTime(clip.start_sec)} to ${formatTime(clip.end_sec)}`}>
