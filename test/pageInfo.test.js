@@ -43,3 +43,20 @@ test('page identity only changes when the page itself changes', () => {
   assert.notEqual(pageIdentity(first), pageIdentity(other));
   assert.equal(pageIdentity(null), '');
 });
+
+test('ignores timestamp-only URL changes', () => {
+  const first = youtube('https://www.youtube.com/watch?v=abc123&t=40', 300);
+  const later = youtube('https://www.youtube.com/watch?v=abc123', 300);
+
+  assert.equal(pageIdentity(first), pageIdentity(later));
+});
+
+test('keeps the known duration when only a timestamp param changes', () => {
+  const prev = youtube('https://www.youtube.com/watch?v=abc123&t=10', 300);
+  const next = youtube('https://www.youtube.com/watch?v=abc123', 0);
+
+  const merged = mergePageInfo(prev, next);
+
+  assert.equal(merged.data.duration, 300);
+  assert.equal(merged.url, 'https://www.youtube.com/watch?v=abc123');
+});

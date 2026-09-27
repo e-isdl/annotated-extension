@@ -1,12 +1,22 @@
+const VOLATILE_PARAMS = ['t', 'start', 'time_continue', 'si', 'pp', 'feature', 'ab_channel'];
+
 export function pageIdentity(info) {
   if (!info) return '';
-  return `${info.type}:${info.url}`;
+  let url = String(info.url || '');
+  try {
+    const parsed = new URL(url);
+    for (const param of VOLATILE_PARAMS) parsed.searchParams.delete(param);
+    url = parsed.toString();
+  } catch {
+    // Unparseable URLs keep the raw string; identity stays deterministic.
+  }
+  return `${info.type}:${url}`;
 }
 
 export function mergePageInfo(prev, next) {
   if (!next) return prev;
   if (!prev) return next;
-  if (prev.url !== next.url) return next;
+  if (pageIdentity(prev) !== pageIdentity(next)) return next;
 
   const prevDuration = Number(prev.data?.duration) || 0;
   const nextDuration = Number(next.data?.duration) || 0;

@@ -1,5 +1,19 @@
 /** Extract timed captions from the YouTube page the user is already viewing. */
 export async function readYouTubeCaptionTrack(videoId) {
+  try {
+    const result = await readCaptionTrack(videoId);
+    return { ok: true, language: result.language || '', body: result.body, diag: result.diag || '' };
+  } catch (error) {
+    const message = String(error?.message || error || '');
+    if (typeof console !== 'undefined' && console.warn) console.warn('[annotated] caption lookup failed', message);
+    return {
+      ok: false,
+      error: message || 'YouTube returned an empty caption track for this video.',
+      diag: String(error?.diag || ''),
+    };
+  }
+
+  async function readCaptionTrack(videoId) {
   const FETCH_TIMEOUT_MS = 15000;
   const PLAYER_TIMEOUT_MS = 10000;
   const MAX_TRACKS_PER_SOURCE = 4;
@@ -173,8 +187,8 @@ export async function readYouTubeCaptionTrack(videoId) {
   );
 
   let result = await runClients();
-  if (isWalled(result)) {
-    // Bot walls usually clear once the burst of player requests settles.
+  if (isWalled(result) || (!result.ok && result.sawTracks)) {
+    // Walls and blank sweeps usually clear once the burst of player requests settles.
     await new Promise((resolve) => setTimeout(resolve, 750));
     notes.push('retry');
     result = await runClients();
@@ -190,6 +204,7 @@ export async function readYouTubeCaptionTrack(videoId) {
   if (!result.sawTracks) throw fail('YouTube has no captions available for this video.');
   if (statuses.includes('error')) throw fail('Could not read captions from YouTube. Reload the video and try again.');
   throw fail('YouTube returned an empty caption track for this video.');
+  }
 }
 
 export function parseYouTubeJson3(payload) {
@@ -257,7 +272,12 @@ export function excerptYouTubeTranscript(segments, startSec, endSec) {
   );
 }
 
+const sessionTranscripts = new Map();
+
 export async function fetchYouTubeTranscript(videoId) {
+  const cached = sessionTranscripts.get(videoId);
+  if (cached?.segments?.length) return cached;
+
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (!tab?.id || !tab.url) {
     throw new Error('Open the YouTube video in the active tab, then try again.');
@@ -284,13 +304,19 @@ export async function fetchYouTubeTranscript(videoId) {
   } catch (error) {
     const message = String(error?.message || error || '');
     console.warn('[annotated] caption injection failed', message);
-    throw new Error(message || 'YouTube returned an empty caption track for this video.');
+    throw new Error(message || 'Could not read captions from YouTube. Reload the video tab and try again.');
   }
   const result = injection?.result;
+  if (result && result.ok === false) {
+    console.warn('[annotated] caption reader reported failure', result.diag || '');
+    throw new Error(result.error || `YouTube returned an empty caption track for this video.${result.diag ? ` (${result.diag})` : ''}`);
+  }
   const suffix = result?.diag ? ` (${result.diag})` : '';
   if (!result?.body) {
     console.warn('[annotated] no caption body from the tab', suffix || result);
-    throw new Error(`YouTube returned an empty caption track for this video.${suffix}`);
+    throw new Error(result
+      ? `YouTube returned an empty caption track for this video.${suffix}`
+      : 'Could not read captions from YouTube. Reload the video tab and try again.');
   }
 
   let payload = null;
@@ -300,5 +326,8 @@ export async function fetchYouTubeTranscript(videoId) {
     console.warn('[annotated] caption body had no readable events', suffix);
     throw new Error(`YouTube returned an empty caption track for this video.${suffix}`);
   }
-  return { language: result.language || '', segments };
+  const entry = { language: result.language || '', segments };
+  if (sessionTranscripts.size >= 8) sessionTranscripts.delete(sessionTranscripts.keys().next().value);
+  sessionTranscripts.set(videoId, entry);
+  return entry;
 }

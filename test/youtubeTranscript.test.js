@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { excerptYouTubeTranscript, formatYouTubeTranscript, parseYouTubeJson3, readYouTubeCaptionTrack } from '../src/lib/youtubeTranscript.js';
+import { excerptYouTubeTranscript, fetchYouTubeTranscript, formatYouTubeTranscript, parseYouTubeJson3, readYouTubeCaptionTrack } from '../src/lib/youtubeTranscript.js';
 
 const pageCaptionBody = JSON.stringify({ events: [
   { tStartMs: 0, dDurationMs: 1200, segs: [{ utf8: 'Hello from captions.' }] },
@@ -154,7 +154,10 @@ test('explains when a video has no captions available at all', async () => {
     },
   });
 
-  await assert.rejects(() => runCaptionReader(sandbox), /no captions available/);
+  const result = await runCaptionReader(sandbox);
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /no captions available/);
 });
 
 test('falls back to the next innertube client when the first returns no caption tracks', async () => {
@@ -198,10 +201,10 @@ test('reports where the caption lookup failed when every source comes back blank
     },
   });
 
-  await assert.rejects(
-    () => runCaptionReader(sandbox),
-    /empty caption track.*page=blank.*IOS:none/,
-  );
+  const result = await runCaptionReader(sandbox);
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /empty caption track.*page=blank.*IOS:none/);
 });
 
 test('explains when YouTube demands a bot check instead of captions', async () => {
@@ -215,10 +218,10 @@ test('explains when YouTube demands a bot check instead of captions', async () =
     },
   });
 
-  await assert.rejects(
-    () => runCaptionReader(sandbox),
-    /not a bot.*page=blank.*IOS:LOGIN_REQUIRED/,
-  );
+  const result = await runCaptionReader(sandbox);
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /not a bot.*page=blank.*IOS:LOGIN_REQUIRED/);
 });
 
 test('retries the player API once when a bot wall clears', async () => {
@@ -280,5 +283,59 @@ test('rejects when the YouTube tab has moved to a different video', async () => 
     fetchImpl: async () => { throw new Error('should not fetch captions'); },
   });
 
-  await assert.rejects(() => runCaptionReader(sandbox), /changed videos/);
+  const result = await runCaptionReader(sandbox);
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /changed videos/);
+});
+
+function panelChrome(videoId, executeScript) {
+  return {
+    tabs: { query: async () => [{ id: 7, url: `https://www.youtube.com/watch?v=${videoId}` }] },
+    scripting: { executeScript },
+  };
+}
+
+test('surfaces the caption reader failure envelope from the panel', async () => {
+  const originalChrome = globalThis.chrome;
+  globalThis.chrome = panelChrome('wall01', async () => [{
+    result: {
+      ok: false,
+      error: 'YouTube wants confirmation that you are not a bot. Reload the video tab, make sure you are signed in, and try again. (page=blank, retry, IOS:LOGIN_REQUIRED)',
+      diag: 'page=blank, retry, IOS:LOGIN_REQUIRED',
+    },
+  }]);
+  try {
+    await assert.rejects(() => fetchYouTubeTranscript('wall01'), /not a bot/);
+  } finally {
+    globalThis.chrome = originalChrome;
+  }
+});
+
+test('asks for a reload when the tab returns no caption result at all', async () => {
+  const originalChrome = globalThis.chrome;
+  globalThis.chrome = panelChrome('gone01', async () => [{}]);
+  try {
+    await assert.rejects(() => fetchYouTubeTranscript('gone01'), /Reload the video tab/);
+  } finally {
+    globalThis.chrome = originalChrome;
+  }
+});
+
+test('serves the same video from the session cache without querying the tab again', async () => {
+  const originalChrome = globalThis.chrome;
+  let injections = 0;
+  globalThis.chrome = panelChrome('cached01', async () => {
+    injections += 1;
+    return [{ result: { ok: true, language: 'en', body: pageCaptionBody, diag: 'page=ok' } }];
+  });
+  try {
+    const first = await fetchYouTubeTranscript('cached01');
+    assert.equal(first.segments[0].text, 'Hello from captions.');
+    const second = await fetchYouTubeTranscript('cached01');
+    assert.equal(second, first);
+    assert.equal(injections, 1);
+  } finally {
+    globalThis.chrome = originalChrome;
+  }
 });
