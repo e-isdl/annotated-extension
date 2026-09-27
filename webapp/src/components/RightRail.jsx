@@ -158,7 +158,7 @@ export default function RightRail() {
       </section>}
 
       <footer className="rail-footer">
-        <span>Open source community notes</span>
+        <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
         <a href="https://github.com/e-isdl/annotated-extension" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </footer>
     </aside>
