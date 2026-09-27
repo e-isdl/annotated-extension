@@ -182,6 +182,127 @@ export async function readYouTubeCaptionTrack(videoId) {
     return { ok: false, statuses, sawTracks };
   };
 
+  const readTranscriptPanel = async () => {
+    try {
+      if (typeof document === 'undefined' || !document.querySelectorAll) return { status: 'unavailable' };
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      const visible = (element) => {
+        const rect = element?.getBoundingClientRect ? element.getBoundingClientRect() : null;
+        return Boolean(rect && rect.width > 0 && rect.height > 0);
+      };
+      const findRows = () => [...document.querySelectorAll(
+        'transcript-segment-view-model, ytd-transcript-segment-renderer, yt-transcript-segment-renderer',
+      )];
+      const readRows = (elements) => elements.map((element) => {
+        const kids = element.children ? [...element.children] : [];
+        const timestampElement = kids.find((kid) => /timestamp/i.test(String(kid.className)) && !/a11y/i.test(String(kid.className)))
+          || kids.find((kid) => /timestamp/i.test(String(kid.className)))
+          || kids[0];
+        const timestamp = String(timestampElement?.textContent || '').trim();
+        if (!/^\d{1,3}(:\d{2}){1,2}$/.test(timestamp)) return null;
+        const rest = kids.filter((kid) => kid !== timestampElement);
+        const textElement = rest.find((kid) => !/a11y/i.test(String(kid.className))) || rest[rest.length - 1];
+        const text = String(textElement?.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!text || text === timestamp) return null;
+        return {
+          start: timestamp.split(':').reduce((total, part) => total * 60 + parseInt(part, 10), 0),
+          text,
+        };
+      }).filter(Boolean);
+      const findEntry = () => [...document.querySelectorAll('button, [role="button"]')].find((element) => (
+        visible(element)
+        && /show transcript/i.test((element.getAttribute?.('aria-label') || '') + (element.textContent || ''))
+      ));
+      const waitFor = async (fn, ms) => {
+        const deadline = Date.now() + ms;
+        while (Date.now() < deadline) {
+          const value = fn();
+          if (value) return value;
+          await sleep(250);
+        }
+        return null;
+      };
+      let openedHere = false;
+      let expandedHere = false;
+      const cleanup = () => {
+        if (openedHere) {
+          try {
+            const panel = findRows()[0]?.closest?.('ytd-engagement-panel-section-list-renderer') || null;
+            const close = panel && [...panel.querySelectorAll('button, [role="button"]')]
+              .find((element) => /close/i.test(element.getAttribute?.('aria-label') || ''));
+            if (close) close.click();
+            else panel?.setAttribute?.('visibility', 'ENGAGEMENT_PANEL_VISIBILITY_HIDDEN');
+          } catch { /* keep whatever state YouTube already chose */ }
+        }
+        if (expandedHere) {
+          try {
+            const collapse = [...document.querySelectorAll('tp-yt-paper-button#collapse, button#collapse')].find(visible);
+            collapse?.click();
+          } catch { /* keep whatever state YouTube already chose */ }
+        }
+      };
+
+      let rows = readRows(findRows());
+      if (!rows.length) {
+        let entry = findEntry();
+        if (!entry) {
+          const more = [...document.querySelectorAll('tp-yt-paper-button, button, span, a')]
+            .filter((element) => visible(element)
+              && /^(…|\.\.\.)\s*more$/i.test((element.textContent || '').trim())
+              && element.id !== 'expand-sizer')
+            .sort((a, b) => a.tagName.length - b.tagName.length)[0];
+          if (!more) return { status: 'unavailable' };
+          more.click();
+          expandedHere = true;
+          entry = await waitFor(findEntry, 5000);
+        }
+        if (!entry) {
+          cleanup();
+          return { status: 'unavailable' };
+        }
+        entry.click();
+        openedHere = true;
+        rows = await waitFor(() => {
+          const found = readRows(findRows());
+          return found.length ? found : null;
+        }, 10000) || [];
+        if (!rows.length) {
+          cleanup();
+          return { status: 'empty' };
+        }
+      }
+
+      // The panel lazy-renders rows; jump to the end to force the rest out.
+      const panel = findRows()[0]?.closest?.('ytd-engagement-panel-section-list-renderer') || null;
+      const scroller = panel && [...panel.querySelectorAll('*')].find((element) => element.scrollHeight > element.clientHeight + 20);
+      for (let round = 0; scroller && round < 12; round += 1) {
+        const before = scroller.scrollTop;
+        scroller.scrollTop = scroller.scrollHeight;
+        await sleep(350);
+        const seen = new Set(rows.map((row) => row.start));
+        for (const row of readRows(findRows())) {
+          if (!seen.has(row.start)) rows.push(row);
+        }
+        if (scroller.scrollTop === before) break;
+      }
+      rows.sort((a, b) => a.start - b.start);
+      const events = rows.map((row, index) => {
+        const next = rows[index + 1];
+        return {
+          tStartMs: Math.round(row.start * 1000),
+          dDurationMs: next && next.start > row.start ? Math.round((next.start - row.start) * 1000) : 4000,
+          segs: [{ utf8: row.text }],
+        };
+      });
+      cleanup();
+      if (!events.length) return { status: 'empty' };
+      return { status: 'ok', body: JSON.stringify({ events }) };
+    } catch (error) {
+      log('transcript panel lookup failed', error);
+      return { status: 'unavailable' };
+    }
+  };
+
   let result = await runClients();
   for (const waitMs of [750, 1500]) {
     if (result.ok) break;
@@ -194,10 +315,18 @@ export async function readYouTubeCaptionTrack(videoId) {
 
   if (result.ok) return { language: result.language, body: result.body, diag: detail() };
 
+  // The panel uses the page's own attested request, so it still works when
+  // direct caption URLs and fallback clients are walled off.
+  const panelOutcome = await readTranscriptPanel();
+  notes.push(`panel=${panelOutcome.status}`);
+  if (panelOutcome.status === 'ok') {
+    return { language: preferredLanguage, body: panelOutcome.body, diag: detail() };
+  }
+
   const CONTENT_STATUSES = new Set(['none', 'blank', 'empty', 'OK']);
   const statuses = [pageOutcome.status, ...result.statuses.map((entry) => entry.split(':').pop())];
   if (statuses.some((status) => status === 'LOGIN_REQUIRED')) {
-    throw fail('YouTube wants confirmation that you are not a bot. Reload the video tab, make sure you are signed in, and try again.');
+    throw fail('YouTube is temporarily blocking caption requests from this tab. Reload the video tab and try again in a moment.');
   }
   if (statuses.some((status) => !CONTENT_STATUSES.has(status))) {
     throw fail('Could not read captions from YouTube. Reload the video and try again.');

@@ -221,7 +221,8 @@ test('explains when YouTube demands a bot check instead of captions', async () =
   const result = await runCaptionReader(sandbox);
 
   assert.equal(result.ok, false);
-  assert.match(result.error, /not a bot.*page=blank.*IOS:LOGIN_REQUIRED/);
+  assert.match(result.error, /blocking caption requests.*page=blank.*IOS:LOGIN_REQUIRED/);
+  assert.match(result.diag, /panel=unavailable/);
 });
 
 test('retries the player API once when a bot wall clears', async () => {
@@ -301,12 +302,12 @@ test('surfaces the caption reader failure envelope from the panel', async () => 
   globalThis.chrome = panelChrome('wall01', async () => [{
     result: {
       ok: false,
-      error: 'YouTube wants confirmation that you are not a bot. Reload the video tab, make sure you are signed in, and try again. (page=blank, retry, IOS:LOGIN_REQUIRED)',
+      error: 'YouTube is temporarily blocking caption requests from this tab. Reload the video tab and try again in a moment. (page=blank, retry, IOS:LOGIN_REQUIRED)',
       diag: 'page=blank, retry, IOS:LOGIN_REQUIRED',
     },
   }]);
   try {
-    await assert.rejects(() => fetchYouTubeTranscript('wall01'), /not a bot/);
+    await assert.rejects(() => fetchYouTubeTranscript('wall01'), /blocking caption requests/);
   } finally {
     globalThis.chrome = originalChrome;
   }
@@ -357,7 +358,7 @@ test('reports the bot wall even when one client fails with a playability error',
   const result = await runCaptionReader(sandbox);
 
   assert.equal(result.ok, false);
-  assert.match(result.error, /not a bot/);
+  assert.match(result.error, /blocking caption requests/);
   assert.match(result.diag, /WEB_EMBEDDED_PLAYER:ERROR/);
 });
 
@@ -371,4 +372,37 @@ test('reports network failures before claiming a video has no captions', async (
 
   assert.equal(result.ok, false);
   assert.match(result.error, /Could not read captions/);
+});
+
+test('reads the transcript panel when direct caption requests come back blank', async () => {
+  const makeRow = (timestamp, text) => ({
+    children: [
+      { className: 'ytwTranscriptSegmentViewModelTimestamp', textContent: timestamp },
+      { className: 'ytwTranscriptSegmentViewModelTimestampA11yLabel', textContent: `${timestamp} a11y` },
+      { className: 'ytwTranscriptSegmentViewModelText', textContent: text },
+    ],
+  });
+  const sandbox = pageSandbox({
+    tracks: [{ baseUrl: 'https://www.youtube.com/api/timedtext?v=abc123', languageCode: 'en' }],
+    fetchImpl: async (url) => {
+      if (String(url).includes('/youtubei/v1/player')) return { ok: true, json: async () => ({}) };
+      return { ok: true, text: async () => '' };
+    },
+  });
+  sandbox.document.querySelectorAll = (selector) => {
+    if (/transcript-segment/.test(selector)) {
+      return [makeRow('0:01', 'Hello from the panel.'), makeRow('0:05', 'Second panel line.')];
+    }
+    return [];
+  };
+
+  const result = await runCaptionReader(sandbox);
+
+  assert.equal(result.language, 'en-us');
+  const parsed = parseYouTubeJson3(JSON.parse(result.body));
+  assert.deepEqual(parsed.map(({ start, text }) => ({ start, text })), [
+    { start: 1, text: 'Hello from the panel.' },
+    { start: 5, text: 'Second panel line.' },
+  ]);
+  assert.match(result.diag, /page=blank.*panel=ok/);
 });
