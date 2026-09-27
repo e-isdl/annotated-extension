@@ -182,14 +182,11 @@ export async function readYouTubeCaptionTrack(videoId) {
     return { ok: false, statuses, sawTracks };
   };
 
-  const isWalled = (result) => (
-    !result.ok && result.statuses.length > 0 && result.statuses.every((entry) => entry.endsWith(':LOGIN_REQUIRED'))
-  );
-
   let result = await runClients();
-  if (isWalled(result) || (!result.ok && result.sawTracks)) {
-    // Walls and blank sweeps usually clear once the burst of player requests settles.
-    await new Promise((resolve) => setTimeout(resolve, 750));
+  for (const waitMs of [750, 1500]) {
+    if (result.ok) break;
+    // Walls and blank sweeps usually clear as the burst of player requests settles.
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
     notes.push('retry');
     result = await runClients();
   }
@@ -197,12 +194,15 @@ export async function readYouTubeCaptionTrack(videoId) {
 
   if (result.ok) return { language: result.language, body: result.body, diag: detail() };
 
+  const CONTENT_STATUSES = new Set(['none', 'blank', 'empty', 'OK']);
   const statuses = [pageOutcome.status, ...result.statuses.map((entry) => entry.split(':').pop())];
-  if (isWalled(result)) {
+  if (statuses.some((status) => status === 'LOGIN_REQUIRED')) {
     throw fail('YouTube wants confirmation that you are not a bot. Reload the video tab, make sure you are signed in, and try again.');
   }
+  if (statuses.some((status) => !CONTENT_STATUSES.has(status))) {
+    throw fail('Could not read captions from YouTube. Reload the video and try again.');
+  }
   if (!result.sawTracks) throw fail('YouTube has no captions available for this video.');
-  if (statuses.includes('error')) throw fail('Could not read captions from YouTube. Reload the video and try again.');
   throw fail('YouTube returned an empty caption track for this video.');
   }
 }

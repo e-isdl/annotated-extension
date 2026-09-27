@@ -339,3 +339,36 @@ test('serves the same video from the session cache without querying the tab agai
     globalThis.chrome = originalChrome;
   }
 });
+
+test('reports the bot wall even when one client fails with a playability error', async () => {
+  const sandbox = pageSandbox({
+    tracks: [{ baseUrl: 'https://www.youtube.com/api/timedtext?v=abc123', languageCode: 'en' }],
+    fetchImpl: async (url, init) => {
+      if (String(url).includes('/youtubei/v1/player')) {
+        if (init.body.includes('"clientName":"WEB_EMBEDDED_PLAYER"')) {
+          return { ok: true, json: async () => ({ playabilityStatus: { status: 'ERROR' } }) };
+        }
+        return { ok: true, json: async () => ({ playabilityStatus: { status: 'LOGIN_REQUIRED' } }) };
+      }
+      return { ok: true, text: async () => '' };
+    },
+  });
+
+  const result = await runCaptionReader(sandbox);
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /not a bot/);
+  assert.match(result.diag, /WEB_EMBEDDED_PLAYER:ERROR/);
+});
+
+test('reports network failures before claiming a video has no captions', async () => {
+  const sandbox = pageSandbox({
+    tracks: undefined,
+    fetchImpl: async () => { throw new Error('offline'); },
+  });
+
+  const result = await runCaptionReader(sandbox);
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /Could not read captions/);
+});
