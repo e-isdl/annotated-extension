@@ -20,7 +20,7 @@ export default function SavedPage() {
 
       const { data, error } = await supabase
         .from('post_saves')
-        .select('created_at, clips(*, profiles(*), annotations(id, text_content, audio_url))')
+        .select('created_at, clips(*, profiles(*), annotations(id, text_content, audio_url), communities(slug))')
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
       if (!active) return;

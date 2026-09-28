@@ -166,7 +166,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
         )}
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium text-text-primary truncate">{clipData.title}</p>
-          {clipData.start_sec !== undefined && (
+          {hasMoment(clipData.start_sec, clipData.end_sec) && (
             <div className="flex items-center gap-1 mt-0.5">
               <span className="timestamp">{formatTime(clipData.start_sec)}</span>
               <span className="text-text-muted text-xs">→</span>
@@ -408,6 +408,13 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
       )}
     </div>
   );
+}
+
+function hasMoment(start, end) {
+  if (start === null || start === undefined || end === null || end === undefined) return false;
+  const startSec = Number(start);
+  const endSec = Number(end);
+  return Number.isFinite(startSec) && Number.isFinite(endSec) && startSec >= 0 && endSec > startSec;
 }
 
 function formatTime(s) {

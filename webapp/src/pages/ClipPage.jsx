@@ -13,9 +13,12 @@ import AnnotationLead from '../components/AnnotationLead';
 import { getDemoClip } from '../lib/demoData';
 import DemoClipPage from './DemoClipPage';
 import { useToast } from '../components/ToastProvider';
+import { postHref } from '../lib/links';
 
 export default function ClipPage() {
-  const { id, commentId } = useParams();
+  const routeParams = useParams();
+  const id = routeParams.id || routeParams.post;
+  const commentId = routeParams.commentId;
   const navigate = useNavigate();
   const [clip, setClip] = useState(null);
   const [annotation, setAnnotation] = useState(null);
@@ -77,7 +80,7 @@ export default function ClipPage() {
 
         const { data: threadClips } = await supabase
           .from('clips')
-          .select('*, profiles(*), annotations(id, text_content, audio_url)')
+          .select('*, profiles(*), annotations(id, text_content, audio_url), communities(slug)')
           .eq('parent_clip_id', clipData.id)
           .order('thread_position', { ascending: true });
         if (threadClips?.length) setThread(threadClips);
@@ -256,7 +259,7 @@ export default function ClipPage() {
                 <div className="w-px flex-1 bg-border" />
               </div>
               <Link
-                to={`/post/${threadClip.slug || threadClip.id}`}
+                to={postHref(threadClip)}
                 className="flex-1 annotation-mark bg-bg-surface rounded-r-lg p-3 hover:bg-bg-raised transition-colors block"
               >
                 <p className="text-sm text-text-secondary leading-relaxed line-clamp-3">

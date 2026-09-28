@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Avatar from '../components/Avatar';
 import VoteButtons from '../components/VoteButtons';
+import { postHref } from '../lib/links';
 
 const PERIODS = [
   { label: 'Today', value: 'day' },
@@ -35,7 +36,7 @@ export default function Leaderboard() {
 
       let query = supabase
         .from('clips_with_scores')
-        .select('*, profiles(*)')
+        .select('*, profiles(*), communities(slug)')
         .order('score', { ascending: false })
         .limit(10);
 
@@ -98,7 +99,7 @@ export default function Leaderboard() {
                   {clip.source_type !== 'youtube' && <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>}
                 </div>
                 <Link
-                  to={`/post/${clip.slug || clip.id}`}
+                  to={postHref(clip)}
                   className="text-sm font-medium text-text-primary hover:text-accent-text transition-colors line-clamp-2"
                 >
                   {clip.title}

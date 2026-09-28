@@ -5,6 +5,7 @@ import { getCurrentUser } from '../lib/authUser';
 import ClipCard from '../components/ClipCard';
 import FollowButton from '../components/FollowButton';
 import Avatar from '../components/Avatar';
+import { postHref } from '../lib/links';
 
 const TABS = [
   { label: 'Posts', value: 'clips' },
@@ -213,12 +214,12 @@ export default function Profile() {
       if (followersRes.data) setFollowers(followersRes.data.map((f) => f.profiles).filter(Boolean));
       if (followingRes.data) setFollowing(followingRes.data.map((f) => f.profiles).filter(Boolean));
     } else if (tab === 'comments') {
-      const { data } = await supabase.from('comments').select('*, clips(id, slug, title, profiles!clips_user_id_fkey(handle))').eq('user_id', profile.id).order('created_at', { ascending: false });
+      const { data } = await supabase.from('comments').select('*, clips(id, slug, title, communities(slug), profiles!clips_user_id_fkey(handle))').eq('user_id', profile.id).order('created_at', { ascending: false });
       if (data) setComments(data);
       if (isOwner) {
         const { data: userClips } = await supabase.from('clips').select('id').eq('user_id', profile.id);
         if (userClips?.length) {
-          const { data: claimRows } = await supabase.from('claims').select('*, clips(id, slug, title)').in('clip_id', userClips.map((clip) => clip.id)).order('created_at', { ascending: false });
+          const { data: claimRows } = await supabase.from('claims').select('*, clips(id, slug, title, communities(slug))').in('clip_id', userClips.map((clip) => clip.id)).order('created_at', { ascending: false });
           if (claimRows) setClaims(claimRows);
         } else setClaims([]);
       }
@@ -326,7 +327,7 @@ export default function Profile() {
           {comments.map((comment) => (
             <div key={comment.id} className="bg-bg-surface border border-border rounded-lg p-3">
               <Link
-                to={`/post/${comment.clips?.slug || comment.clips?.id}`}
+                to={postHref(comment.clips)}
                 className="text-xs text-accent-text hover:text-accent transition-colors no-underline block mb-2"
               >
                 {comment.clips?.title || 'Untitled clip'}
@@ -347,7 +348,7 @@ export default function Profile() {
             <div key={claim.id} className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <Link
-                  to={`/post/${claim.clips?.slug || claim.clips?.id}`}
+                  to={postHref(claim.clips)}
                   className="text-xs text-accent-text hover:text-accent transition-colors no-underline"
                 >
                   {claim.clips?.title || 'Untitled clip'}

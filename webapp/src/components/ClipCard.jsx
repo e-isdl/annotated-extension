@@ -5,6 +5,8 @@ import { getCurrentUser } from '../lib/authUser';
 import VoteButtons from './VoteButtons';
 import { useToast } from './ToastProvider';
 import { communityStyle } from '../lib/community';
+import { postHref } from '../lib/links';
+import { hasMoment } from '../lib/moment';
 
 export default function ClipCard({ clip }) {
   const navigate = useNavigate();
@@ -16,7 +18,7 @@ export default function ClipCard({ clip }) {
   const [score, setScore] = useState(clip.score ?? 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
-  const href = `/post/${clip.slug || clip.id}`;
+  const href = postHref(clip);
   const sourceImage = clip.source_image_url || clip.thumbnail || (clip.youtube_id ? `https://img.youtube.com/vi/${clip.youtube_id}/hqdefault.jpg` : null);
 
   useEffect(() => {
@@ -95,7 +97,7 @@ export default function ClipCard({ clip }) {
           </div>
           {sourceImage && <img src={sourceImage} alt="" className={`source-preview-image${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />}
         </div>
-        {clip.start_sec !== undefined && clip.end_sec !== undefined && (
+        {hasMoment(clip.start_sec, clip.end_sec) && (
           <div className="post-timestamp-row" aria-label={`Source moment from ${formatTime(clip.start_sec)} to ${formatTime(clip.end_sec)}`}>
             <span className="timestamp">{formatTime(clip.start_sec)}</span>
             <span className="text-text-muted text-xs">→</span>

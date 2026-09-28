@@ -50,6 +50,7 @@ function AppShell() {
           <Route path="/clip/:id" element={<ClipPage />} />
           <Route path="/post/:id/comment/:commentId" element={<ClipPage />} />
           <Route path="/post/:id" element={<ClipPage />} />
+          <Route path="/c/:community/:post" element={<ClipPage />} />
           <Route path="/u/:handle" element={<Profile />} />
           <Route path="/u" element={<ProfileEntry />} />
           <Route path="/u/:handle/annotations" element={<Profile />} />

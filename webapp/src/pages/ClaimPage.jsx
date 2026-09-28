@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { postHref } from '../lib/links';
 
 export default function ClaimPage() {
   const { id } = useParams();
@@ -12,7 +13,7 @@ export default function ClaimPage() {
     async function load() {
       const { data } = await supabase
         .from('claims')
-        .select('id, reason, created_at, clips(id, slug, title)')
+        .select('id, reason, created_at, clips(id, slug, title, communities(slug))')
         .eq('id', id)
         .maybeSingle();
       if (active) { setClaim(data); setLoading(false); }
@@ -27,7 +28,7 @@ export default function ClaimPage() {
   const clip = claim.clips;
   return (
     <article className="section-page claim-page">
-      <Link to={clip ? `/post/${clip.slug || clip.id}` : '/'} className="back-link">← Back to post</Link>
+      <Link to={clip ? postHref(clip) : '/'} className="back-link">← Back to post</Link>
       <p className="eyebrow">SOURCE CLAIM</p>
       <h1 className="section-title">Claim about {clip?.title || 'this annotation'}</h1>
       <p className="section-subtitle">Filed {new Date(claim.created_at).toLocaleDateString()}</p>
