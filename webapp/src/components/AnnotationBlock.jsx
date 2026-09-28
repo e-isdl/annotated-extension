@@ -38,61 +38,62 @@ export default function AnnotationBlock({ annotation, transcript }) {
       )}
 
       {annotation && (annotation.text_content || annotation.audio_url) && (
-        <div className="relative">
-          <div className="absolute left-0 top-3 bottom-3 w-[2px] bg-accent rounded-full" />
-          <div className="ml-4 annotation-audio-block overflow-hidden">
-            <div className="p-5 sm:p-6 flex flex-col gap-4">
-              {annotation.text_content && (
-                <p className="text-[15px] sm:text-base leading-[1.85] font-semibold" style={{ color: '#aaa' }}>
-                  {annotation.text_content}
-                </p>
-              )}
+        <div className="annotation-audio-block overflow-hidden">
+          <div className="p-5 sm:p-6 flex flex-col gap-4">
+            {annotation.text_content && (
+              <p className="text-[15px] sm:text-base leading-[1.85] font-semibold" style={{ color: '#aaa' }}>
+                {annotation.text_content}
+              </p>
+            )}
 
-              {annotation.audio_url && (
-                <div className="flex flex-col gap-3">
-                  <audio
-                    ref={audioRef}
-                    src={annotation.audio_url}
-                    onEnded={() => setPlaying(false)}
-                    onTimeUpdate={() => setProgress(audioRef.current?.currentTime || 0)}
-                    onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
-                  />
-                  <div className="bg-bg-raised/60 rounded-lg p-3 flex items-center gap-3">
-                    <button
-                      onClick={togglePlay}
-                      className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center text-accent hover:bg-accent/25 transition-colors shrink-0"
-                    >
-                      {playing ? (
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                        </svg>
-                      ) : (
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      )}
-                    </button>
-                    <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+            {annotation.audio_url && (
+              <div className="flex flex-col gap-3">
+                <audio
+                  ref={audioRef}
+                  src={annotation.audio_url}
+                  onEnded={() => setPlaying(false)}
+                  onTimeUpdate={() => setProgress(audioRef.current?.currentTime || 0)}
+                  onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+                />
+                <div className="bg-bg-raised/60 rounded-lg p-3 flex items-center gap-3">
+                  <button
+                    onClick={togglePlay}
+                    aria-label={playing ? 'Pause annotation audio' : 'Play annotation audio'}
+                    className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center text-accent hover:bg-accent/25 transition-colors shrink-0"
+                  >
+                    {playing ? (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                      </svg>
+                    ) : (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="text-[10px] text-text-muted/60 font-mono tabular-nums shrink-0">{formatTime(progress)}</span>
+                  <div
+                    className="flex-1 min-w-0 py-2 -my-2 cursor-pointer group"
+                    onClick={handleSeek}
+                    role="slider"
+                    aria-label="Seek"
+                    aria-valuemin={0}
+                    aria-valuemax={Math.round(duration)}
+                    aria-valuenow={Math.round(progress)}
+                  >
+                    <div className="h-1 bg-border rounded-full overflow-hidden">
                       <div
-                        className="h-1 bg-border rounded-full overflow-hidden cursor-pointer group"
-                        onClick={handleSeek}
+                        className="h-full bg-accent/70 rounded-full relative"
+                        style={{ width: duration ? `${(progress / duration) * 100}%` : '0%' }}
                       >
-                        <div
-                          className="h-full bg-accent/70 rounded-full relative"
-                          style={{ width: duration ? `${(progress / duration) * 100}%` : '0%' }}
-                        >
-                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-accent opacity-0 group-hover:opacity-100 transition-opacity shadow-sm" />
-                        </div>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[10px] text-text-muted/60 font-mono tabular-nums">{formatTime(progress)}</span>
-                        <span className="text-[10px] text-text-muted/60 font-mono tabular-nums">{formatTime(duration)}</span>
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-accent opacity-0 group-hover:opacity-100 transition-opacity shadow-sm" />
                       </div>
                     </div>
                   </div>
+                  <span className="text-[10px] text-text-muted/60 font-mono tabular-nums shrink-0">{formatTime(duration)}</span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

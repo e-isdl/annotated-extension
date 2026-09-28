@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
+import { useToast } from './ToastProvider';
 import Avatar from './Avatar';
 
 const NOTIF_ICONS = {
@@ -40,6 +41,7 @@ export default function Navbar() {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   const notifRef = useRef(null);
+  const { push } = useToast();
 
   useEffect(() => {
     getCurrentUser().then((user) => {
@@ -124,6 +126,15 @@ export default function Navbar() {
     });
   };
 
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      push('Signed out.', 'neutral');
+      navigate('/');
+    }
+  };
+
   return (
     <nav className="border-b border-border-subtle bg-bg-base sticky top-0 z-10">
       <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between gap-5">
@@ -206,6 +217,20 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
+
+              <button
+                type="button"
+                onClick={signOut}
+                aria-label="Sign out"
+                title="Sign out"
+                className="text-text-secondary hover:text-accent transition-colors"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
 
               <Link to={`/u/${user.user_metadata?.user_name || user.id}`} aria-label="Open your profile" className="flex items-center">
                 <Avatar profile={{
