@@ -14,6 +14,7 @@ import { getDemoClip } from '../lib/demoData';
 import DemoClipPage from './DemoClipPage';
 import { useToast } from '../components/ToastProvider';
 import { postHref } from '../lib/links';
+import { hasMoment } from '../lib/moment';
 
 export default function ClipPage() {
   const routeParams = useParams();
@@ -223,7 +224,23 @@ export default function ClipPage() {
         </div>
       </div>
 
-      {clip.source_url && clip.source_type !== 'youtube' && <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="source-link real-source-link">↗ {sourceDomain(clip.source_url)}</a>}
+      {clip.source_url && (
+        <a
+          href={clip.source_type === 'youtube' ? youtubeSourceHref(clip) : clip.source_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="source-link real-source-link"
+        >
+          <span>↗ {sourceDomain(clip.source_url)}</span>
+          {clip.source_type === 'youtube' && hasMoment(clip.start_sec, clip.end_sec) && (
+            <span className="source-timestamp-range" aria-label={`Source moment from ${formatTime(clip.start_sec)} to ${formatTime(clip.end_sec)}`}>
+              <span className="timestamp">{formatTime(clip.start_sec)}</span>
+              <span className="text-text-muted text-xs">→</span>
+              <span className="timestamp">{formatTime(clip.end_sec)}</span>
+            </span>
+          )}
+        </a>
+      )}
 
       {isOwner && claims.length > 0 && (
         <div className="flex flex-col gap-3">
@@ -313,6 +330,19 @@ function formatDate(dateStr) {
 
 function sourceDomain(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'source'; }
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function youtubeSourceHref(clip) {
+  if (!clip.youtube_id) return clip.source_url;
+  const base = `https://www.youtube.com/watch?v=${clip.youtube_id}`;
+  const start = Number(clip.start_sec);
+  return Number.isFinite(start) && start > 0 ? `${base}&t=${Math.floor(start)}s` : base;
 }
 
 function LoadingState() {
