@@ -22,6 +22,13 @@ function detectPageInfoFromUrl(url, title) {
     return info;
   }
 
+  const statusMatch = String(url || '').match(/(?:twitter\.com|x\.com)\/([^/?#]+)\/status\/(\d+)/);
+  if (statusMatch) {
+    info.type = 'x';
+    info.data = { handle: statusMatch[1], statusId: statusMatch[2], title: cleanXTitle(cleanTitle), author: statusMatch[1] };
+    return info;
+  }
+
   if (url.includes('podcast') || url.includes('spotify.com/episode') || url.includes('overcast.fm')) {
     info.type = 'podcast';
     info.data = { audioSrc: '', title: cleanTitle, duration: 0 };
@@ -35,6 +42,14 @@ function detectPageInfoFromUrl(url, title) {
   }
 
   return info;
+}
+
+function cleanXTitle(title) {
+  let cleaned = String(title || '').trim().replace(/^\(\d+\)\s*/, '');
+  cleaned = cleaned.replace(/\s*\/\s*X$/, '');
+  cleaned = cleaned.replace(/^[^:]{1,80}on X:\s*/i, '');
+  cleaned = cleaned.replace(/^["“']+/, '').replace(/["”']+$/, '');
+  return cleaned.trim() || String(title || '').trim();
 }
 
 async function getPageInfoFromTab(tabId) {

@@ -73,6 +73,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
   const fileInputRef = useRef(null);
   const isYouTube = clipData?.source_type === 'youtube';
   const isArticle = clipData?.source_type === 'article';
+  const isSocial = clipData?.source_type === 'social';
   const cacheKey = isYouTube ? clipData.youtube_id : null;
   const annotationLimit = ANNOTATION_LIMITS[annotationType];
 
@@ -339,7 +340,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={isArticle ? "What's your take on this?" : "What's your take on this clip?"}
+            placeholder={isArticle || isSocial ? "What's your take on this?" : "What's your take on this clip?"}
             rows={5}
             maxLength={annotationLimit}
             className="input resize-none text-sm leading-relaxed"

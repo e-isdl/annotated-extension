@@ -253,7 +253,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .comment-search::placeholder { color: var(--text-muted); }
 .comment-composer { display: flex; align-items: flex-start; gap: 10px; margin: 12px 0 16px; }
 .comment-composer-main { min-width: 0; flex: 1; }
-.comment-textarea, .comment-reply-input { display: block; width: 100%; min-height: 62px; max-height: 192px; padding: 9px 12px; border: 1px solid #3a4146; border-radius: 12px; background: #1b1f22; color: var(--text-primary); font: 14px/1.45 var(--ui-font); outline: none; resize: none; }
+.comment-textarea, .comment-reply-input { display: block; width: 100%; min-height: 42px; max-height: 192px; padding: 9px 12px; border: 1px solid #3a4146; border-radius: 12px; background: #1b1f22; color: var(--text-primary); font: 14px/1.45 var(--ui-font); outline: none; resize: none; }
 .comment-textarea:focus, .comment-reply-input:focus { border-color: #586168; }
 .comment-textarea::placeholder, .comment-reply-input::placeholder { color: #8a9297; }
 .comment-composer-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 8px; }
@@ -433,8 +433,24 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
   .toast-region { right: 12px; bottom: 80px; width: calc(100vw - 24px); }
 }
 
-/* Static clip-range strip under YouTube embeds: full video in gray, amber = clip. */
-.yt-range { padding: 9px 10px 10px; background: #0d0e0f; }
-.yt-range__bar { position: relative; height: 6px; border-radius: 3px; background: #26282b; overflow: hidden; }
-.yt-range__clip { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: #e8a33d; }
-.yt-range__labels { display: flex; justify-content: space-between; margin-top: 6px; color: var(--text-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+/* Static clip-range strip under YouTube embeds: full video in gray, amber = clip, white ticks = clip bounds. */
+.yt-range { padding: 10px; background: #0d0e0f; }
+.yt-range__track { position: relative; height: 6px; border-radius: 3px; background: #26282b; }
+.yt-range__clip { position: absolute; top: 0; bottom: 0; min-width: 2px; border-radius: 3px; background: #e8a33d; }
+.yt-range__tick { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 1px; background: rgba(255,255,255,.92); }
+.yt-range__labels { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; font-size: 10px; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.yt-range__bound { color: var(--text-muted); opacity: .7; }
+.yt-range__range { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #e8a33d; font-weight: 600; }
+
+
+/* Detail header: community and author share one row; pull the back arrow flush left. */
+.context-author { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
+.detail-author-row { margin-bottom: 12px; }
+.detail-back-button { margin-left: -6px; }
+
+/* Empty comment states sit centered with breathing room. */
+.comment-empty-state { padding: 44px 16px 32px; color: var(--text-muted); font-size: 14px; text-align: center; }
+
+/* Embedded X post: the iframe reports its own height via postMessage.
+   The embed lays out at 550px; cap the frame so no light page edge shows. */
+.x-embed { display: block; width: 100%; max-width: 550px; margin-inline: auto; border: 0; background: transparent; }

@@ -195,7 +195,7 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
       <div className="comment-composer">
         <Avatar profile={session?.user ? authProfile(session.user) : null} size="md" />
         <div className="comment-composer-main">
-          <textarea ref={composerRef} rows={2} maxLength={600} value={body} onChange={(event) => { setBody(event.target.value); resizeCommentField(event.currentTarget); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') submitComment({ text: body }); }} placeholder={session ? 'Add a comment' : 'Sign in to comment'} className="comment-textarea" />
+          <textarea ref={composerRef} rows={1} maxLength={600} value={body} onChange={(event) => { setBody(event.target.value); resizeCommentField(event.currentTarget); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') submitComment({ text: body }); }} placeholder={session ? 'Add a comment' : 'Sign in to comment'} className="comment-textarea" />
           <div className="comment-composer-footer">
             {body.length >= 480 && <span className="comment-character-count">{body.length}/600</span>}
             <button onClick={() => submitComment({ text: body })} disabled={!body.trim()} className="comment-submit-button">Comment</button>
@@ -224,8 +224,8 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
               voteComment={voteComment}
             />
           ))}
-          {comments.length === 0 && <p className="text-sm text-text-muted py-5">Be the first person to comment.</p>}
-          {comments.length > 0 && visibleComments.length === 0 && <p className="text-sm text-text-muted py-5">No comments match your search.</p>}
+          {comments.length === 0 && <p className="comment-empty-state">Be the first person to comment.</p>}
+          {comments.length > 0 && visibleComments.length === 0 && <p className="comment-empty-state">No comments match your search.</p>}
         </div>
       )}
     </section>
@@ -322,7 +322,7 @@ function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, 
           {collapsed && replyCount > 0 && <button type="button" className="comment-collapse-summary" aria-expanded="false" onClick={() => setCollapsed(false)}>+ {replyCount} {replyCount === 1 ? 'reply' : 'replies'}</button>}
           <div className={`reply-composer${replyIsOpen ? ' reply-composer-open' : ''}`} aria-hidden={!replyIsOpen}>
             <div className="reply-composer-row">
-              <textarea ref={replyInputRef} rows={2} maxLength={600} value={replyBody} onChange={(event) => { setReplyBody(event.target.value); resizeCommentField(event.currentTarget); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') submitComment({ text: replyBody, parentCommentId: comment.id }); }} placeholder={`Reply to ${displayName}`} className="comment-reply-input" tabIndex={replyIsOpen ? 0 : -1} />
+              <textarea ref={replyInputRef} rows={1} maxLength={600} value={replyBody} onChange={(event) => { setReplyBody(event.target.value); resizeCommentField(event.currentTarget); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') submitComment({ text: replyBody, parentCommentId: comment.id }); }} placeholder={`Reply to ${displayName}`} className="comment-reply-input" tabIndex={replyIsOpen ? 0 : -1} />
               <button onClick={() => submitComment({ text: replyBody, parentCommentId: comment.id })} disabled={!replyBody.trim()} className="comment-submit-button" tabIndex={replyIsOpen ? 0 : -1}>Reply</button>
             </div>
           </div>

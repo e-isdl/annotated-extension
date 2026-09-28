@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import YouTubeClipper from './YouTubeClipper';
 import ArticleClipper from './ArticleClipper';
+import TweetClipper from './TweetClipper';
 import PodcastClipper from './PodcastClipper';
 import AnnotationForm from './AnnotationForm';
 import SuccessScreen from './SuccessScreen';
@@ -89,6 +90,7 @@ export default function ClipCreator({ pageInfo, session }) {
     switch (pageInfo.type) {
       case 'youtube': return <YouTubeClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
       case 'article': return <ArticleClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
+      case 'x': return <TweetClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
       case 'podcast': return <PodcastClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
       default: return <UnsupportedPage />;
     }
@@ -100,6 +102,7 @@ export default function ClipCreator({ pageInfo, session }) {
     switch (pageInfo.type) {
       case 'youtube': return 'Select range';
       case 'article': return 'Select text';
+      case 'x': return 'Post';
       case 'podcast': return 'Select range';
       default: return 'Select clip';
     }
@@ -151,7 +154,7 @@ function UnsupportedPage() {
     <div className="flex flex-col items-center justify-center h-48 px-6 gap-2 text-center">
       <span className="text-2xl">📎</span>
       <p className="text-sm text-text-secondary">This page type isn't supported yet.</p>
-      <p className="text-xs text-text-muted">Navigate to a YouTube video, news article, or podcast page.</p>
+        <p className="text-xs text-text-muted">Navigate to a YouTube video, X post, news article, or podcast page.</p>
     </div>
   );
 }

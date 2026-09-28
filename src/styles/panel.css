@@ -106,6 +106,7 @@
   .badge-youtube { background: rgba(229,57,53,0.12); color: #EF5350; }
   .badge-article { background: rgba(0,121,211,0.12); color: #0079D3; }
   .badge-podcast { background: rgba(168,85,247,0.12); color: #A855F7; }
+  .badge-social { background: rgba(29,155,240,0.12); color: #1DA1F2; }
   .timestamp {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;

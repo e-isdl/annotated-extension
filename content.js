@@ -19,6 +19,18 @@ function detectPageInfo() {
     return info;
   }
 
+  const statusMatch = matchStatusUrl(url);
+  if (statusMatch) {
+    info.type = 'x';
+    info.data = {
+      handle: statusMatch.handle,
+      statusId: statusMatch.statusId,
+      title: tweetTextFromPage() || cleanXTitle(document.title),
+      author: statusMatch.handle,
+    };
+    return info;
+  }
+
   const audioEl = document.querySelector('audio[src], audio source[src]');
   if (audioEl) {
     const audioSrc = audioEl.src || audioEl.querySelector('source')?.src;
@@ -45,6 +57,28 @@ function detectPageInfo() {
   }
 
   return info;
+}
+
+function matchStatusUrl(url) {
+  const match = String(url || '').match(/(?:twitter\.com|x\.com)\/([^/?#]+)\/status\/(\d+)/);
+  return match ? { handle: match[1], statusId: match[2] } : null;
+}
+
+function tweetTextFromPage() {
+  try {
+    const el = document.querySelector('[data-testid="tweetText"]');
+    return el ? String(el.innerText || '').trim() : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function cleanXTitle(title) {
+  let cleaned = String(title || '').trim().replace(/^\(\d+\)\s*/, '');
+  cleaned = cleaned.replace(/\s*\/\s*X$/, '');
+  cleaned = cleaned.replace(/^[^:]{1,80}on X:\s*/i, '');
+  cleaned = cleaned.replace(/^["“']+/, '').replace(/["”']+$/, '');
+  return cleaned.trim() || String(title || '').trim();
 }
 
 function isAdPlaying() {

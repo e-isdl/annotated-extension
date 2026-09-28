@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { deleteClip } from '../lib/api';
 import YouTubeEmbed from '../components/YouTubeEmbed';
+import XEmbed from '../components/XEmbed';
+import Avatar from '../components/Avatar';
 import AudioPlayer from '../components/AudioPlayer';
 import AnnotationBlock from '../components/AnnotationBlock';
 import FileClaimButton from '../components/FileClaimButton';
@@ -15,6 +17,7 @@ import DemoClipPage from './DemoClipPage';
 import { useToast } from '../components/ToastProvider';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
+import { isXPostUrl } from '../lib/social';
 
 export default function ClipPage() {
   const routeParams = useParams();
@@ -131,6 +134,17 @@ export default function ClipPage() {
   if (loading) return <LoadingState />;
   if (!clip) return <NotFound />;
 
+  const isX = isXPostUrl(clip.source_url);
+
+  const range = hasMoment(clip.start_sec, clip.end_sec) && clip.duration > clip.end_sec
+    ? (() => {
+        const left = (clip.start_sec / clip.duration) * 100;
+        const right = (clip.end_sec / clip.duration) * 100;
+        const center = (left + right) / 2;
+        return { left, right, align: center < 34 ? 'left' : center > 66 ? 'right' : 'center' };
+      })()
+    : null;
+
   return (
     <article className="detail-page real-detail-page">
       <div className="detail-author-row">
@@ -138,8 +152,9 @@ export default function ClipPage() {
           <Link to="/" className="detail-back-button" aria-label="Back to home">←</Link>
           {clip.community_slug && clip.community_name && <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>}
           <span>•</span>
+          <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author context-author no-underline"><Avatar profile={profile} size="xs" /><span>{profile?.handle || 'anonymous'}</span></Link>
+          <span>•</span>
           <span>{formatDate(clip.created_at)}</span>
-          {!annotation?.text_content && <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author no-underline">by {profile?.handle || 'anonymous'}</Link>}
         </div>
         <div className="detail-header-actions">
           <span className="badge badge-article">{clip.annotation_type || 'Annotation'}</span>
@@ -176,36 +191,38 @@ export default function ClipPage() {
         </div>
       </div>
 
-      <AnnotationLead text={annotation?.text_content || clip.title} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} />
+      <AnnotationLead text={annotation?.text_content || clip.title} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} showAuthor={false} />
 
       {clip.source_url && <section className="source-post" aria-label="Original source post">
-        {clip.source_type !== 'youtube' && <div className="source-post-header">
+        {!isX && clip.source_type !== 'youtube' && <div className="source-post-header">
           <div>
             <p className="source-post-domain">{clip.source_domain || sourceDomain(clip.source_url)}</p>
           {(clip.source_title || clip.title) && (clip.source_title || clip.title) !== (annotation?.text_content || clip.title) && <p className="source-post-caption">{clip.source_title || clip.title}</p>}
           </div>
           <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
         </div>}
+        {isX && (
+          <div className="source-media"><XEmbed url={clip.source_url} /></div>
+        )}
         {clip.source_type === 'youtube' && (
           <div className="source-media">
             <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted autoplay />
-            {hasMoment(clip.start_sec, clip.end_sec) && clip.duration > clip.end_sec && (
+            {range && (
               <div
                 className="yt-range"
-                aria-label={`Clip from ${formatTime(clip.start_sec)} to ${formatTime(clip.end_sec)} of a ${formatTime(clip.duration)} video`}
+                aria-label={`Clip from ${formatSpan(clip.start_sec)} to ${formatSpan(clip.end_sec)} of a ${formatSpan(clip.duration)} video`}
               >
-                <div className="yt-range__bar">
-                  <span
-                    className="yt-range__clip"
-                    style={{
-                      left: `${(clip.start_sec / clip.duration) * 100}%`,
-                      width: `${((clip.end_sec - clip.start_sec) / clip.duration) * 100}%`,
-                    }}
-                  />
+                <div className="yt-range__track">
+                  <span className="yt-range__clip" style={{ left: `${range.left}%`, width: `${range.right - range.left}%` }} />
+                  <span className="yt-range__tick" style={{ left: `${range.left}%` }} />
+                  <span className="yt-range__tick" style={{ left: `${range.right}%` }} />
                 </div>
                 <div className="yt-range__labels">
-                  <span>0:00</span>
-                  <span>{formatTime(clip.duration)}</span>
+                  <span className="yt-range__bound">{formatSpan(0)}</span>
+                  <span className="yt-range__range" style={{ textAlign: range.align }}>
+                    {formatSpan(clip.start_sec)} → {formatSpan(clip.end_sec)}
+                  </span>
+                  <span className="yt-range__bound">{formatSpan(clip.duration)}</span>
                 </div>
               </div>
             )}
@@ -214,13 +231,13 @@ export default function ClipPage() {
         {clip.source_type === 'podcast' && (
           <div className="source-media"><AudioPlayer src={clip.audio_url} /></div>
         )}
-        {clip.source_type === 'article' && clip.article_text && (
+        {!isX && clip.source_type === 'article' && clip.article_text && (
           <div className="source-article-body"><p>{clip.article_text}</p></div>
         )}
-        {clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && (clip.source_image_url || clip.thumbnail) && (
+        {!isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && (clip.source_image_url || clip.thumbnail) && (
           <img src={clip.source_image_url || clip.thumbnail} alt="" className="source-post-image" />
         )}
-        {clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && !clip.source_image_url && !clip.thumbnail && (
+        {!isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && !clip.source_image_url && !clip.thumbnail && (
           <div className="source-text-placeholder">This post is anchored to a source conversation. Open the original or expand the context below.</div>
         )}
       </section>}
@@ -358,6 +375,15 @@ function formatTime(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function formatSpan(s) {
+  const total = Math.max(0, Math.floor(Number(s) || 0));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = total % 60;
+  const pad = n => n.toString().padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
 }
 
 function youtubeSourceHref(clip) {

@@ -7,6 +7,7 @@ import { useToast } from './ToastProvider';
 import { communityStyle } from '../lib/community';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
+import { isXPostUrl } from '../lib/social';
 
 export default function ClipCard({ clip }) {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ export default function ClipCard({ clip }) {
   const annotation = clip.annotations?.[0];
   const commentary = clip.annotation || annotation?.text_content;
   const commentaryPreview = annotationPreview(commentary);
-  const sourceTitle = clip.source_type === 'youtube' ? null : clip.source_title || clip.title;
+  const sourceTitle = clip.source_type === 'youtube' || isXPostUrl(clip.source_url) ? null : clip.source_title || clip.title;
   const [score, setScore] = useState(clip.score ?? 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
