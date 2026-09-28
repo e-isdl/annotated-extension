@@ -73,6 +73,8 @@ export default function ClipCreator({ pageInfo, session }) {
       article_text: clipData.article_text || null,
       start_sec: clipData.start_sec ?? null,
       end_sec: clipData.end_sec ?? null,
+      duration: clipData.duration ?? null,
+
       slug: generateSlug(clipData.title),
       annotation_text: annotationData.text_content,
       annotation_audio_url: annotationData.audio_url,

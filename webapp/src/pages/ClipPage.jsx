@@ -187,7 +187,29 @@ export default function ClipPage() {
           <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
         </div>}
         {clip.source_type === 'youtube' && (
-          <div className="source-media"><YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted autoplay /></div>
+          <div className="source-media">
+            <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted autoplay />
+            {hasMoment(clip.start_sec, clip.end_sec) && clip.duration > clip.end_sec && (
+              <div
+                className="yt-range"
+                aria-label={`Clip from ${formatTime(clip.start_sec)} to ${formatTime(clip.end_sec)} of a ${formatTime(clip.duration)} video`}
+              >
+                <div className="yt-range__bar">
+                  <span
+                    className="yt-range__clip"
+                    style={{
+                      left: `${(clip.start_sec / clip.duration) * 100}%`,
+                      width: `${((clip.end_sec - clip.start_sec) / clip.duration) * 100}%`,
+                    }}
+                  />
+                </div>
+                <div className="yt-range__labels">
+                  <span>0:00</span>
+                  <span>{formatTime(clip.duration)}</span>
+                </div>
+              </div>
+            )}
+          </div>
         )}
         {clip.source_type === 'podcast' && (
           <div className="source-media"><AudioPlayer src={clip.audio_url} /></div>

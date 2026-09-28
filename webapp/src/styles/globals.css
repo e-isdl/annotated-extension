@@ -432,3 +432,9 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
   .mobile-nav-icon { font-size: 18px; line-height: 1; }
   .toast-region { right: 12px; bottom: 80px; width: calc(100vw - 24px); }
 }
+
+/* Static clip-range strip under YouTube embeds: full video in gray, amber = clip. */
+.yt-range { padding: 9px 10px 10px; background: #0d0e0f; }
+.yt-range__bar { position: relative; height: 6px; border-radius: 3px; background: #26282b; overflow: hidden; }
+.yt-range__clip { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: #e8a33d; }
+.yt-range__labels { display: flex; justify-content: space-between; margin-top: 6px; color: var(--text-muted); font-size: 10px; font-variant-numeric: tabular-nums; }

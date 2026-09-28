@@ -93,6 +93,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
       youtube_id: data.videoId,
       start_sec: startSec,
       end_sec: endSec,
+      duration: duration || null,
       thumbnail: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`,
     });
   };

@@ -15,6 +15,7 @@ export async function createExtensionPost(client, payload) {
     p_article_text: payload.article_text ?? null,
     p_start_sec: payload.start_sec ?? null,
     p_end_sec: payload.end_sec ?? null,
+    p_duration: payload.duration ?? null,
     p_slug: payload.slug,
     p_annotation: payload.annotation_text ?? null,
     p_annotation_audio_url: payload.annotation_audio_url ?? null,
