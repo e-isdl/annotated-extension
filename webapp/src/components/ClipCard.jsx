@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import VoteButtons from './VoteButtons';
+import AudioPlayer from './AudioPlayer';
 import { useToast } from './ToastProvider';
 import { communityStyle } from '../lib/community';
 import { postHref } from '../lib/links';
@@ -15,7 +16,10 @@ export default function ClipCard({ clip }) {
   const annotation = clip.annotations?.[0];
   const commentary = clip.annotation || annotation?.text_content;
   const commentaryPreview = annotationPreview(commentary);
-  const sourceTitle = clip.source_type === 'youtube' || isXPostUrl(clip.source_url) ? null : clip.source_title || clip.title;
+  const audioUrl = annotation?.audio_url;
+  const isYouTube = clip.source_type === 'youtube';
+  const youtubeTitle = clip.source_title || clip.title;
+  const sourceTitle = isYouTube || isXPostUrl(clip.source_url) ? null : clip.source_title || clip.title;
   const [score, setScore] = useState(clip.score ?? 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
@@ -83,6 +87,13 @@ export default function ClipCard({ clip }) {
 
       <Link to={href} className="block no-underline group">
         {commentary && <h2 className="post-annotation-preview">{commentaryPreview.text}{commentaryPreview.truncated && <span className="post-commentary-more">…</span>}</h2>}
+
+        {audioUrl && (
+          <div className="post-audio" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
+            <AudioPlayer src={audioUrl} compact />
+          </div>
+        )}
+        {isYouTube && youtubeTitle && youtubeTitle !== commentary && <p className="post-source-title">{youtubeTitle}</p>}
 
         <div className="source-preview">
           <div className="source-preview-copy">

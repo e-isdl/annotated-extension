@@ -126,6 +126,8 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .post-annotation-preview { margin: 11px 2px 9px; color: #edf0f2; font-family: var(--ui-font); font-size: 17px; font-weight: 700; line-height: 1.4; letter-spacing: -.01em; }
 .post-annotation-preview::first-letter, .annotation-lead-copy::first-letter { text-transform: uppercase; }
 .post-commentary-more { color: var(--text-muted); }
+.post-audio { margin: 10px 0; }
+.post-source-title { margin: 10px 2px 9px; color: var(--text-primary); font-size: 14px; font-weight: 550; line-height: 1.4; }
 .source-preview { display: flex; align-items: stretch; gap: 14px; min-width: 0; min-height: 132px; margin-top: 0; overflow: hidden; border-radius: 12px; background: #111416; }
 .source-preview-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; justify-content: center; padding: 10px 4px 10px 12px; }
 .source-label { color: var(--text-muted); font-size: 10px; letter-spacing: .035em; }
@@ -219,6 +221,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .source-post-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 8px; }
 .source-post-domain { margin: 0; color: var(--text-muted); font-size: 11px; }
 .source-post-caption { margin: 5px 0 0; color: var(--text-primary); font-size: 14px; font-weight: 550; line-height: 1.4; }
+.source-post-title { margin: 0 0 9px; color: var(--text-primary); font-size: 14px; font-weight: 550; line-height: 1.4; }
 .source-media { overflow: hidden; border-radius: 10px; background: #080909; }
 .source-post-image { display: block; width: 100%; max-height: 460px; border-radius: 10px; object-fit: cover; }
 .source-text-placeholder, .source-article-body { padding: 20px; border-radius: var(--radius-sm); background: var(--bg-surface); }
@@ -244,7 +247,6 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .overflow-menu .relative { position: static; }
 .overflow-menu .relative > button { width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text-secondary); text-align: left; cursor: pointer; }
 .overflow-menu .relative > button:hover { background: rgba(255,255,255,.07); color: var(--text-primary); }
-.annotation-audio-block { background: var(--bg-surface); border: 1px solid var(--border); border-left: 2px solid var(--accent); border-radius: 12px; }
 .detail-commentary { margin: 16px 0; padding: 15px; border-left: 2px solid var(--border); background: rgba(255,255,255,.025); color: var(--text-primary); font: 700 15px/1.6 var(--ui-font); }
 
 .comment-section { margin-top: 18px; border-top: 1px solid var(--border-soft); padding-top: 12px; }

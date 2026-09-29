@@ -5,7 +5,6 @@ import { deleteClip } from '../lib/api';
 import YouTubeEmbed from '../components/YouTubeEmbed';
 import XEmbed from '../components/XEmbed';
 import AudioPlayer from '../components/AudioPlayer';
-import AnnotationBlock from '../components/AnnotationBlock';
 import FileClaimButton from '../components/FileClaimButton';
 import ReportButton from '../components/ReportButton';
 import CommentSection from '../components/CommentSection';
@@ -17,6 +16,8 @@ import { useToast } from '../components/ToastProvider';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
 import { isXPostUrl } from '../lib/social';
+
+const MEDIA_FRAME = /youtube\.com\/embed|youtube-nocookie\.com\/embed|platform\.twitter\.com|twimg\.com/;
 
 export default function ClipPage() {
   const routeParams = useParams();
@@ -127,6 +128,25 @@ export default function ClipPage() {
       clearTimeout(timer);
     };
   }, [clip?.id, clip?.source_type, clip?.source_url, clip?.source_excerpt]);
+
+  useEffect(() => {
+    if (!annotation?.audio_url) return undefined;
+    let activeFrame = null;
+    const check = () => {
+      const active = document.activeElement;
+      if (!active || active.tagName !== 'IFRAME') {
+        activeFrame = null;
+        return;
+      }
+      if (active === activeFrame) return;
+      const frameSrc = active.getAttribute('src') || active.src || '';
+      if (!MEDIA_FRAME.test(frameSrc)) return;
+      activeFrame = active;
+      window.dispatchEvent(new CustomEvent('annotated:play', { detail: null }));
+    };
+    const timer = window.setInterval(check, 250);
+    return () => window.clearInterval(timer);
+  }, [annotation?.audio_url]);
 
   if (demoClip) return <DemoClipPage clip={demoClip} />;
 
@@ -239,9 +259,14 @@ export default function ClipPage() {
         </div>
       </div>
 
-      <AnnotationLead text={annotation?.text_content || clip.title} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} />
+      <AnnotationLead text={annotation?.text_content} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} />
+
+      {annotation?.audio_url && <div className="post-audio"><AudioPlayer src={annotation.audio_url} /></div>}
 
       {clip.source_url && <section className="source-post" aria-label="Original source post">
+        {clip.source_type === 'youtube' && (clip.source_title || clip.title) && (
+          <p className="source-post-title">{clip.source_title || clip.title}</p>
+        )}
         {!isX && clip.source_type !== 'youtube' && <div className="source-post-header">
           <div>
             <p className="source-post-domain">{clip.source_domain || sourceDomain(clip.source_url)}</p>
@@ -296,11 +321,9 @@ export default function ClipPage() {
         )}
       </section>}
 
-      {annotation?.audio_url && <AnnotationBlock annotation={{ ...annotation, text_content: null }} />}
-
       {transcript && (
         <section className="source-transcript" aria-label="Transcript">
-          <span className="source-transcript-label">Transcript</span>
+          {!annotation?.audio_url && <span className="source-transcript-label">Transcript</span>}
           <p className="source-transcript-text">{transcript}</p>
         </section>
       )}
