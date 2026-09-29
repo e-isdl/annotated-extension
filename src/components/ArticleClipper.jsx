@@ -21,6 +21,7 @@ export default function ArticleClipper({ pageInfo, onReady }) {
       title: data.title,
       author: data.author,
       article_text: selectedText,
+      thumbnail: data.ogImage || null,
     });
   };
 

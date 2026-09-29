@@ -84,6 +84,37 @@ function notifySidePanel(message) {
   chrome.runtime.sendMessage(message).catch(() => {});
 }
 
+function sendToTab(tabId, message) {
+  return new Promise((resolve) => {
+    chrome.tabs.sendMessage(tabId, message, (response) => {
+      if (chrome.runtime.lastError) resolve(null);
+      else resolve(response || null);
+    });
+  });
+}
+
+async function captureTweetScreenshot() {
+  try {
+    const tab = await getActiveTab();
+    if (tab?.id == null) return { ok: false };
+    await getPageInfoFromTab(tab.id);
+    const prep = await sendToTab(tab.id, { type: 'CAPTURE_TWEET' });
+    if (!prep || !prep.ok) return { ok: false, hasPhotos: prep?.hasPhotos === true };
+    if (!prep.hasPhotos) return { ok: true, hasPhotos: false };
+    let shot = null;
+    try {
+      shot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    } catch (e) {
+      return { ok: false, hasPhotos: true };
+    }
+    const cropped = await sendToTab(tab.id, { type: 'CROP_TWEET', dataUrl: shot, rect: prep.rect });
+    if (!cropped?.ok || !cropped.dataUrl) return { ok: false, hasPhotos: true };
+    return { ok: true, hasPhotos: true, dataUrl: cropped.dataUrl };
+  } catch (e) {
+    return { ok: false };
+  }
+}
+
 // The side panel follows one tab at a time: the tab the user last switched to.
 // Anything else updating in the background must not overwrite the panel's page.
 let currentTabId = null;
@@ -127,6 +158,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse(null);
       }
     });
+    return true;
+  }
+  if (message.type === 'CAPTURE_TWEET') {
+    captureTweetScreenshot().then(sendResponse);
     return true;
   }
 });

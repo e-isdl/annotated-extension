@@ -274,7 +274,14 @@ export default function ClipPage() {
           </div>
           <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
         </div>}
-        {isX && (
+        {isX && (clip.thumbnail ? (
+          <div className="source-media source-media-x">
+            <img src={clip.thumbnail} alt={clip.title || 'X post'} className="source-post-image source-post-image-x" loading="lazy" />
+            <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
+              ↗ view original on x
+            </a>
+          </div>
+        ) : (
           <XEmbed
             url={clip.source_url}
             title={clip.title}
@@ -282,7 +289,7 @@ export default function ClipPage() {
             authorUrl={clip.author_url}
             text={clip.source_excerpt}
           />
-        )}
+        ))}
         {clip.source_type === 'youtube' && (
           <div className="source-media">
             <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted autoplay />
