@@ -22,6 +22,7 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
   const [commentVotes, setCommentVotes] = useState({});
   const [moderatorIds, setModeratorIds] = useState(new Set());
   const [deletingId, setDeletingId] = useState(null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const composerRef = useRef(null);
   const pendingVotes = useRef(new Set());
   const { push } = useToast();
@@ -78,6 +79,10 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
   useEffect(() => {
     if (composerRef.current && !body) composerRef.current.style.height = '';
   }, [body]);
+
+  useEffect(() => {
+    if (composerOpen) composerRef.current?.focus();
+  }, [composerOpen]);
 
   const visibleComments = useMemo(() => {
     const sorted = [...comments].sort((a, b) => {
@@ -143,6 +148,7 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
 
       const data = await createComment(supabase, insertPayload);
       setComments((current) => current.map((comment) => comment.id === tempId ? data : comment));
+      if (!parentCommentId) setComposerOpen(false);
 
     } catch (error) {
       console.error('Comment failed:', error);
@@ -193,14 +199,31 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
       </div>
 
       <div className="comment-composer">
-        <Avatar profile={session?.user ? authProfile(session.user) : null} size="md" />
-        <div className="comment-composer-main">
-          <textarea ref={composerRef} rows={1} maxLength={600} value={body} onChange={(event) => { setBody(event.target.value); resizeCommentField(event.currentTarget); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') submitComment({ text: body }); }} placeholder={session ? 'Add a comment' : 'Sign in to comment'} className="comment-textarea" />
-          <div className="comment-composer-footer">
-            {body.length >= 480 && <span className="comment-character-count">{body.length}/600</span>}
-            <button onClick={() => submitComment({ text: body })} disabled={!body.trim()} className="comment-submit-button">Comment</button>
+        {!composerOpen ? (
+          <button type="button" className="comment-composer-trigger" aria-expanded="false" onClick={() => setComposerOpen(true)}>
+            {session ? 'Add a comment' : 'Sign in to comment'}
+          </button>
+        ) : (
+          <div className="comment-composer-main">
+            <textarea
+              ref={composerRef}
+              rows={1}
+              maxLength={600}
+              value={body}
+              onChange={(event) => { setBody(event.target.value); resizeCommentField(event.currentTarget); }}
+              onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') submitComment({ text: body }); }}
+              onBlur={(event) => { if (!event.currentTarget.value.trim()) setComposerOpen(false); }}
+              placeholder={session ? 'Add a comment' : 'Sign in to comment'}
+              className="comment-textarea"
+            />
+            {(body.trim() || body.length >= 480) && (
+              <div className="comment-composer-footer">
+                {body.length >= 480 && <span className="comment-character-count">{body.length}/600</span>}
+                {body.trim() && <button onClick={() => submitComment({ text: body })} className="comment-submit-button">Comment</button>}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
       {loading ? <CommentSkeleton /> : (
@@ -343,15 +366,6 @@ function CommentActionIcon({ name }) {
     caret: <path d="m7 10 5 5 5-5" />,
   };
   return <svg className={`comment-icon comment-icon-${name}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
-}
-
-function authProfile(user) {
-  return {
-    id: user.id,
-    handle: user.user_metadata?.user_name || user.email?.split('@')[0] || user.id.slice(0, 8),
-    display_name: user.user_metadata?.full_name || null,
-    avatar_url: user.user_metadata?.avatar_url || null,
-  };
 }
 
 function resizeCommentField(field) {

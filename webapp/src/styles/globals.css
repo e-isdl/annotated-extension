@@ -255,7 +255,9 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .comment-icon-caret { position: absolute; right: 0; width: 13px; height: 13px; color: var(--text-muted); pointer-events: none; }
 .comment-search { width: min(220px, 45vw); height: 32px; padding: 0 12px; border: 1px solid var(--border-soft); border-radius: var(--radius-pill); background: #171a1c; color: var(--text-primary); font: 12px var(--ui-font); }
 .comment-search::placeholder { color: var(--text-muted); }
-.comment-composer { display: flex; align-items: flex-start; gap: 10px; margin: 12px 0 16px; }
+.comment-composer { margin: 12px 0 16px; }
+.comment-composer-trigger { display: block; width: 100%; padding: 4px 0 11px; border: 0; border-bottom: 1px solid #2c3236; background: transparent; color: #8a9297; font: 14px/1.45 var(--ui-font); text-align: left; cursor: text; transition: color .15s, border-color .15s; }
+.comment-composer-trigger:hover { color: var(--text-secondary); border-color: #3a4146; }
 .comment-composer-main { min-width: 0; flex: 1; }
 .comment-textarea, .comment-reply-input { display: block; width: 100%; min-height: 42px; max-height: 192px; padding: 9px 12px; border: 1px solid #3a4146; border-radius: 12px; background: #1b1f22; color: var(--text-primary); font: 14px/1.45 var(--ui-font); outline: none; resize: none; }
 .comment-textarea:focus, .comment-reply-input:focus { border-color: #586168; }
@@ -411,8 +413,6 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
   .comment-node[data-depth="1"]::before, .comment-node[data-depth="2"]::before, .comment-node[data-depth="3"]::before, .comment-node[data-depth="4"]::before, .comment-node[data-depth="5"]::before { left: -8px; width: 8px; }
   .comment-action-items { gap: 11px; }
   .comment-actions { margin-left: -42px; padding-left: 42px; }
-  .comment-composer { gap: 8px; }
-  .comment-composer .avatar-circle { width: 32px; height: 32px; }
   .detail-actions { gap: 6px; }
   .detail-actions .post-action { min-height: 34px; padding-inline: 9px; font-size: 11px; }
   .profile-edit-backdrop { padding: 12px; }
