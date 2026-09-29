@@ -201,11 +201,11 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 
 .detail-page, .annotated-post-page { width: 100%; max-width: 770px; margin-inline: auto; }
 .detail-meta-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; color: var(--text-muted); font-size: 12px; }
-.detail-back-button { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--text-secondary); text-decoration: none; }
+.detail-back-button { position: absolute; left: -32px; top: 50%; transform: translateY(-50%); display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--text-secondary); text-decoration: none; }
 .detail-back-button:hover { background: rgba(255,255,255,.07); color: var(--text-primary); }
 .detail-author-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 24px; }
 .detail-header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
-.detail-post-context { font-size: 12px; }
+.detail-post-context { position: relative; min-height: 28px; font-size: 12px; }
 .annotation-lead { margin: 0 0 9px; padding: 0; border: 0; }
 .annotation-lead-kicker { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 .annotation-lead-author { display: flex; align-items: center; gap: 7px; margin-top: 0; }
@@ -420,6 +420,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
   .moment-fields { grid-template-columns: 1fr; }
   .annotation-lead-copy { font-size: 18px; }
   .detail-author-row { align-items: flex-start; }
+  .detail-back-button { position: static; top: auto; transform: none; margin-left: -4px; }
   .profile-header { padding: 0 7px; }
   .profile-copy h1 { font-size: 18px; }
   .notification-row { grid-template-columns: 1fr auto; gap: 6px 10px; }
@@ -446,10 +447,17 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 /* Empty comment states sit centered with breathing room. */
 .comment-empty-state { padding: 44px 16px 32px; color: var(--text-muted); font-size: 14px; text-align: center; }
 
-/* Embedded X post: the iframe reports its own height via postMessage.
-   The embed lays out at 550px; cap the frame so no light page edge shows. */
-/* Official X widget: no fixed height/overflow on the wrapper so it sizes itself.
-   clip-path only trims X's white corner pixels at the card's rounded corners. */
-.source-embed { background: transparent; border-radius: 10px; }
+/* X post compact card: site-colored summary by default; the official widget
+   only renders inside the card after the reader expands it.
+   clip-path on .x-embed trims X's white corner pixels at the widget's rounded corners. */
+.x-card { padding: 20px; border-radius: var(--radius-sm); background: var(--bg-surface); }
+.x-card-title { margin: 0 0 8px; color: var(--text-primary); font-size: 14px; font-weight: 550; line-height: 1.4; }
+.x-card-author { display: flex; align-items: baseline; gap: 7px; margin-bottom: 8px; }
+.x-card-name { color: var(--text-primary); font-size: 12px; font-weight: 650; }
+.x-card-handle { color: var(--text-muted); font-size: 12px; }
+.x-card-text { display: -webkit-box; overflow: hidden; margin: 0; color: var(--text-secondary); font: 14px/1.55 var(--reading-font); white-space: pre-wrap; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.x-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-soft); }
+.x-card-domain { color: var(--text-muted); font-size: 11px; }
+.x-card .x-embed { margin-top: 14px; }
 .x-embed { width: 100%; max-width: 550px; margin-inline: auto; overflow: visible; background: transparent; clip-path: inset(0 round 16px); }
 .x-embed-fallback { display: block; width: fit-content; margin-inline: auto; color: var(--accent, #1d9bf0); font-size: 14px; }

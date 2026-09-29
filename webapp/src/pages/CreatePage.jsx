@@ -7,6 +7,7 @@ import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
 import { createAnnotatedPost } from '../lib/mutations';
 import { communityStyle } from '../lib/community';
+import { isXPostUrl } from '../lib/social';
 
 const TYPES = ['Reaction', 'Fact check', 'Explainer', 'Steelman', 'Found receipts'];
 const ANNOTATION_LIMITS = { Reaction: 280, 'Fact check': 500, Explainer: 600, Steelman: 800, 'Found receipts': 1000 };
@@ -90,6 +91,7 @@ export default function CreatePage() {
     if (commentary.length > annotationLimit) { setStatus(`This ${form.type.toLowerCase()} annotation is limited to ${annotationLimit} characters.`); return; }
     if (needsSource && !url) { setStatus(mode === 'moment' ? 'Add the video or podcast URL for this moment.' : 'Add the source URL, or switch to Text.'); return; }
     if (url && !isValidUrl(url)) { setStatus('Use a complete source URL, including https://.'); return; }
+    if (sourceType === 'social' && url && !isXPostUrl(url)) { setStatus('Share an X post link, like https://x.com/user/status/123.'); return; }
     if (mode === 'moment' && sourceType !== 'youtube') { setStatus('Moment posts currently need a YouTube source so the selected times can be played back.'); return; }
     if (mode === 'moment' && (!Number.isFinite(startSec) || !Number.isFinite(endSec) || startSec < 0 || endSec <= startSec)) { setStatus('Add a valid start and end time for the moment.'); return; }
     if (!user) { setStatus('Sign in to publish. Your draft is ready when you are.'); return; }
@@ -201,7 +203,7 @@ function detectSourceType(value, mode) {
     const host = new URL(value).hostname.replace(/^www\./, '').toLowerCase();
     if (host === 'youtube.com' || host === 'youtu.be') return 'youtube';
     if (['spotify.com', 'open.spotify.com', 'podcasts.apple.com', 'anchor.fm', 'overcast.fm'].some((domain) => host === domain || host.endsWith(`.${domain}`))) return 'podcast';
-    if (['x.com', 'twitter.com', 'threads.net'].some((domain) => host === domain || host.endsWith(`.${domain}`))) return 'social';
+    if (['x.com', 'twitter.com'].some((domain) => host === domain || host.endsWith(`.${domain}`))) return 'social';
   } catch {}
   return 'article';
 }

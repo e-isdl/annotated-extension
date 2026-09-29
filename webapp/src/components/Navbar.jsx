@@ -164,9 +164,9 @@ export default function Navbar() {
         </form>
 
         <div className="flex items-center gap-4 shrink-0">
-          <Link to="/explore" className="hidden sm:block text-xs text-text-secondary hover:text-text-primary transition-colors">Explore</Link>
-          <Link to="/leaderboard" className="hidden md:block text-xs text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
-          <Link to="/create" className="hidden sm:inline-flex btn-primary text-xs py-2 px-3">Create</Link>
+          <Link to="/explore" className="hidden sm:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Explore</Link>
+          <Link to="/leaderboard" className="hidden md:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
+          <Link to="/create" className="btn-primary h-9 text-xs">Create</Link>
 
           {user ? (
             <>
@@ -174,7 +174,7 @@ export default function Navbar() {
                   <button
                   aria-label="Open notifications"
                   onClick={() => { setShowNotifs(!showNotifs); if (!showNotifs) markAllRead(); }}
-                  className="relative text-text-secondary hover:text-text-primary transition-colors"
+                  className="relative flex items-center justify-center w-9 h-9 rounded-full text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -223,7 +223,7 @@ export default function Navbar() {
                 onClick={signOut}
                 aria-label="Sign out"
                 title="Sign out"
-                className="text-text-secondary hover:text-accent transition-colors"
+                className="flex items-center justify-center w-9 h-9 rounded-full text-text-secondary hover:text-accent transition-colors"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2v10" />
@@ -231,7 +231,7 @@ export default function Navbar() {
                 </svg>
               </button>
 
-              <Link to={`/u/${user.user_metadata?.user_name || user.id}`} aria-label="Open your profile" className="flex items-center">
+              <Link to={`/u/${user.user_metadata?.user_name || user.id}`} aria-label="Open your profile" className="flex items-center justify-center w-9 h-9 rounded-full">
                 <Avatar profile={{
                   handle: user.user_metadata?.user_name || user.email?.split('@')[0],
                   avatar_url: user.user_metadata?.avatar_url,
@@ -239,7 +239,7 @@ export default function Navbar() {
               </Link>
             </>
           ) : (
-            <button onClick={signIn} className="btn-primary text-xs py-1.5 px-3">
+            <button onClick={signIn} className="btn-primary h-9 text-xs">
               Sign in
             </button>
           )}

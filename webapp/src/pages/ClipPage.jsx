@@ -98,6 +98,37 @@ export default function ClipPage() {
     load();
   }, [id, demoClip]);
 
+  useEffect(() => {
+    if (!clip || clip.source_type !== 'social' || !isXPostUrl(clip.source_url)) return undefined;
+    if (clip.source_excerpt) return undefined;
+    let cancelled = false;
+    let attempt = 0;
+    let timer = null;
+    const refresh = async () => {
+      try {
+        const { data, error } = await supabase.rpc('refresh_x_metadata', { p_clip_id: clip.id });
+        if (cancelled) return;
+        if (!error && data && data.text) {
+          setClip((previous) => (previous ? {
+            ...previous,
+            author: data.author ?? previous.author,
+            author_url: data.author_url ?? previous.author_url,
+            source_excerpt: data.text ?? previous.source_excerpt,
+          } : previous));
+          return;
+        }
+      } catch {}
+      if (cancelled) return;
+      attempt += 1;
+      if (attempt < 6) timer = setTimeout(refresh, 600 + attempt * 400);
+    };
+    refresh();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [clip?.id, clip?.source_type, clip?.source_url, clip?.source_excerpt]);
+
   if (demoClip) return <DemoClipPage clip={demoClip} />;
 
   const handleDeleteClip = async () => {
@@ -217,7 +248,13 @@ export default function ClipPage() {
           <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
         </div>}
         {isX && (
-          <div className="source-embed"><XEmbed url={clip.source_url} /></div>
+          <XEmbed
+            url={clip.source_url}
+            title={clip.title}
+            authorName={clip.author}
+            authorUrl={clip.author_url}
+            text={clip.source_excerpt}
+          />
         )}
         {clip.source_type === 'youtube' && (
           <div className="source-media">

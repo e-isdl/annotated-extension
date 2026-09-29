@@ -19,19 +19,35 @@ function loadWidgets() {
   return widgetsScript;
 }
 
-export default function XEmbed({ url }) {
+function handleFromUrl(url) {
+  if (!url) return null;
+  try {
+    const segments = new URL(url).pathname.split('/').filter(Boolean);
+    return segments.length ? segments[segments.length - 1] : null;
+  } catch {
+    return null;
+  }
+}
+
+export default function XEmbed({ url, title, authorName, authorUrl, text }) {
   const containerRef = useRef(null);
+  const [expanded, setExpanded] = useState(false);
   const [failed, setFailed] = useState(false);
   const tweetId = tweetIdFromUrl(url);
+  const handle = handleFromUrl(authorUrl);
+  const postText = (text || '').trim();
+  const postTitle = (title || '').trim();
+  const showTitle = Boolean(postTitle) && (!postText || (postTitle !== postText && !postText.startsWith(postTitle)));
 
   useEffect(() => {
-    if (!tweetId) return undefined;
+    if (!expanded || !tweetId) return undefined;
     const container = containerRef.current;
     if (!container) return undefined;
     let cancelled = false;
     loadWidgets().then((twttr) => {
-      if (cancelled || !twttr) {
-        if (!twttr) setFailed(true);
+      if (cancelled) return;
+      if (!twttr) {
+        setFailed(true);
         return;
       }
       twttr.ready((ready) => {
@@ -48,17 +64,39 @@ export default function XEmbed({ url }) {
     return () => {
       cancelled = true;
     };
-  }, [tweetId]);
+  }, [expanded, tweetId]);
 
   if (!tweetId) return null;
 
-  if (failed) {
-    return (
-      <a className="x-embed-fallback" href={url} target="_blank" rel="noopener noreferrer">
-        View post on X
-      </a>
-    );
-  }
-
-  return <div ref={containerRef} className="x-embed" />;
+  return (
+    <div className="x-card">
+      {showTitle && <p className="x-card-title">{postTitle}</p>}
+      {(authorName || handle) && (
+        <div className="x-card-author">
+          {authorName && <span className="x-card-name">{authorName}</span>}
+          {handle && <span className="x-card-handle">@{handle}</span>}
+        </div>
+      )}
+      {!expanded && postText && <p className="x-card-text">{postText}</p>}
+      {expanded && failed && (
+        <a className="x-embed-fallback" href={url} target="_blank" rel="noopener noreferrer">
+          View post on X
+        </a>
+      )}
+      {expanded && !failed && <div ref={containerRef} className="x-embed" />}
+      <div className="x-card-foot">
+        <span className="x-card-domain">x.com</span>
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={() => {
+            setFailed(false);
+            setExpanded((value) => !value);
+          }}
+        >
+          {expanded ? 'Hide post' : 'Show full post'}
+        </button>
+      </div>
+    </div>
+  );
 }
