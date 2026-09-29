@@ -351,7 +351,6 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
             maxLength={annotationLimit}
             className="input resize-none text-sm leading-relaxed"
           />
-          <p className="text-[10px] text-text-muted text-right">{text.length}/{annotationLimit}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
