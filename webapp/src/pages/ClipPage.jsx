@@ -180,8 +180,12 @@ export default function ClipPage() {
       <div className="detail-author-row">
         <div className="detail-post-context">
           <Link to="/" className="detail-back-button" aria-label="Back to home">←</Link>
-          {clip.community_slug && clip.community_name && <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>}
-          <span>•</span>
+          {clip.community_slug && clip.community_name && (
+            <>
+              <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>
+              <span>•</span>
+            </>
+          )}
           <span>{formatDate(clip.created_at)}</span>
           {!annotation?.text_content && <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author no-underline">by {profile?.handle || 'anonymous'}</Link>}
         </div>

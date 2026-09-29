@@ -211,7 +211,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .detail-post-context { position: relative; min-height: 28px; font-size: 12px; }
 .annotation-lead { margin: 0 0 9px; padding: 0; border: 0; }
 .annotation-lead-kicker { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-.annotation-lead-author { display: flex; align-items: center; gap: 8px; min-height: 28px; margin-top: 0; }
+.annotation-lead-author { display: flex; align-items: center; gap: 8px; min-height: 28px; margin-top: 6px; }
 .annotation-lead-handle { color: var(--text-secondary); font-size: 12px; font-weight: 650; }
 .annotation-lead-copy { display: block; margin: 7px 0 0; color: var(--text-primary); font: 700 18px/1.4 var(--ui-font); letter-spacing: -.01em; }
 .detail-title { margin: 0; color: var(--text-primary); font: 600 clamp(20px, 2vw, 24px)/1.3 var(--reading-font); }

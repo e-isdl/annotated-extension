@@ -24,8 +24,12 @@ export default function DemoClipPage({ clip }) {
     <article className="detail-page annotated-post-page">
       <div className="detail-meta-row">
         <Link to="/" className="detail-back-button" aria-label="Back to home">←</Link>
-        <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>
-        <span>•</span>
+        {clip.community_slug && clip.community_name && (
+          <>
+            <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>
+            <span>•</span>
+          </>
+        )}
         <span>{timeAgo(clip.created_at)}</span>
       </div>
 

@@ -6,6 +6,7 @@ export function youtubeEmbedUrl(videoId, { startSec = 0, endSec = 0, muted = tru
     autoplay: autoplay ? '1' : '0',
     mute: muted ? '1' : '0',
     playsinline: '1',
+    cc_load_policy: '0',
   });
   if (end > start) params.set('end', String(end));
   return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${params.toString()}`;
