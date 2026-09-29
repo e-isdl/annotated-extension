@@ -20,7 +20,6 @@ export default function AnnotationLead({ text, profile, annotationType = 'Annota
         </Link>
       </div>
       <Copy className="annotation-lead-copy">{text}</Copy>
-      <span className="annotation-rule annotation-lead-rule" aria-hidden="true" />
     </section>
   );
 }
