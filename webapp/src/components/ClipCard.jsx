@@ -20,6 +20,7 @@ export default function ClipCard({ clip }) {
   const isYouTube = clip.source_type === 'youtube';
   const youtubeTitle = clip.source_title || clip.title;
   const sourceTitle = isYouTube || isXPostUrl(clip.source_url) ? null : clip.source_title || clip.title;
+  const sourceLabel = clip.source_type === 'social' ? 'x' : clip.source_type;
   const [score, setScore] = useState(clip.score ?? 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
@@ -82,7 +83,7 @@ export default function ClipCard({ clip }) {
         </Link>
         <span className="post-meta-separator">•</span>
         <span>{timeAgo(clip.created_at)}</span>
-        <span className={`badge badge-${clip.source_type}`}>{clip.annotation_type || clip.source_type}</span>
+        <span className={`badge badge-${clip.source_type}`}>{sourceLabel}</span>
       </div>
 
       <Link to={href} className="block no-underline group">
