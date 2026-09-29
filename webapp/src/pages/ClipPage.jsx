@@ -115,37 +115,6 @@ export default function ClipPage() {
   }, [id, demoClip]);
 
   useEffect(() => {
-    if (!clip || clip.source_type !== 'social' || !isXPostUrl(clip.source_url)) return undefined;
-    if (clip.source_excerpt) return undefined;
-    let cancelled = false;
-    let attempt = 0;
-    let timer = null;
-    const refresh = async () => {
-      try {
-        const { data, error } = await supabase.rpc('refresh_x_metadata', { p_clip_id: clip.id });
-        if (cancelled) return;
-        if (!error && data && data.text) {
-          setClip((previous) => (previous ? {
-            ...previous,
-            author: data.author ?? previous.author,
-            author_url: data.author_url ?? previous.author_url,
-            source_excerpt: data.text ?? previous.source_excerpt,
-          } : previous));
-          return;
-        }
-      } catch {}
-      if (cancelled) return;
-      attempt += 1;
-      if (attempt < 6) timer = setTimeout(refresh, 600 + attempt * 400);
-    };
-    refresh();
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [clip?.id, clip?.source_type, clip?.source_url, clip?.source_excerpt]);
-
-  useEffect(() => {
     if (!annotation?.audio_url) return undefined;
     let activeFrame = null;
     const check = () => {
@@ -295,7 +264,7 @@ export default function ClipPage() {
         ref={tweetTextRef}
         className={`x-text-card-text${tweetExpanded ? '' : ' x-text-card-text-clamped'}`}
       >
-        {clip.source_excerpt || clip.article_text || clip.title}
+        {clip.article_text || clip.source_excerpt || clip.title}
       </p>
       {tweetExpandable && (
         <button
