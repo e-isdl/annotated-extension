@@ -7,6 +7,7 @@ export default function Avatar({ profile, size = 'md' }) {
   const initial = String(profile?.display_name || profile?.handle || profile?.email || 'A').replace(/^@/, '').trim().charAt(0).toUpperCase() || 'A';
   const hue = [...String(identity)].reduce((value, character) => (value * 31 + character.charCodeAt(0)) >>> 0, 7) % 360;
   const sizeClasses = {
+    dot: 'w-[18px] h-[18px] text-[9px]',
     xs: 'w-5 h-5 text-[8px]',
     sm: 'w-6 h-6 text-[10px]',
     md: 'w-8 h-8 text-xs',

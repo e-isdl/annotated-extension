@@ -7,6 +7,7 @@ import AudioPlayer from './AudioPlayer';
 import SourceIcon from './SourceIcon';
 import { useToast } from './ToastProvider';
 import CommunityAvatar from './CommunityAvatar';
+import Avatar from './Avatar';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
 import { isXPostUrl, matchStatusUrl } from '../lib/social';
@@ -74,17 +75,27 @@ export default function ClipCard({ clip }) {
   return (
     <article className="post-card">
       <div className="post-meta">
-        {clip.community_slug && clip.community_name && <>
-          <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline">
-            <CommunityAvatar slug={clip.community_slug} name={clip.community_name} />
-            <span>c/{clip.community_name}</span>
-          </Link>
-          <span className="post-meta-separator">•</span>
-        </>}
-        <Link to={clip.profiles?.handle ? `/u/${clip.profiles.handle}` : '#'} className="post-author no-underline">
-          {clip.profiles?.handle || 'anonymous'}
-        </Link>
-        <span className="post-meta-separator">•</span>
+        {clip.community_slug && clip.community_name ? (
+          <>
+            <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline">
+              <CommunityAvatar slug={clip.community_slug} name={clip.community_name} />
+              <span>c/{clip.community_name}</span>
+            </Link>
+            <span className="post-meta-separator">•</span>
+            <Link to={clip.profiles?.handle ? `/u/${clip.profiles.handle}` : '#'} className="post-author no-underline">
+              {clip.profiles?.handle || 'anonymous'}
+            </Link>
+            <span className="post-meta-separator">•</span>
+          </>
+        ) : (
+          <>
+            <Link to={clip.profiles?.handle ? `/u/${clip.profiles.handle}` : '#'} className="community-pill no-underline">
+              <Avatar profile={clip.profiles} size="dot" />
+              <span>{clip.profiles?.handle || 'anonymous'}</span>
+            </Link>
+            <span className="post-meta-separator">•</span>
+          </>
+        )}
         <span>{timeAgo(clip.created_at)}</span>
         <span className={`badge badge-${clip.source_type}`}><SourceIcon type={clip.source_type} />{sourceLabel}</span>
       </div>
