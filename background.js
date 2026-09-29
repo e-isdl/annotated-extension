@@ -94,26 +94,40 @@ function sendToTab(tabId, message) {
 }
 
 const CAPTURE_ZOOM_CANDIDATES = [2, 1.5, 1.25, 1];
+const CAPTURE_SLICE_OVERLAP = 80;
+const CAPTURE_MAX_SLICES = 12;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Capture rules: a tweet that fits within 90% of the screen is captured whole,
-// at the highest page zoom that still fits (extra sharpness). Anything taller
-// is not screenshotted at all — the post falls back to its copied text.
+// Fits in one viewport → single capture (optionally zoomed). Taller posts →
+// overlapping slices stitched together. Video/image posts are often taller
+// than 90% of the screen even when they look fine on screen.
 function planCapture(prep) {
   if (!(prep.h > 10) || !(prep.w > 10)) return null;
-  const topOffset = prep.headerH + 8;
-  if (prep.h + topOffset > 0.9 * prep.vh) return null;
-  const maxZoom = Math.min(
-    2,
-    (0.9 * prep.vh) / prep.h,
-    prep.vh / (prep.h + topOffset),
-    prep.vw / prep.w,
-  );
-  const zoom = CAPTURE_ZOOM_CANDIDATES.find((z) => z <= maxZoom + 1e-6) || 1;
-  return { zoom, height: prep.h };
+  const topOffset = Math.min(prep.headerH + 8, Math.round(prep.vh * 0.14));
+  const usableVh = Math.max(200, prep.vh - topOffset);
+
+  if (prep.h <= usableVh * 0.98) {
+    const maxZoom = Math.min(
+      2,
+      usableVh / prep.h,
+      prep.vw / prep.w,
+    );
+    const zoom = CAPTURE_ZOOM_CANDIDATES.find((z) => z <= maxZoom + 1e-6) || 1;
+    return { mode: 'single', zoom, height: prep.h };
+  }
+
+  let step = usableVh - CAPTURE_SLICE_OVERLAP;
+  if (step < 120) step = Math.max(120, Math.round(usableVh * 0.72));
+  let slices = Math.ceil(prep.h / step);
+  if (slices > CAPTURE_MAX_SLICES) {
+    step = Math.ceil(prep.h / CAPTURE_MAX_SLICES);
+    slices = CAPTURE_MAX_SLICES;
+  }
+  if (prep.h > 22000) return null;
+  return { mode: 'stitched', height: prep.h, step, slices };
 }
 
 async function captureTweetScreenshot() {
@@ -136,7 +150,7 @@ async function captureTweetScreenshot() {
     if (!plan) return { ok: true, hasPhotos: false, reason: 'too-tall' };
     let vw = prep.vw;
     let vh = prep.vh;
-    if (plan.zoom !== 1) {
+    if (plan.mode === 'single' && plan.zoom !== 1) {
       try { await chrome.tabs.setZoom(tab.id, plan.zoom); } catch (e) { /* ignore */ }
       await sleep(320);
       const zoomed = await sendToTab(tab.id, { type: 'CAPTURE_PREP' });
@@ -145,22 +159,29 @@ async function captureTweetScreenshot() {
       vh = zoomed.vh;
     }
 
-    const scrolled = await sendToTab(tab.id, {
-      type: 'CAPTURE_SCROLL',
-      to: prep.absTop - (prep.headerH + 8),
-    });
-    if (!scrolled?.ok) return { ok: false, hasPhotos: true };
-    await sleep(700);
-    let dataUrl;
-    try {
-      dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 95 });
-    } catch (e) {
-      return { ok: false, hasPhotos: true };
+    const topOffset = prep.headerH + 8;
+    const sliceCount = plan.mode === 'stitched' ? plan.slices : 1;
+    const sliceStep = plan.mode === 'stitched' ? plan.step : 0;
+    const shots = [];
+    for (let i = 0; i < sliceCount; i += 1) {
+      const scrolled = await sendToTab(tab.id, {
+        type: 'CAPTURE_SCROLL',
+        to: prep.absTop - topOffset + i * sliceStep,
+      });
+      if (!scrolled?.ok) return { ok: false, hasPhotos: true };
+      await sleep(i === 0 ? 700 : 420);
+      let dataUrl;
+      try {
+        dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 95 });
+      } catch (e) {
+        return { ok: false, hasPhotos: true };
+      }
+      shots.push({ dataUrl, rect: scrolled.rect, cutTop: topOffset });
     }
 
     const stitched = await sendToTab(tab.id, {
       type: 'CAPTURE_STITCH',
-      shots: [{ dataUrl, rect: scrolled.rect, scrollY: scrolled.scrollY }],
+      shots,
       w: prep.w,
       h: plan.height,
       vw,

@@ -108,17 +108,61 @@ function findTweetArticle() {
   return articles[0];
 }
 
-function tweetHasMedia(article) {
-  return !!article.querySelector(
-    '[data-testid="tweetPhoto"], a[href*="/photo/"], a[href*="/video/"], video, [data-testid="videoPlayer"], [data-testid="videoComponent"]',
-  );
+function tweetHeaderHeight() {
+  const banner = document.querySelector('header[role="banner"]');
+  if (banner) {
+    const height = banner.getBoundingClientRect().height;
+    if (Number.isFinite(height) && height > 0 && height < 180) return height;
+  }
+  return 53;
 }
 
-function tweetHeaderHeight() {
-  const header = document.querySelector('header[role="banner"]') || document.querySelector('header');
-  if (!header) return 0;
-  const height = header.getBoundingClientRect().height;
-  return Number.isFinite(height) ? height : 0;
+// Measure the visible tweet card (author, text, media, actions) instead of the
+// full <article>, which on X can include a lot of empty vertical space.
+function tweetCaptureBounds(article) {
+  const parts = [
+    '[data-testid="User-Name"]',
+    '[data-testid="tweetText"]',
+    '[data-testid="tweetPhoto"]',
+    '[data-testid="card.wrapper"]',
+    '[data-testid="videoPlayer"]',
+    '[data-testid="videoComponent"]',
+    'video',
+    '[role="group"]',
+  ];
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let found = false;
+  parts.forEach((selector) => {
+    article.querySelectorAll(selector).forEach((el) => {
+      const box = el.getBoundingClientRect();
+      if (box.width < 2 || box.height < 2) return;
+      found = true;
+      minX = Math.min(minX, box.left);
+      minY = Math.min(minY, box.top);
+      maxX = Math.max(maxX, box.right);
+      maxY = Math.max(maxY, box.bottom);
+    });
+  });
+  if (!found) {
+    const box = article.getBoundingClientRect();
+    return {
+      x: box.left,
+      y: box.top,
+      w: box.width,
+      h: box.height,
+      absTop: box.top + window.scrollY,
+    };
+  }
+  return {
+    x: minX,
+    y: minY,
+    w: Math.max(1, maxX - minX),
+    h: Math.max(1, maxY - minY),
+    absTop: minY + window.scrollY,
+  };
 }
 
 function expandTruncatedTweet(article) {
@@ -167,7 +211,13 @@ function loadImage(src) {
 function tweetTextFromPage() {
   try {
     const el = document.querySelector('[data-testid="tweetText"]');
-    return el ? String(el.innerText || '').trim() : '';
+    if (!el) return '';
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll('br').forEach((br) => { br.replaceWith('\n'); });
+    return String(clone.textContent || '')
+      .replace(/ /g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   } catch (e) {
     return '';
   }
@@ -238,20 +288,20 @@ if (!window.__annotatedContentLoaded) {
         try {
           const article = findTweetArticle();
           if (!article) { sendResponse({ ok: false }); return; }
-          if (!tweetHasMedia(article)) { sendResponse({ ok: true, hasPhotos: false }); return; }
           expandTruncatedTweet(article);
           pauseTweetMedia(article);
+          article.scrollIntoView({ block: 'center', behavior: 'instant' });
           await new Promise((resolve) => setTimeout(resolve, 300));
           await waitForTweetMedia(article, 2500);
           pauseTweetMedia(article);
-          const box = article.getBoundingClientRect();
-          if (box.width < 40 || box.height < 40) { sendResponse({ ok: false }); return; }
+          const bounds = tweetCaptureBounds(article);
+          if (bounds.w < 40 || bounds.h < 40) { sendResponse({ ok: false }); return; }
           sendResponse({
             ok: true,
             hasPhotos: true,
-            w: box.width,
-            h: box.height,
-            absTop: box.top + window.scrollY,
+            w: bounds.w,
+            h: bounds.h,
+            absTop: bounds.absTop,
             headerH: tweetHeaderHeight(),
             vw: window.innerWidth,
             vh: window.innerHeight,
@@ -272,11 +322,11 @@ if (!window.__annotatedContentLoaded) {
           await new Promise((resolve) => setTimeout(resolve, 260));
           await waitForTweetMedia(article, 1200);
           pauseTweetMedia(article);
-          const box = article.getBoundingClientRect();
+          const bounds = tweetCaptureBounds(article);
           sendResponse({
             ok: true,
             scrollY: window.scrollY,
-            rect: { x: box.left, y: box.top, w: box.width, h: box.height },
+            rect: { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h },
           });
         } catch (e) {
           sendResponse({ ok: false });
@@ -309,9 +359,10 @@ if (!window.__annotatedContentLoaded) {
             const img = i === 0 ? first : await loadImage(shot.dataUrl);
             if (!img.naturalWidth) continue;
             const rect = shot.rect;
-            const localTop = Math.max(0, -rect.y);
+            const cutTop = Math.max(0, Number(shot.cutTop) || 0);
+            const visTop = Math.max(rect.y, cutTop);
+            const localTop = visTop - rect.y;
             if (localTop >= h) continue;
-            const visTop = Math.max(0, rect.y);
             const visH = Math.min(h - localTop, vh - visTop);
             if (visH <= 0 || rect.w <= 0) continue;
             const sx = Math.min(Math.max(rect.x * scale, 0), img.naturalWidth - 1);
