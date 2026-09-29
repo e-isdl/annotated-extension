@@ -9,8 +9,8 @@ import { createAnnotatedPost } from '../lib/mutations';
 import { communityStyle } from '../lib/community';
 import { isXPostUrl } from '../lib/social';
 
-const TYPES = ['Reaction', 'Fact check', 'Explainer', 'Steelman', 'Found receipts'];
-const ANNOTATION_LIMITS = { Reaction: 280, 'Fact check': 500, Explainer: 600, Steelman: 800, 'Found receipts': 1000 };
+const TYPES = ['Reaction', 'Fact check', 'Explainer', 'Hot take', 'Question'];
+const ANNOTATION_LIMITS = { Reaction: 280, 'Fact check': 500, Explainer: 600, 'Hot take': 800, Question: 1000 };
 const POST_MODES = [
   { label: 'Source', value: 'source', helper: 'Share a source and your point of view.' },
   { label: 'Text', value: 'text', helper: 'Start with an idea when there is no external source.' },
