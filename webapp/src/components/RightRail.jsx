@@ -113,7 +113,7 @@ export default function RightRail() {
           <div className="community-info-heading">
             <span className="community-dot community-dot-lg" style={communityStyle(community.slug)}>{community.name?.[0]}</span>
             <div className="min-w-0 flex-1">
-              <p className="community-info-prefix">c/{community.slug}</p>
+              <p className="community-info-prefix">c/{community.name}</p>
               <h2>{community.name}</h2>
             </div>
             {community.id
@@ -122,7 +122,7 @@ export default function RightRail() {
           </div>
           {community.description && <p className="community-info-description">{community.description}</p>}
           <div className="community-stats">
-            <span><strong>{community.members ?? '—'}</strong> members</span>
+            <span><strong>{community.members ?? '—'}</strong> {community.members === 1 ? 'member' : 'members'}</span>
             <span>Public community</span>
           </div>
           <div className="community-info-actions">
@@ -149,8 +149,8 @@ export default function RightRail() {
             <Link key={item.slug} to={`/c/${item.slug}`} className="flex items-center gap-3 no-underline group">
               <span className="community-dot community-dot-lg" style={communityStyle(item.slug)}>{item.name[0]}</span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm text-text-primary group-hover:text-accent-text truncate">c/{item.slug}</span>
-                <span className="block text-[11px] text-text-muted mt-0.5">{item.members} members</span>
+          <span className="block text-sm text-text-primary group-hover:text-accent-text truncate">c/{item.name}</span>
+          <span className="block text-[11px] text-text-muted mt-0.5">{item.members} {item.members === 1 ? 'member' : 'members'}</span>
               </span>
             </Link>
           ))}

@@ -36,7 +36,6 @@ export default function ClipPage() {
   const [claims, setClaims] = useState([]);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
-  const [overflowOpen, setOverflowOpen] = useState(false);
   const [postMenuOpen, setPostMenuOpen] = useState(false);
   const { push } = useToast();
 
@@ -188,52 +187,51 @@ export default function ClipPage() {
         </div>
         <div className="detail-header-actions">
           <span className="badge badge-article">{clip.annotation_type || 'Annotation'}</span>
-          {isOwner && (
-            <div className="detail-overflow detail-overflow-end relative">
-              <button
-                type="button"
-                className="post-action overflow-trigger"
-                aria-label="Post options"
-                aria-expanded={postMenuOpen}
-                onClick={() => setPostMenuOpen((value) => !value)}
-              >
-                <PostActionIcon name="more" />
-              </button>
-              {postMenuOpen && (
-                <div className="overflow-menu">
-                  {confirmDelete ? (
-                    <div className="flex items-center gap-2 p-1.5">
-                      <span className="text-[11px] text-red-400">Delete post?</span>
-                      <button
-                        type="button"
-                        onClick={handleDeleteClip}
-                        disabled={deleting}
-                        className="text-[11px] px-2 py-1 rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-40"
-                      >
-                        {deleting ? '...' : 'Yes'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmDelete(false)}
-                        disabled={deleting}
-                        className="text-[11px] px-2 py-1 rounded-md text-text-muted bg-bg-raised hover:bg-bg-surface transition-colors"
-                      >
-                        No
-                      </button>
-                    </div>
-                  ) : (
+          <div className="detail-overflow detail-overflow-end relative">
+            <button
+              type="button"
+              className="post-action overflow-trigger"
+              aria-label="Post options"
+              aria-expanded={postMenuOpen}
+              onClick={() => setPostMenuOpen((value) => !value)}
+            >
+              <PostActionIcon name="more" />
+            </button>
+            {postMenuOpen && (
+              <div className="overflow-menu">
+                <FileClaimButton clipId={clip.id} />
+                {isOwner && (confirmDelete ? (
+                  <div className="flex items-center gap-2 p-1.5">
+                    <span className="text-[11px] text-red-400">Delete post?</span>
                     <button
                       type="button"
-                      onClick={() => setConfirmDelete(true)}
-                      className="w-full text-left text-[11px] px-2 py-1.5 rounded-md text-red-400 hover:bg-red-400/10 transition-colors"
+                      onClick={handleDeleteClip}
+                      disabled={deleting}
+                      className="text-[11px] px-2 py-1 rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-40"
                     >
-                      Delete
+                      {deleting ? '...' : 'Yes'}
                     </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      disabled={deleting}
+                      className="text-[11px] px-2 py-1 rounded-md text-text-muted bg-bg-raised hover:bg-bg-surface transition-colors"
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    className="w-full text-left text-[11px] px-2 py-1.5 rounded-md text-red-400 hover:bg-red-400/10 transition-colors"
+                  >
+                    Delete
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -309,13 +307,9 @@ export default function ClipPage() {
         <ReportButton clipId={clip.id} />
         <button type="button" className="post-action" onClick={handleShare}><PostActionIcon name="share" /><span aria-live="polite">{shared ? 'Copied' : 'Share'}</span></button>
         <button type="button" className={`post-action ${saved ? 'post-action-saved' : ''}`} onClick={handleSave}><PostActionIcon name="save" /><span>{saved ? 'Saved' : 'Save'}</span></button>
-        <div className="detail-overflow detail-overflow-end">
-          <button type="button" className="post-action overflow-trigger" aria-label="More post actions" aria-expanded={overflowOpen} onClick={() => setOverflowOpen((value) => !value)}><PostActionIcon name="more" /></button>
-          {overflowOpen && <div className="overflow-menu"><FileClaimButton clipId={clip.id} /></div>}
-        </div>
       </div>
 
-      {clip.source_url && (
+      {clip.source_url && !isX && (
         <a
           href={clip.source_type === 'youtube' ? youtubeSourceHref(clip) : clip.source_url}
           target="_blank"

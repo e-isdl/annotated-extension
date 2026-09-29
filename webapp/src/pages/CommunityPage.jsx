@@ -82,7 +82,7 @@ export default function CommunityPage() {
       </div>
 
       <div className="community-stats">
-        <span><strong>{community.members || 'New'}</strong> members</span>
+        <span><strong>{community.members || 'New'}</strong> {community.members === 1 ? 'member' : 'members'}</span>
         <span><strong>{clips.length || '—'}</strong> threads</span>
         <span>Public community</span>
       </div>

@@ -29,15 +29,20 @@ function handleFromUrl(url) {
   }
 }
 
+function stripTrailingLinks(value) {
+  return value.replace(/(?:\s*(?:https?:\/\/)?(?:pic\.twitter\.com|t\.co)\/\S+)+\s*$/i, '').trim();
+}
+
 export default function XEmbed({ url, title, authorName, authorUrl, text }) {
   const containerRef = useRef(null);
   const [expanded, setExpanded] = useState(false);
   const [failed, setFailed] = useState(false);
   const tweetId = tweetIdFromUrl(url);
   const handle = handleFromUrl(authorUrl);
-  const postText = (text || '').trim();
+  const rawPostText = (text || '').trim();
+  const postText = stripTrailingLinks(rawPostText);
   const postTitle = (title || '').trim();
-  const showTitle = Boolean(postTitle) && (!postText || (postTitle !== postText && !postText.startsWith(postTitle)));
+  const showTitle = Boolean(postTitle) && (!rawPostText || (postTitle !== rawPostText && !rawPostText.startsWith(postTitle)));
 
   useEffect(() => {
     if (!expanded || !tweetId) return undefined;
@@ -88,7 +93,7 @@ export default function XEmbed({ url, title, authorName, authorUrl, text }) {
         <span className="x-card-domain">x.com</span>
         <button
           type="button"
-          className="btn-ghost"
+          className="post-action"
           onClick={() => {
             setFailed(false);
             setExpanded((value) => !value);

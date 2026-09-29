@@ -40,7 +40,7 @@ export default function ExplorePage() {
               <h2>{community.name}</h2>
               <p>{community.description}</p>
               <div className="flex items-center gap-3 mt-5 text-[11px] text-text-muted font-mono">
-                <span>{community.members} members</span>
+                <span>{community.members} {community.members === 1 ? 'member' : 'members'}</span>
                 <span>•</span>
                 <span>{postCount} featured threads</span>
               </div>
