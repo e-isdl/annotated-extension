@@ -57,6 +57,11 @@
 nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-pill) !important; background: #252a2e !important; }
 .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: var(--radius-pill); background: rgba(255,255,255,.065); color: var(--text-muted); font-size: 10px; font-weight: 650; letter-spacing: 0; }
 .badge-youtube, .badge-article, .badge-podcast, .badge-social { background: rgba(255,255,255,.075); color: var(--text-secondary); }
+.post-meta .badge { gap: 7px; padding: 5px 12px 5px 10px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.09); color: var(--text-secondary); font-size: 12px; font-weight: 650; }
+.source-badge-icon { width: 15px; height: 15px; flex: 0 0 auto; }
+.badge-youtube .source-badge-icon { color: #ff5b4d; }
+.badge-social .source-badge-icon { color: #f2f4f5; }
+.badge-article .source-badge-icon { color: var(--text-muted); }
 .timestamp { display: inline-flex; padding: 4px 10px; border-radius: var(--radius-pill); background: rgba(255,255,255,.07); color: var(--text-secondary); font: 11px var(--reading-font); }
 .eyebrow, .sidebar-label, .rail-heading { color: var(--text-muted); font-size: 10px; line-height: 1.3; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 

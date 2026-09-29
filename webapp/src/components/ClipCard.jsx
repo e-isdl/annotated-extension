@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import VoteButtons from './VoteButtons';
 import AudioPlayer from './AudioPlayer';
+import SourceIcon from './SourceIcon';
 import { useToast } from './ToastProvider';
 import { communityStyle } from '../lib/community';
 import { postHref } from '../lib/links';
@@ -83,7 +84,7 @@ export default function ClipCard({ clip }) {
         </Link>
         <span className="post-meta-separator">•</span>
         <span>{timeAgo(clip.created_at)}</span>
-        <span className={`badge badge-${clip.source_type}`}>{sourceLabel}</span>
+        <span className={`badge badge-${clip.source_type}`}><SourceIcon type={clip.source_type} />{sourceLabel}</span>
       </div>
 
       <Link to={href} className="block no-underline group">
