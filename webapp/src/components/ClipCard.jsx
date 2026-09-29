@@ -89,6 +89,7 @@ export default function ClipCard({ clip }) {
 
       <Link to={href} className="block no-underline group">
         {commentary && <h2 className="post-annotation-preview">{commentaryPreview.text}{commentaryPreview.truncated && <span className="post-commentary-more">…</span>}</h2>}
+        {commentary && <span className="annotation-rule" aria-hidden="true" />}
 
         {audioUrl && (
           <div className="post-audio" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
