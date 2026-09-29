@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Microphone access — Annotated</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0E0E12;
+      color: #EEECEA;
+      font: 14px/1.5 Inter, -apple-system, 'Segoe UI', sans-serif;
+    }
+    main { width: 360px; text-align: center; }
+    h1 { margin: 0 0 8px; font-size: 15px; }
+    p { margin: 0 0 14px; color: #8C8C9E; font-size: 13px; }
+    p.granted { color: #2F9E44; }
+    p code { color: #EF5350; font-size: 12px; word-break: break-all; }
+    .row { display: flex; gap: 8px; justify-content: center; }
+    button {
+      padding: 9px 16px;
+      border: 0;
+      border-radius: 8px;
+      background: #E53935;
+      color: #fff;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary { background: #202028; color: #EEECEA; border: 1px solid #2C2C38; }
+    button[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Microphone access</h1>
+    <p id="status">Checking microphone access…</p>
+    <p id="detail" hidden></p>
+    <div class="row">
+      <button id="allow" hidden>Allow microphone</button>
+      <button id="settings" class="secondary" hidden>Open Chrome settings</button>
+      <button id="retry" class="secondary" hidden>Try again</button>
+    </div>
+  </main>
+  <script>
+    const status = document.getElementById('status');
+    const detail = document.getElementById('detail');
+    const allowBtn = document.getElementById('allow');
+    const settingsBtn = document.getElementById('settings');
+    const retryBtn = document.getElementById('retry');
+
+    const constraints = { audio: { echoCancellation: true, noiseSuppression: true } };
+    const SETTINGS_URL = 'chrome://settings/content/siteDetails?site='
+      + encodeURIComponent('chrome-extension://' + location.host + '/');
+
+    function show(text, granted) {
+      status.className = granted ? 'granted' : '';
+      status.textContent = text;
+    }
+
+    function showDetail(html) {
+      detail.hidden = false;
+      detail.innerHTML = html;
+    }
+
+    function hideDetail() { detail.hidden = true; }
+
+    function setButtons({ allow, settings, retry }) {
+      allowBtn.hidden = !allow;
+      settingsBtn.hidden = !settings;
+      retryBtn.hidden = !retry;
+    }
+
+    function openSettings() {
+      try {
+        chrome.tabs.create({ url: SETTINGS_URL });
+      } catch (err) {
+        showDetail('Open <code>' + SETTINGS_URL + '</code> and set Microphone to Allow.');
+      }
+    }
+
+    async function permissionState() {
+      try {
+        const result = await navigator.permissions.query({ name: 'microphone' });
+        return result.state;
+      } catch {
+        return 'unknown';
+      }
+    }
+
+    async function grant() {
+      hideDetail();
+      setButtons({ allow: false, settings: false, retry: false });
+      show('Waiting for Chrome…');
+
+      const request = navigator.mediaDevices.getUserMedia(constraints);
+      let timer;
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Object.assign(new Error('no prompt'), { name: 'PromptTimeout' })), 10000);
+      });
+
+      try {
+        const stream = await Promise.race([request, timeout]);
+        stream.getTracks().forEach((track) => track.stop());
+        show('Microphone access granted.', true);
+        setTimeout(() => window.close(), 400);
+      } catch (err) {
+        // Whatever happens, do not leave a stream dangling if Chrome answers late.
+        request.then((late) => late.getTracks().forEach((track) => track.stop())).catch(() => {});
+
+        if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          show('No microphone found.');
+          showDetail('Connect a microphone, then try again.');
+          setButtons({ retry: true });
+        } else if (err.name === 'PromptTimeout') {
+          show("Chrome didn't show a permission prompt.");
+          showDetail('Set Microphone to Allow for this extension in Chrome settings, then come back here.');
+          setButtons({ settings: true, retry: true });
+        } else {
+          const state = await permissionState();
+          if (state === 'denied') {
+            show("Microphone access is blocked.");
+            showDetail('Set Microphone to <strong>Allow</strong> for this extension in Chrome settings, then try again.');
+            setButtons({ settings: true, retry: true });
+          } else {
+            show('Microphone access was not granted.');
+            showDetail('Click <strong>Allow microphone</strong> again, or set Microphone to Allow in Chrome settings.');
+            setButtons({ allow: true, settings: true });
+          }
+        }
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function start() {
+      const state = await permissionState();
+      if (state === 'granted') {
+        grant();
+        return;
+      }
+      if (state === 'denied') {
+        show("Microphone access is blocked.");
+        showDetail('Set Microphone to <strong>Allow</strong> for this extension in Chrome settings, then try again.');
+        setButtons({ settings: true });
+        return;
+      }
+      show('Chrome needs your permission to use the microphone.');
+      setButtons({ allow: true });
+    }
+
+    allowBtn.addEventListener('click', grant);
+    retryBtn.addEventListener('click', grant);
+    settingsBtn.addEventListener('click', openSettings);
+    start();
+  </script>
+</body>
+</html>

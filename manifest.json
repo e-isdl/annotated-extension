@@ -9,8 +9,7 @@
     "activeTab",
     "scripting",
     "storage",
-    "identity",
-    "offscreen"
+    "identity"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {

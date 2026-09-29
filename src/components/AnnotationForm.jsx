@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import AudioRecorder from './AudioRecorder';
 import { excerptYouTubeTranscript, fetchYouTubeTranscript, formatYouTubeTranscript } from '../lib/youtubeTranscript';
 
 const ANNOTATION_LIMITS = { Reaction: 280, 'Fact check': 500, Explainer: 600, Steelman: 800, 'Found receipts': 1000 };
@@ -128,8 +129,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
     setPublishing(false);
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
+  const uploadAudioFile = async (file) => {
     if (!file) return;
     setUploading(true);
     setUploadError('');
@@ -152,6 +152,12 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
       setUploadError('Upload failed: ' + err.message);
     }
     setUploading(false);
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadAudioFile(file);
     e.target.value = '';
   };
 
@@ -361,25 +367,31 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <button
-                onClick={() => fileInputRef.current?.click()}
+              <AudioRecorder
+                onUseFile={uploadAudioFile}
                 disabled={uploading}
-                className="flex items-center justify-center gap-2 px-4 py-3 text-xs font-medium rounded-lg bg-bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors disabled:opacity-40"
-              >
-                {uploading ? (
-                  <>
-                    <div className="w-3 h-3 rounded-full bg-accent/50 animate-pulse" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
-                    </svg>
-                    Upload audio file
-                  </>
+                uploadButton={(
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs font-medium rounded-lg bg-bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors disabled:opacity-40"
+                  >
+                    {uploading ? (
+                      <>
+                        <div className="w-3 h-3 rounded-full bg-accent/50 animate-pulse" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
+                        </svg>
+                        Upload audio file
+                      </>
+                    )}
+                  </button>
                 )}
-              </button>
+              />
               <input
                 ref={fileInputRef}
                 type="file"

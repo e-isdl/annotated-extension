@@ -133,6 +133,13 @@ if (!window.__annotatedContentLoaded) {
       sendResponse(detectPageInfo());
       return true;
     }
+    if (message.type === 'PAUSE_MEDIA') {
+      document.querySelectorAll('audio, video').forEach((el) => {
+        try { el.pause(); } catch (e) { /* ignore */ }
+      });
+      sendResponse({ ok: true });
+      return true;
+    }
   });
 
   const pushPageInfo = () => {

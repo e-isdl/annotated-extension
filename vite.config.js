@@ -12,8 +12,7 @@ export default defineConfig({
         const distDir = resolve(__dirname, 'dist');
         if (!existsSync(distDir)) mkdirSync(distDir, { recursive: true });
         copyFileSync(resolve(__dirname, 'manifest.json'), resolve(distDir, 'manifest.json'));
-        copyFileSync(resolve(__dirname, 'offscreen.html'), resolve(distDir, 'offscreen.html'));
-        copyFileSync(resolve(__dirname, 'offscreen-recorder.js'), resolve(distDir, 'offscreen-recorder.js'));
+        copyFileSync(resolve(__dirname, 'permission.html'), resolve(distDir, 'permission.html'));
       }
     }
   ],
