@@ -16,7 +16,7 @@ import DemoClipPage from './DemoClipPage';
 import { useToast } from '../components/ToastProvider';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
-import { isXPostUrl } from '../lib/social';
+import { isXPostUrl, matchStatusUrl } from '../lib/social';
 
 const MEDIA_FRAME = /youtube\.com\/embed|youtube-nocookie\.com\/embed|platform\.twitter\.com|twimg\.com/;
 
@@ -194,6 +194,7 @@ export default function ClipPage() {
   if (!clip) return <NotFound />;
 
   const isX = isXPostUrl(clip.source_url);
+  const posterHandle = isX ? (matchStatusUrl(clip.source_url)?.handle || String(clip.author || '').replace(/^@/, '')) : '';
 
   const range = hasMoment(clip.start_sec, clip.end_sec) && clip.duration > clip.end_sec
     ? (() => {
@@ -281,22 +282,24 @@ export default function ClipPage() {
           </div>
         ) : (
   <div className="source-media x-text-card">
-    {clip.author && <p className="x-card-poster">@{String(clip.author).replace(/^@/, '')}</p>}
-    <p
-      ref={tweetTextRef}
-      className={`x-text-card-text${tweetExpanded ? '' : ' x-text-card-text-clamped'}`}
-    >
-      {clip.source_excerpt || clip.article_text || clip.title}
-    </p>
-    {tweetExpandable && (
-      <button
-        type="button"
-        className="x-read-more"
-        onClick={() => setTweetExpanded((value) => !value)}
+    <div className="x-card-box">
+      {posterHandle && <p className="x-card-poster">@{posterHandle}</p>}
+      <p
+        ref={tweetTextRef}
+        className={`x-text-card-text${tweetExpanded ? '' : ' x-text-card-text-clamped'}`}
       >
-        {tweetExpanded ? 'Show less' : 'Read more'}
-      </button>
-    )}
+        {clip.source_excerpt || clip.article_text || clip.title}
+      </p>
+      {tweetExpandable && (
+        <button
+          type="button"
+          className="x-read-more"
+          onClick={() => setTweetExpanded((value) => !value)}
+        >
+          {tweetExpanded ? 'Show less' : 'Read more'}
+        </button>
+      )}
+    </div>
     <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
       ↗ view original on x
     </a>

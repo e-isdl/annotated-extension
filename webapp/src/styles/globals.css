@@ -143,9 +143,6 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .source-quote { display: -webkit-box; overflow: hidden; margin: 9px 0 0; color: var(--text-secondary); font: 14px/1.55 var(--reading-font); -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 .source-quote-muted { color: var(--text-muted); font-style: italic; }
 .source-quote-poster { margin: 0 0 -4px; color: var(--text-secondary); font-size: 12px; font-weight: 650; }
-.source-quote-more { display: block; margin-top: 6px; padding: 0; border: 0; background: none; color: var(--accent-strong); font-size: 12px; font-weight: 650; cursor: pointer; }
-.source-quote-more:hover { text-decoration: underline; }
-.source-quote-expanded { display: block; overflow: visible; }
 .source-title { overflow: hidden; margin: 7px 0 0; color: var(--text-muted); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
 .source-preview-image { display: block; width: 190px; height: 142px; flex: 0 0 190px; align-self: center; margin: 7px; border-radius: 9px; object-fit: cover; background: #0b0d0e; }
 .source-preview-image-youtube { filter: brightness(1.32) saturate(1.12); }
@@ -256,7 +253,8 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .x-text-card-author { color: var(--text-secondary); font-size: 13px; font-weight: 650; }
 .x-text-card .x-original-link { margin-top: 2px; }
 .x-card-poster { margin: 0; color: var(--text-secondary); font-size: 13px; font-weight: 650; }
-.x-text-card-text-clamped { display: -webkit-box; -webkit-line-clamp: 10; -webkit-box-orient: vertical; overflow: hidden; }
+.x-card-box { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,.02); }
+.x-text-card-text-clamped { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
 .x-read-more { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--accent-strong); font-size: 13px; font-weight: 650; cursor: pointer; }
 .x-read-more:hover { text-decoration: underline; }
 .source-text-placeholder, .source-article-body { padding: 20px; border-radius: var(--radius-sm); background: var(--bg-surface); }
