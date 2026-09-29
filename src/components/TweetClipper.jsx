@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
-const CAPTURE_TIMEOUT_MS = 15000;
+const CAPTURE_TIMEOUT_MS = 20000;
 
 function dataUrlToBlob(dataUrl) {
   const [head, base64] = String(dataUrl).split(',');
@@ -38,17 +38,19 @@ export default function TweetClipper({ pageInfo, onReady }) {
         );
         if (cancelled) return;
         if (!result?.ok || !result.dataUrl) {
-          setCapture(result?.hasPhotos === false ? 'none' : 'failed');
+          if (result?.reason === 'too-tall') setCapture('text');
+          else if (result?.hasPhotos === false) setCapture('none');
+          else setCapture('failed');
           return;
         }
         const { data: { user } } = await supabase.auth.getUser();
         if (cancelled) return;
         if (!user) { setCapture('failed'); return; }
-        const filename = `clips/thumbs/${user.id}/${Date.now()}-tweet.png`;
+        const filename = `clips/thumbs/${user.id}/${Date.now()}-tweet.jpg`;
         const { error } = await supabase.storage.from('clips').upload(
           filename,
           dataUrlToBlob(result.dataUrl),
-          { contentType: 'image/png' },
+          { contentType: 'image/jpeg' },
         );
         if (cancelled) return;
         if (error) {
@@ -94,21 +96,25 @@ export default function TweetClipper({ pageInfo, onReady }) {
         <p className="text-xs text-text-muted truncate">{url}</p>
       </div>
 
-      {busy && (
-        <div className="annotation-mark bg-bg-surface rounded-r-lg p-3">
-          <p className="text-xs text-text-muted">Capturing a screenshot of this post for the thumbnail…</p>
-        </div>
-      )}
-      {!busy && capture === 'ready' && (
-        <div className="annotation-mark bg-bg-surface rounded-r-lg p-3">
-          <p className="text-xs text-text-muted">Screenshot captured — it will be the thumbnail of your post.</p>
-        </div>
-      )}
-      {!busy && capture !== 'ready' && (
-        <div className="annotation-mark bg-bg-surface rounded-r-lg p-3">
-          <p className="text-xs text-text-muted">Tip: posts with photos get an automatic screenshot as their thumbnail — no need to highlight anything.</p>
-        </div>
-      )}
+      {(() => {
+        const statusText = busy
+          ? 'Preparing a high-quality screenshot of this post…'
+          : capture === 'ready'
+            ? 'Screenshot captured — it will be the thumbnail of your post.'
+            : capture === 'text'
+              ? 'This post is taller than the screen — its text will be shown instead of a picture.'
+              : capture === 'none'
+                ? 'No photo or video in this post — its text will be shown instead.'
+                : capture === 'failed'
+                  ? 'Screenshot unavailable — the text will be shown instead.'
+                  : null;
+        if (!statusText) return null;
+        return (
+          <div className="annotation-mark bg-bg-surface rounded-r-lg p-3">
+            <p className="text-xs text-text-muted">{statusText}</p>
+          </div>
+        );
+      })()}
 
       <button
         onClick={handleContinue}

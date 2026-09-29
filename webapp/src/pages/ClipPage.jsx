@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { deleteClip } from '../lib/api';
 import YouTubeEmbed from '../components/YouTubeEmbed';
-import XEmbed from '../components/XEmbed';
 import AudioPlayer from '../components/AudioPlayer';
 import FileClaimButton from '../components/FileClaimButton';
 import ReportButton from '../components/ReportButton';
@@ -199,15 +198,31 @@ export default function ClipPage() {
     <article className="detail-page real-detail-page">
       <div className="detail-author-row">
         <div className="detail-post-context">
-          <Link to="/" className="detail-back-button" aria-label="Back to home">←</Link>
+          <Link to="/" className="detail-back-button" aria-label="Back to home">
+            <PostActionIcon name="back" />
+          </Link>
           {clip.community_slug && clip.community_name && (
-            <>
-              <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>
-              <span>•</span>
-            </>
+            <span className="detail-header-avatar" aria-hidden="true">
+              <span className="community-dot">{clip.community_name[0]}</span>
+            </span>
           )}
-          <span>{formatDate(clip.created_at)}</span>
-          {!annotation?.text_content && <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author no-underline">by {profile?.handle || 'anonymous'}</Link>}
+          <div className="detail-header-text">
+            <p className="detail-header-line1">
+              {clip.community_slug && clip.community_name && (
+                <>
+                  <Link to={`/c/${clip.community_slug}`} className="detail-header-community">c/{clip.community_name}</Link>
+                  <span className="detail-header-dot" aria-hidden="true">•</span>
+                </>
+              )}
+              <span className="detail-header-date detail-header-date-inline">{formatDate(clip.created_at)}</span>
+            </p>
+            {profile?.handle && (
+              <p className="detail-header-line2">
+                <Link to={`/u/${profile.handle}`} className="detail-header-author">{profile.handle}</Link>
+                <span className="detail-header-date detail-header-date-stack">• {formatDate(clip.created_at)}</span>
+              </p>
+            )}
+          </div>
         </div>
         <div className="detail-header-actions">
           <span className="badge badge-article">{clip.annotation_type || 'Annotation'}</span>
@@ -259,7 +274,7 @@ export default function ClipPage() {
         </div>
       </div>
 
-      <AnnotationLead text={annotation?.text_content} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} />
+      <AnnotationLead text={annotation?.text_content} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} showAuthor={false} />
 
       {annotation?.audio_url && <div className="post-audio"><AudioPlayer src={annotation.audio_url} /></div>}
 
@@ -282,13 +297,13 @@ export default function ClipPage() {
             </a>
           </div>
         ) : (
-          <XEmbed
-            url={clip.source_url}
-            title={clip.title}
-            authorName={clip.author}
-            authorUrl={clip.author_url}
-            text={clip.source_excerpt}
-          />
+          <div className="source-media x-text-card">
+            <p className="x-text-card-text">{clip.source_excerpt || clip.article_text || clip.title}</p>
+            {clip.author && <span className="x-text-card-author">@{String(clip.author).replace(/^@/, '')}</span>}
+            <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
+              ↗ view original on x
+            </a>
+          </div>
         ))}
         {clip.source_type === 'youtube' && (
           <div className="source-media">
@@ -412,6 +427,7 @@ function PostActionIcon({ name }) {
     share: <><path d="M12 16V4m-5 5 5-5 5 5" /><path d="M5 13v7h14v-7" /></>,
     save: <path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-4-6 4V4.5Z" />,
     more: <><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></>,
+    back: <><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></>,
   };
   return <svg className="post-action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }

@@ -103,8 +103,8 @@ export default function ClipCard({ clip }) {
             {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
             {clip.source_preview_text ? (
               <p className="source-quote">{clip.source_preview_text}</p>
-            ) : clip.article_text || clip.transcript ? (
-              <p className="source-quote">“{clip.article_text || clip.transcript}”</p>
+            ) : clip.article_text || clip.source_excerpt || clip.transcript ? (
+              <p className="source-quote">“{clip.article_text || clip.source_excerpt || clip.transcript}”</p>
             ) : (
               <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
             )}

@@ -93,25 +93,88 @@ function sendToTab(tabId, message) {
   });
 }
 
+const CAPTURE_ZOOM_CANDIDATES = [2, 1.5, 1.25, 1];
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Capture rules: a tweet that fits within 90% of the screen is captured whole,
+// at the highest page zoom that still fits (extra sharpness). Anything taller
+// is not screenshotted at all — the post falls back to its copied text.
+function planCapture(prep) {
+  if (!(prep.h > 10) || !(prep.w > 10)) return null;
+  const topOffset = prep.headerH + 8;
+  if (prep.h + topOffset > 0.9 * prep.vh) return null;
+  const maxZoom = Math.min(
+    2,
+    (0.9 * prep.vh) / prep.h,
+    prep.vh / (prep.h + topOffset),
+    prep.vw / prep.w,
+  );
+  const zoom = CAPTURE_ZOOM_CANDIDATES.find((z) => z <= maxZoom + 1e-6) || 1;
+  return { zoom, height: prep.h };
+}
+
 async function captureTweetScreenshot() {
+  const tab = await getActiveTab();
+  if (tab?.id == null) return { ok: false };
+  let savedZoom = 0;
+  try { savedZoom = await chrome.tabs.getZoom(tab.id); } catch (e) { savedZoom = 0; }
+  let restoreScroll = null;
   try {
-    const tab = await getActiveTab();
-    if (tab?.id == null) return { ok: false };
     await getPageInfoFromTab(tab.id);
-    const prep = await sendToTab(tab.id, { type: 'CAPTURE_TWEET' });
-    if (!prep || !prep.ok) return { ok: false, hasPhotos: prep?.hasPhotos === true };
-    if (!prep.hasPhotos) return { ok: true, hasPhotos: false };
-    let shot = null;
+    try { await chrome.tabs.setZoom(tab.id, 1); } catch (e) { /* ignore */ }
+    await sleep(320);
+    const prep = await sendToTab(tab.id, { type: 'CAPTURE_PREP' });
+    if (!prep) return { ok: false };
+    if (restoreScroll == null && typeof prep.scrollY === 'number') restoreScroll = prep.scrollY;
+    if (prep.ok && prep.hasPhotos === false) return { ok: true, hasPhotos: false };
+    if (!prep.ok) return { ok: false, hasPhotos: true };
+
+    const plan = planCapture(prep);
+    if (!plan) return { ok: true, hasPhotos: false, reason: 'too-tall' };
+    let vw = prep.vw;
+    let vh = prep.vh;
+    if (plan.zoom !== 1) {
+      try { await chrome.tabs.setZoom(tab.id, plan.zoom); } catch (e) { /* ignore */ }
+      await sleep(320);
+      const zoomed = await sendToTab(tab.id, { type: 'CAPTURE_PREP' });
+      if (!zoomed?.ok) return { ok: false, hasPhotos: true };
+      vw = zoomed.vw;
+      vh = zoomed.vh;
+    }
+
+    const scrolled = await sendToTab(tab.id, {
+      type: 'CAPTURE_SCROLL',
+      to: prep.absTop - (prep.headerH + 8),
+    });
+    if (!scrolled?.ok) return { ok: false, hasPhotos: true };
+    await sleep(700);
+    let dataUrl;
     try {
-      shot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+      dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 95 });
     } catch (e) {
       return { ok: false, hasPhotos: true };
     }
-    const cropped = await sendToTab(tab.id, { type: 'CROP_TWEET', dataUrl: shot, rect: prep.rect });
-    if (!cropped?.ok || !cropped.dataUrl) return { ok: false, hasPhotos: true };
-    return { ok: true, hasPhotos: true, dataUrl: cropped.dataUrl };
+
+    const stitched = await sendToTab(tab.id, {
+      type: 'CAPTURE_STITCH',
+      shots: [{ dataUrl, rect: scrolled.rect, scrollY: scrolled.scrollY }],
+      w: prep.w,
+      h: plan.height,
+      vw,
+      vh,
+    });
+    if (!stitched?.ok || !stitched.dataUrl) return { ok: false, hasPhotos: true };
+    return { ok: true, hasPhotos: true, dataUrl: stitched.dataUrl };
   } catch (e) {
     return { ok: false };
+  } finally {
+    try { await chrome.tabs.setZoom(tab.id, savedZoom); } catch (e) { /* ignore */ }
+    if (restoreScroll != null) {
+      await sendToTab(tab.id, { type: 'CAPTURE_SCROLL', to: restoreScroll });
+    }
   }
 }
 

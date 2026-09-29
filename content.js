@@ -89,17 +89,46 @@ function findTweetArticle() {
   return articles[0];
 }
 
-function tweetHasPhotos(article) {
-  return !!article.querySelector('[data-testid="tweetPhoto"], a[href*="/photo/"]');
+function tweetHasMedia(article) {
+  return !!article.querySelector(
+    '[data-testid="tweetPhoto"], a[href*="/photo/"], a[href*="/video/"], video, [data-testid="videoPlayer"], [data-testid="videoComponent"]',
+  );
 }
 
-function waitForTweetImages(article, timeoutMs) {
-  const pending = Array.from(article.querySelectorAll('img'))
+function tweetHeaderHeight() {
+  const header = document.querySelector('header[role="banner"]') || document.querySelector('header');
+  if (!header) return 0;
+  const height = header.getBoundingClientRect().height;
+  return Number.isFinite(height) ? height : 0;
+}
+
+function expandTruncatedTweet(article) {
+  article.querySelectorAll('[role="button"], button').forEach((el) => {
+    const label = (el.innerText || '').trim().toLowerCase();
+    if (label === 'show more' || label === 'read more') el.click();
+  });
+}
+
+function pauseTweetMedia(article) {
+  article.querySelectorAll('video').forEach((video) => {
+    try { video.pause(); } catch (e) { /* ignore */ }
+  });
+}
+
+function waitForTweetMedia(article, timeoutMs) {
+  const images = Array.from(article.querySelectorAll('img'))
     .filter((img) => img.src && !(img.complete && img.naturalWidth > 0))
     .map((img) => new Promise((resolve) => {
       img.addEventListener('load', resolve, { once: true });
       img.addEventListener('error', resolve, { once: true });
     }));
+  const videos = Array.from(article.querySelectorAll('video'))
+    .filter((video) => video.readyState < 2)
+    .map((video) => new Promise((resolve) => {
+      video.addEventListener('loadeddata', resolve, { once: true });
+      video.addEventListener('error', resolve, { once: true });
+    }));
+  const pending = [...images, ...videos];
   if (!pending.length) return Promise.resolve();
   return Promise.race([
     Promise.all(pending),
@@ -185,25 +214,49 @@ if (!window.__annotatedContentLoaded) {
       sendResponse(detectPageInfo());
       return true;
     }
-    if (message.type === 'CAPTURE_TWEET') {
+    if (message.type === 'CAPTURE_PREP') {
       (async () => {
         try {
           const article = findTweetArticle();
           if (!article) { sendResponse({ ok: false }); return; }
-          if (!tweetHasPhotos(article)) { sendResponse({ ok: true, hasPhotos: false }); return; }
-          const before = article.getBoundingClientRect();
-          const fits = before.height <= window.innerHeight && before.width <= window.innerWidth;
-          article.scrollIntoView({ block: fits ? 'center' : 'start' });
-          await new Promise((resolve) => setTimeout(resolve, 350));
-          await waitForTweetImages(article, 3000);
+          if (!tweetHasMedia(article)) { sendResponse({ ok: true, hasPhotos: false }); return; }
+          expandTruncatedTweet(article);
+          pauseTweetMedia(article);
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          await waitForTweetMedia(article, 2500);
+          pauseTweetMedia(article);
           const box = article.getBoundingClientRect();
-          const onScreen = box.width > 20 && box.height > 20 &&
-            box.bottom > 0 && box.top < window.innerHeight &&
-            box.right > 0 && box.left < window.innerWidth;
-          if (!onScreen) { sendResponse({ ok: false, hasPhotos: true, reason: 'offscreen' }); return; }
+          if (box.width < 40 || box.height < 40) { sendResponse({ ok: false }); return; }
           sendResponse({
             ok: true,
             hasPhotos: true,
+            w: box.width,
+            h: box.height,
+            absTop: box.top + window.scrollY,
+            headerH: tweetHeaderHeight(),
+            vw: window.innerWidth,
+            vh: window.innerHeight,
+            scrollY: window.scrollY,
+          });
+        } catch (e) {
+          sendResponse({ ok: false });
+        }
+      })();
+      return true;
+    }
+    if (message.type === 'CAPTURE_SCROLL') {
+      (async () => {
+        try {
+          const article = findTweetArticle();
+          if (!article) { sendResponse({ ok: false }); return; }
+          window.scrollTo({ top: message.to, behavior: 'instant' });
+          await new Promise((resolve) => setTimeout(resolve, 260));
+          await waitForTweetMedia(article, 1200);
+          pauseTweetMedia(article);
+          const box = article.getBoundingClientRect();
+          sendResponse({
+            ok: true,
+            scrollY: window.scrollY,
             rect: { x: box.left, y: box.top, w: box.width, h: box.height },
           });
         } catch (e) {
@@ -212,25 +265,47 @@ if (!window.__annotatedContentLoaded) {
       })();
       return true;
     }
-    if (message.type === 'CROP_TWEET') {
+    if (message.type === 'CAPTURE_STITCH') {
       (async () => {
         try {
-          const { dataUrl, rect } = message;
-          const image = await loadImage(dataUrl);
-          if (!image.naturalWidth || !image.naturalHeight || !rect || rect.w <= 0 || rect.h <= 0) {
+          const { shots, w, h, vw, vh } = message;
+          if (!Array.isArray(shots) || !shots.length || !(w > 10) || !(h > 10) || !(vw > 0) || !(vh > 0)) {
             sendResponse({ ok: false });
             return;
           }
-          const scale = image.naturalWidth / window.innerWidth;
-          const sx = Math.min(Math.max(rect.x * scale, 0), image.naturalWidth - 1);
-          const sy = Math.min(Math.max(rect.y * scale, 0), image.naturalHeight - 1);
-          const sw = Math.min(Math.max(rect.w * scale, 1), image.naturalWidth - sx);
-          const sh = Math.min(Math.max(rect.h * scale, 1), image.naturalHeight - sy);
+          const first = await loadImage(shots[0].dataUrl);
+          if (!first.naturalWidth) { sendResponse({ ok: false }); return; }
+          const scale = first.naturalWidth / vw;
+          const outW = Math.round(w * scale);
+          const outH = Math.round(h * scale);
+          if (outW < 10 || outH < 10 || outW > 8000 || outH > 24000) { sendResponse({ ok: false }); return; }
           const canvas = document.createElement('canvas');
-          canvas.width = Math.round(sw);
-          canvas.height = Math.round(sh);
-          canvas.getContext('2d').drawImage(image, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-          sendResponse({ ok: true, dataUrl: canvas.toDataURL('image/png') });
+          canvas.width = outW;
+          canvas.height = outH;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = getComputedStyle(document.body).backgroundColor || '#ffffff';
+          ctx.fillRect(0, 0, outW, outH);
+          for (let i = 0; i < shots.length; i += 1) {
+            const shot = shots[i];
+            const img = i === 0 ? first : await loadImage(shot.dataUrl);
+            if (!img.naturalWidth) continue;
+            const rect = shot.rect;
+            const localTop = Math.max(0, -rect.y);
+            if (localTop >= h) continue;
+            const visTop = Math.max(0, rect.y);
+            const visH = Math.min(h - localTop, vh - visTop);
+            if (visH <= 0 || rect.w <= 0) continue;
+            const sx = Math.min(Math.max(rect.x * scale, 0), img.naturalWidth - 1);
+            const sy = Math.min(Math.max(visTop * scale, 0), img.naturalHeight - 1);
+            const sw = Math.min(Math.max(rect.w * scale, 1), img.naturalWidth - sx);
+            const sh = Math.min(Math.max(visH * scale, 1), img.naturalHeight - sy);
+            const dy = Math.round(localTop * scale);
+            const dw = Math.min(outW, Math.round(rect.w * scale));
+            const dh = Math.min(outH - dy, Math.round(visH * scale));
+            if (dw <= 0 || dh <= 0) continue;
+            ctx.drawImage(img, sx, sy, sw, sh, 0, dy, dw, dh);
+          }
+          sendResponse({ ok: true, dataUrl: canvas.toDataURL('image/jpeg', 0.92), width: outW, height: outH });
         } catch (e) {
           sendResponse({ ok: false });
         }
