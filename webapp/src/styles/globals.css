@@ -211,9 +211,9 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 
 .detail-page, .annotated-post-page { width: 100%; max-width: 770px; margin-inline: auto; }
 .detail-meta-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; color: var(--text-muted); font-size: 12px; }
-.detail-back-button { display: inline-grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 999px; color: var(--text-muted); text-decoration: none; transition: background .15s ease, color .15s ease; }
+.detail-back-button { position: absolute; left: -48px; top: 50%; transform: translateY(-50%); display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 999px; color: var(--text-muted); text-decoration: none; transition: background .15s ease, color .15s ease; }
 .detail-back-button:hover { background: rgba(255,255,255,.07); color: var(--text-primary); }
-.detail-author-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; }
+.detail-author-row { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; }
 .detail-header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .detail-post-context { display: flex; flex-wrap: nowrap; align-items: center; gap: 12px; min-width: 0; color: var(--text-muted); font-size: 12px; }
 .detail-header-avatar { display: inline-flex; flex: 0 0 auto; }
@@ -450,7 +450,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
   .create-preview-wrap { position: static; }
   .moment-fields { grid-template-columns: 1fr; }
   .annotation-lead-copy { font-size: 19px; }
-  .detail-back-button { width: 40px; height: 40px; }
+  .detail-back-button { position: static; top: auto; left: auto; transform: none; width: 40px; height: 40px; }
   .detail-header-line1 .detail-header-dot, .detail-header-line1 .detail-header-date-inline { display: none; }
   .detail-header-date-stack { display: inline; }
   .profile-header { padding: 0 7px; }
