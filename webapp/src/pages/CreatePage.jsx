@@ -56,6 +56,7 @@ export default function CreatePage() {
   const sourceType = useMemo(() => detectSourceType(form.url, mode), [form.url, mode]);
   const domain = sourceDomain(form.url);
   const needsSource = mode !== 'text';
+  const titleLimit = sourceType === 'social' ? 25000 : 180;
 
   useEffect(() => {
     let active = true;
@@ -167,8 +168,8 @@ export default function CreatePage() {
           </div>}
 
           <label className="form-label">{needsSource ? 'Source title' : 'Post title'}
-            <input className="input" value={form.title} onChange={(event) => update('title', event.target.value)} placeholder={needsSource ? 'The original source title' : 'What is the conversation about?'} maxLength={180} />
-            <span className="field-counter">{form.title.length}/180</span>
+            <input className="input" value={form.title} onChange={(event) => update('title', event.target.value)} placeholder={needsSource ? 'The original source title' : 'What is the conversation about?'} maxLength={titleLimit} />
+            <span className="field-counter">{form.title.length}/{titleLimit}</span>
           </label>
           <label className="form-label">The context <span className="text-text-muted font-normal">(quote, timestamp, or excerpt)</span>
             <textarea className="input resize-none" rows={5} value={form.quote} onChange={(event) => update('quote', event.target.value)} placeholder="Point to the exact part people should look at..." maxLength={2000} />
