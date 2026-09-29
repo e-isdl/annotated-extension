@@ -218,10 +218,11 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .detail-post-context { display: flex; flex-wrap: nowrap; align-items: center; gap: 12px; min-width: 0; color: var(--text-muted); font-size: 12px; }
 .detail-header-avatar { display: inline-flex; flex: 0 0 auto; }
 .detail-header-avatar .community-dot { width: 34px; height: 34px; font-size: 14px; }
+.detail-header-avatar .avatar-circle { width: 34px; height: 34px; font-size: 14px; }
 .detail-header-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .detail-header-line1, .detail-header-line2 { display: flex; align-items: center; gap: 6px; min-width: 0; margin: 0; }
-.detail-header-community { min-width: 0; overflow: hidden; color: var(--text-primary); font-size: 14px; font-weight: 600; text-overflow: ellipsis; text-decoration: none; white-space: nowrap; }
-.detail-header-community:hover { text-decoration: underline; }
+.detail-header-community, .detail-header-author-name { min-width: 0; overflow: hidden; color: var(--text-primary); font-size: 14px; font-weight: 600; text-overflow: ellipsis; text-decoration: none; white-space: nowrap; }
+.detail-header-community:hover, .detail-header-author-name:hover { text-decoration: underline; }
 .detail-header-dot { flex: 0 0 auto; color: var(--text-muted); font-size: 12px; }
 .detail-header-date { flex: 0 0 auto; color: var(--text-muted); font-size: 13px; font-weight: 400; white-space: nowrap; }
 .detail-header-date-stack { display: none; }

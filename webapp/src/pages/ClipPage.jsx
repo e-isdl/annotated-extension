@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { deleteClip } from '../lib/api';
+import Avatar from '../components/Avatar';
 import YouTubeEmbed from '../components/YouTubeEmbed';
 import AudioPlayer from '../components/AudioPlayer';
 import FileClaimButton from '../components/FileClaimButton';
@@ -196,34 +197,7 @@ export default function ClipPage() {
 
   return (
     <article className="detail-page real-detail-page">
-      <div className="detail-author-row">
-        <div className="detail-post-context">
-          <Link to="/" className="detail-back-button" aria-label="Back to home">
-            <PostActionIcon name="back" />
-          </Link>
-          {clip.community_slug && clip.community_name && (
-            <span className="detail-header-avatar" aria-hidden="true">
-              <span className="community-dot">{clip.community_name[0]}</span>
-            </span>
-          )}
-          <div className="detail-header-text">
-            <p className="detail-header-line1">
-              {clip.community_slug && clip.community_name && (
-                <>
-                  <Link to={`/c/${clip.community_slug}`} className="detail-header-community">c/{clip.community_name}</Link>
-                  <span className="detail-header-dot" aria-hidden="true">•</span>
-                </>
-              )}
-              <span className="detail-header-date detail-header-date-inline">{formatDate(clip.created_at)}</span>
-            </p>
-            {profile?.handle && (
-              <p className="detail-header-line2">
-                <Link to={`/u/${profile.handle}`} className="detail-header-author">{profile.handle}</Link>
-                <span className="detail-header-date detail-header-date-stack">• {formatDate(clip.created_at)}</span>
-              </p>
-            )}
-          </div>
-        </div>
+      <DetailHeader clip={clip} profile={profile}>
         <div className="detail-header-actions">
           <span className="badge badge-article">{clip.annotation_type || 'Annotation'}</span>
           <div className="detail-overflow detail-overflow-end relative">
@@ -272,7 +246,7 @@ export default function ClipPage() {
             )}
           </div>
         </div>
-      </div>
+      </DetailHeader>
 
       <AnnotationLead text={annotation?.text_content} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} showAuthor={false} />
 
@@ -418,6 +392,71 @@ export default function ClipPage() {
 
       <CommentSection clipId={clip.id} postOwnerId={clip.user_id} communityId={clip.community_id} focusCommentId={commentId} />
     </article>
+  );
+}
+
+function DetailHeader({ clip, profile, children }) {
+  const hasCommunity = Boolean(clip.community_slug && clip.community_name);
+  return (
+    <div className="detail-author-row">
+      <div className="detail-post-context">
+        <Link to="/" className="detail-back-button" aria-label="Back to home">
+          <PostActionIcon name="back" />
+        </Link>
+        {hasCommunity
+          ? <CommunityHeaderVariant clip={clip} profile={profile} />
+          : <PersonalHeaderVariant clip={clip} profile={profile} />}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function CommunityHeaderVariant({ clip, profile }) {
+  const date = formatDate(clip.created_at);
+  return (
+    <>
+      <span className="detail-header-avatar" aria-hidden="true">
+        <span className="community-dot">{clip.community_name[0]}</span>
+      </span>
+      <div className="detail-header-text">
+        <p className="detail-header-line1">
+          <Link to={`/c/${clip.community_slug}`} className="detail-header-community">c/{clip.community_name}</Link>
+          <span className="detail-header-dot" aria-hidden="true">•</span>
+          <span className="detail-header-date detail-header-date-inline">{date}</span>
+        </p>
+        {profile?.handle && (
+          <p className="detail-header-line2">
+            <Link to={`/u/${profile.handle}`} className="detail-header-author">{profile.handle}</Link>
+            <span className="detail-header-date detail-header-date-stack">• {date}</span>
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
+function PersonalHeaderVariant({ clip, profile }) {
+  const date = formatDate(clip.created_at);
+  const handle = profile?.handle || null;
+  return (
+    <>
+      <span className="detail-header-avatar" aria-hidden="true">
+        <Avatar profile={profile} size="md" />
+      </span>
+      <div className="detail-header-text">
+        <p className="detail-header-line1">
+          {handle ? (
+            <Link to={`/u/${handle}`} className="detail-header-author-name">{handle}</Link>
+          ) : (
+            <span className="detail-header-author-name">anonymous</span>
+          )}
+        </p>
+        <p className="detail-header-line2">
+          <span className="detail-header-date">{date}</span>
+        </p>
+      </div>
+    </>
   );
 }
 
