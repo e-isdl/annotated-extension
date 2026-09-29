@@ -1,43 +1,64 @@
 import { useEffect, useRef, useState } from 'react';
-import { xEmbedSrc } from '../lib/social';
+import { tweetIdFromUrl } from '../lib/social';
 
-const FALLBACK_HEIGHT = 560;
-const MIN_HEIGHT = 180;
-const MAX_HEIGHT = 1400;
-const HEIGHT_BUFFER = 16;
-const EMBED_ORIGIN = 'https://platform.twitter.com';
+let widgetsScript = null;
+
+function loadWidgets() {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  if (window.twttr && window.twttr.widgets) return Promise.resolve(window.twttr);
+  if (!widgetsScript) {
+    widgetsScript = new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://platform.twitter.com/widgets.js';
+      script.async = true;
+      script.onload = () => resolve(window.twttr || null);
+      script.onerror = () => resolve(null);
+      document.body.appendChild(script);
+    });
+  }
+  return widgetsScript;
+}
 
 export default function XEmbed({ url }) {
-  const frameRef = useRef(null);
-  const [height, setHeight] = useState(FALLBACK_HEIGHT);
-  const src = xEmbedSrc(url);
+  const containerRef = useRef(null);
+  const [failed, setFailed] = useState(false);
+  const tweetId = tweetIdFromUrl(url);
 
   useEffect(() => {
-    if (!src) return undefined;
-    function onMessage(event) {
-      if (event.origin !== EMBED_ORIGIN) return;
-      if (!frameRef.current || event.source !== frameRef.current.contentWindow) return;
-      const payload = event.data && event.data['twttr.embed'];
-      if (!payload || payload.method !== 'twttr.private.resize') return;
-      const next = Number(payload.params?.[0]?.height);
-      if (Number.isFinite(next) && next > 0) {
-        setHeight(Math.min(Math.max(next, MIN_HEIGHT), MAX_HEIGHT));
+    if (!tweetId) return undefined;
+    const container = containerRef.current;
+    if (!container) return undefined;
+    let cancelled = false;
+    loadWidgets().then((twttr) => {
+      if (cancelled || !twttr) {
+        if (!twttr) setFailed(true);
+        return;
       }
-    }
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, [src]);
+      twttr.ready((ready) => {
+        if (cancelled || !container.isConnected) return;
+        container.innerHTML = '';
+        ready.widgets.createTweet(tweetId, container, {
+          theme: 'dark',
+          align: 'center',
+          conversation: 'none',
+          dnt: true,
+        });
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tweetId]);
 
-  if (!src) return null;
+  if (!tweetId) return null;
 
-  return (
-    <iframe
-      ref={frameRef}
-      className="x-embed"
-      title="Embedded X post"
-      src={src}
-      loading="lazy"
-      style={{ height: height + HEIGHT_BUFFER }}
-    />
-  );
+  if (failed) {
+    return (
+      <a className="x-embed-fallback" href={url} target="_blank" rel="noopener noreferrer">
+        View post on X
+      </a>
+    );
+  }
+
+  return <div ref={containerRef} className="x-embed" />;
 }

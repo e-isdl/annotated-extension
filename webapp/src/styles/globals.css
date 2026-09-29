@@ -443,14 +443,13 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .yt-range__range { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #e8a33d; font-weight: 600; }
 
 
-/* Detail header: community and author share one row; pull the back arrow flush left. */
-.context-author { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
-.detail-author-row { margin-bottom: 12px; }
-.detail-back-button { margin-left: -6px; }
-
 /* Empty comment states sit centered with breathing room. */
 .comment-empty-state { padding: 44px 16px 32px; color: var(--text-muted); font-size: 14px; text-align: center; }
 
 /* Embedded X post: the iframe reports its own height via postMessage.
    The embed lays out at 550px; cap the frame so no light page edge shows. */
-.x-embed { display: block; width: 100%; max-width: 550px; margin-inline: auto; border: 0; background: transparent; }
+/* Official X widget: no fixed height/overflow on the wrapper so it sizes itself.
+   clip-path only trims X's white corner pixels at the card's rounded corners. */
+.source-embed { background: transparent; border-radius: 10px; }
+.x-embed { width: 100%; max-width: 550px; margin-inline: auto; overflow: visible; background: transparent; clip-path: inset(0 round 16px); }
+.x-embed-fallback { display: block; width: fit-content; margin-inline: auto; color: var(--accent, #1d9bf0); font-size: 14px; }

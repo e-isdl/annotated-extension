@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase';
 import { deleteClip } from '../lib/api';
 import YouTubeEmbed from '../components/YouTubeEmbed';
 import XEmbed from '../components/XEmbed';
-import Avatar from '../components/Avatar';
 import AudioPlayer from '../components/AudioPlayer';
 import AnnotationBlock from '../components/AnnotationBlock';
 import FileClaimButton from '../components/FileClaimButton';
@@ -38,6 +37,7 @@ export default function ClipPage() {
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
+  const [postMenuOpen, setPostMenuOpen] = useState(false);
   const { push } = useToast();
 
   const demoClip = getDemoClip(id);
@@ -152,46 +152,61 @@ export default function ClipPage() {
           <Link to="/" className="detail-back-button" aria-label="Back to home">←</Link>
           {clip.community_slug && clip.community_name && <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>}
           <span>•</span>
-          <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author context-author no-underline"><Avatar profile={profile} size="xs" /><span>{profile?.handle || 'anonymous'}</span></Link>
-          <span>•</span>
           <span>{formatDate(clip.created_at)}</span>
+          {!annotation?.text_content && <Link to={profile?.handle ? `/u/${profile.handle}` : '#'} className="post-author no-underline">by {profile?.handle || 'anonymous'}</Link>}
         </div>
         <div className="detail-header-actions">
           <span className="badge badge-article">{clip.annotation_type || 'Annotation'}</span>
           {isOwner && (
-            <div className="flex items-center gap-1">
-              {confirmDelete ? (
-                <>
-                  <span className="text-[11px] text-red-400 mr-1">Delete?</span>
-                  <button
-                    onClick={handleDeleteClip}
-                    disabled={deleting}
-                    className="text-[11px] px-2 py-1 rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-40"
-                  >
-                    {deleting ? '...' : 'Yes'}
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(false)}
-                    disabled={deleting}
-                    className="text-[11px] px-2 py-1 rounded-md text-text-muted bg-bg-raised hover:bg-bg-surface transition-colors"
-                  >
-                    No
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setConfirmDelete(true)}
-                  className="text-[11px] px-2 py-1 rounded-md text-red-400 bg-red-400/10 hover:bg-red-400/20 transition-colors"
-                >
-                  Delete
-                </button>
+            <div className="detail-overflow detail-overflow-end relative">
+              <button
+                type="button"
+                className="post-action overflow-trigger"
+                aria-label="Post options"
+                aria-expanded={postMenuOpen}
+                onClick={() => setPostMenuOpen((value) => !value)}
+              >
+                <PostActionIcon name="more" />
+              </button>
+              {postMenuOpen && (
+                <div className="overflow-menu">
+                  {confirmDelete ? (
+                    <div className="flex items-center gap-2 p-1.5">
+                      <span className="text-[11px] text-red-400">Delete post?</span>
+                      <button
+                        type="button"
+                        onClick={handleDeleteClip}
+                        disabled={deleting}
+                        className="text-[11px] px-2 py-1 rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-40"
+                      >
+                        {deleting ? '...' : 'Yes'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(false)}
+                        disabled={deleting}
+                        className="text-[11px] px-2 py-1 rounded-md text-text-muted bg-bg-raised hover:bg-bg-surface transition-colors"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(true)}
+                      className="w-full text-left text-[11px] px-2 py-1.5 rounded-md text-red-400 hover:bg-red-400/10 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           )}
         </div>
       </div>
 
-      <AnnotationLead text={annotation?.text_content || clip.title} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} showAuthor={false} />
+      <AnnotationLead text={annotation?.text_content || clip.title} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} />
 
       {clip.source_url && <section className="source-post" aria-label="Original source post">
         {!isX && clip.source_type !== 'youtube' && <div className="source-post-header">
@@ -202,7 +217,7 @@ export default function ClipPage() {
           <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
         </div>}
         {isX && (
-          <div className="source-media"><XEmbed url={clip.source_url} /></div>
+          <div className="source-embed"><XEmbed url={clip.source_url} /></div>
         )}
         {clip.source_type === 'youtube' && (
           <div className="source-media">
@@ -271,13 +286,6 @@ export default function ClipPage() {
           className="source-link real-source-link"
         >
           <span>↗ {sourceDomain(clip.source_url)}</span>
-          {clip.source_type === 'youtube' && hasMoment(clip.start_sec, clip.end_sec) && (
-            <span className="source-timestamp-range" aria-label={`Source moment from ${formatTime(clip.start_sec)} to ${formatTime(clip.end_sec)}`}>
-              <span className="timestamp">{formatTime(clip.start_sec)}</span>
-              <span className="text-text-muted text-xs">→</span>
-              <span className="timestamp">{formatTime(clip.end_sec)}</span>
-            </span>
-          )}
         </a>
       )}
 
@@ -369,12 +377,6 @@ function formatDate(dateStr) {
 
 function sourceDomain(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'source'; }
-}
-
-function formatTime(s) {
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 function formatSpan(s) {
