@@ -22,11 +22,13 @@ function detectPageInfo() {
   const statusMatch = matchStatusUrl(url);
   if (statusMatch) {
     info.type = 'x';
+    const poster = tweetPosterFromPage();
     info.data = {
-      handle: statusMatch.handle,
+      handle: (poster && poster.handle) || statusMatch.handle,
       statusId: statusMatch.statusId,
       title: tweetTextFromPage() || cleanXTitle(document.title),
-      author: statusMatch.handle,
+      author: (poster && poster.handle) || statusMatch.handle,
+      authorName: (poster && poster.name) || '',
     };
     return info;
   }
@@ -63,6 +65,23 @@ function detectPageInfo() {
 function matchStatusUrl(url) {
   const match = String(url || '').match(/(?:twitter\.com|x\.com)\/([^/?#]+)\/status\/(\d+)/);
   return match ? { handle: match[1], statusId: match[2] } : null;
+}
+
+// The poster of the tweet: username and display name scraped from the
+// tweet's User-Name cell, falling back to the status URL handle.
+function tweetPosterFromPage() {
+  const cell = document.querySelector('article[data-testid="tweet"] [data-testid="User-Name"]');
+  if (!cell) return null;
+  const lines = cell.innerText.split('\n').map((line) => line.trim()).filter(Boolean);
+  const handleLine = lines.find((line) => /^@[A-Za-z0-9_]{1,15}$/.test(line));
+  const hrefHandle = [...cell.querySelectorAll('a[href]')]
+    .map((a) => a.getAttribute('href') || '')
+    .map((href) => (href.match(/^\/([A-Za-z0-9_]{1,15})\/?$/) || [])[1])
+    .find(Boolean);
+  const handle = (handleLine || '').replace(/^@/, '') || hrefHandle || null;
+  if (!handle) return null;
+  const name = lines.find((line) => line !== handleLine && !/^https?:\/\//.test(line) && line !== handle) || '';
+  return { handle, name };
 }
 
 function metaImageUrl() {

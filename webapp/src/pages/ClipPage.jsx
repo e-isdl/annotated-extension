@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { deleteClip } from '../lib/api';
 import Avatar from '../components/Avatar';
+import CommunityAvatar from '../components/CommunityAvatar';
 import YouTubeEmbed from '../components/YouTubeEmbed';
 import AudioPlayer from '../components/AudioPlayer';
 import FileClaimButton from '../components/FileClaimButton';
@@ -38,7 +39,15 @@ export default function ClipPage() {
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
   const [postMenuOpen, setPostMenuOpen] = useState(false);
+  const tweetTextRef = useRef(null);
+  const [tweetExpanded, setTweetExpanded] = useState(false);
+  const [tweetExpandable, setTweetExpandable] = useState(false);
   const { push } = useToast();
+
+  useEffect(() => {
+    const el = tweetTextRef.current;
+    if (el && !tweetExpanded) setTweetExpandable(el.scrollHeight - el.clientHeight > 4);
+  });
 
   const demoClip = getDemoClip(id);
 
@@ -271,13 +280,27 @@ export default function ClipPage() {
             </a>
           </div>
         ) : (
-          <div className="source-media x-text-card">
-            <p className="x-text-card-text">{clip.source_excerpt || clip.article_text || clip.title}</p>
-            {clip.author && <span className="x-text-card-author">@{String(clip.author).replace(/^@/, '')}</span>}
-            <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
-              ↗ view original on x
-            </a>
-          </div>
+  <div className="source-media x-text-card">
+    {clip.author && <p className="x-card-poster">@{String(clip.author).replace(/^@/, '')}</p>}
+    <p
+      ref={tweetTextRef}
+      className={`x-text-card-text${tweetExpanded ? '' : ' x-text-card-text-clamped'}`}
+    >
+      {clip.source_excerpt || clip.article_text || clip.title}
+    </p>
+    {tweetExpandable && (
+      <button
+        type="button"
+        className="x-read-more"
+        onClick={() => setTweetExpanded((value) => !value)}
+      >
+        {tweetExpanded ? 'Show less' : 'Read more'}
+      </button>
+    )}
+    <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
+      ↗ view original on x
+    </a>
+  </div>
         ))}
         {clip.source_type === 'youtube' && (
           <div className="source-media">
@@ -417,7 +440,7 @@ function CommunityHeaderVariant({ clip, profile }) {
   return (
     <>
       <span className="detail-header-avatar" aria-hidden="true">
-        <span className="community-dot">{clip.community_name[0]}</span>
+        <CommunityAvatar slug={clip.community_slug} name={clip.community_name} />
       </span>
       <div className="detail-header-text">
         <p className="detail-header-line1">

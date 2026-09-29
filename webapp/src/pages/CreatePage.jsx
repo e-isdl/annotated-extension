@@ -6,7 +6,7 @@ import { generateSlug } from '../lib/api';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
 import { createAnnotatedPost } from '../lib/mutations';
-import { communityStyle } from '../lib/community';
+import CommunityAvatar from '../components/CommunityAvatar';
 import { isXPostUrl } from '../lib/social';
 
 const TYPES = ['Reaction', 'Fact check', 'Explainer', 'Hot take', 'Question'];
@@ -186,7 +186,7 @@ export default function CreatePage() {
         <div className="create-preview-wrap">
           <p className="eyebrow">LIVE PREVIEW</p>
           <div className="create-preview">
-            <p className="post-meta">{selectedCommunity ? <span className="community-pill"><span className="community-dot" style={communityStyle(selectedCommunity.slug)}>{selectedCommunity.name[0]}</span> c/{selectedCommunity.name}</span> : <span>Post</span>}<span>• just now</span></p>
+            <p className="post-meta">{selectedCommunity ? <span className="community-pill"><CommunityAvatar slug={selectedCommunity.slug} name={selectedCommunity.name} /> c/{selectedCommunity.name}</span> : <span>Post</span>}<span>• just now</span></p>
             <h2 className="post-annotation-preview">{form.commentary || 'Your point of view will be the center of the post.'}</h2>
             {mode !== 'text' && <div className="source-preview source-preview-preview"><div className="source-preview-copy"><div className="source-label">↗ {form.url ? domain : 'your source'}</div><p className="source-title">{form.title || 'Your source title will appear here'}</p><p className="source-quote">{form.quote ? `“${form.quote}”` : 'Add a quote or source context so people know what you are discussing.'}</p></div></div>}
             {mode === 'moment' && hasMoment(form.startSec, form.endSec) && <div className="post-timestamp-row"><span className="timestamp">{formatTime(form.startSec)}</span><span className="text-text-muted text-xs">→</span><span className="timestamp">{formatTime(form.endSec)}</span></div>}

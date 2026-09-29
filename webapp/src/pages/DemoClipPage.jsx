@@ -4,6 +4,7 @@ import VoteButtons from '../components/VoteButtons';
 import YouTubeEmbed from '../components/YouTubeEmbed';
 import AudioPlayer from '../components/AudioPlayer';
 import AnnotationLead from '../components/AnnotationLead';
+import CommunityAvatar from '../components/CommunityAvatar';
 import { useToast } from '../components/ToastProvider';
 
 export default function DemoClipPage({ clip }) {
@@ -26,7 +27,7 @@ export default function DemoClipPage({ clip }) {
         <Link to="/" className="detail-back-button" aria-label="Back to home">←</Link>
         {clip.community_slug && clip.community_name && (
           <>
-            <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><span className="community-dot">{clip.community_name[0]}</span> c/{clip.community_name}</Link>
+            <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline"><CommunityAvatar slug={clip.community_slug} name={clip.community_name} /> c/{clip.community_name}</Link>
             <span>•</span>
           </>
         )}

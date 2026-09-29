@@ -7,3 +7,14 @@ export function communityHue(value = '') {
 export function communityStyle(value = '') {
   return { '--community-hue': communityHue(value) };
 }
+
+const COMMUNITY_PFPS = {
+  technology: '/pfps/technology.svg',
+  'media-literacy': '/pfps/media-literacy.svg',
+  startups: '/pfps/startups.svg',
+  'internet-culture': '/pfps/internet-culture.svg',
+};
+
+export function communityPfpUrl(slug = '') {
+  return COMMUNITY_PFPS[String(slug || '').toLowerCase()] || null;
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
@@ -6,7 +6,7 @@ import VoteButtons from './VoteButtons';
 import AudioPlayer from './AudioPlayer';
 import SourceIcon from './SourceIcon';
 import { useToast } from './ToastProvider';
-import { communityStyle } from '../lib/community';
+import CommunityAvatar from './CommunityAvatar';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
 import { isXPostUrl } from '../lib/social';
@@ -25,6 +25,10 @@ export default function ClipCard({ clip }) {
   const [score, setScore] = useState(clip.score ?? 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
+  const isXPost = isXPostUrl(clip.source_url);
+  const quoteRef = useRef(null);
+  const [quoteExpanded, setQuoteExpanded] = useState(false);
+  const [quoteExpandable, setQuoteExpandable] = useState(false);
   const href = postHref(clip);
   const sourceImage = clip.source_image_url || clip.thumbnail || (clip.youtube_id ? `https://img.youtube.com/vi/${clip.youtube_id}/hqdefault.jpg` : null);
 
@@ -43,6 +47,11 @@ export default function ClipCard({ clip }) {
     });
     return () => { active = false; };
   }, [clip.id]);
+
+  useEffect(() => {
+    const el = quoteRef.current;
+    if (el && !quoteExpanded) setQuoteExpandable(el.scrollHeight - el.clientHeight > 4);
+  });
 
   const handleShare = async (event) => {
     event.preventDefault();
@@ -74,7 +83,7 @@ export default function ClipCard({ clip }) {
       <div className="post-meta">
         {clip.community_slug && clip.community_name && <>
           <Link to={`/c/${clip.community_slug}`} className="community-pill no-underline">
-            <span className="community-dot" style={communityStyle(clip.community_slug)}>{clip.community_name[0]}</span>
+            <CommunityAvatar slug={clip.community_slug} name={clip.community_name} />
             <span>c/{clip.community_name}</span>
           </Link>
           <span className="post-meta-separator">•</span>
@@ -101,12 +110,22 @@ export default function ClipCard({ clip }) {
         <div className="source-preview">
           <div className="source-preview-copy">
             {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
+            {isXPost && clip.author && <p className="source-quote-poster">@{String(clip.author).replace(/^@/, '')}</p>}
             {clip.source_preview_text ? (
-              <p className="source-quote">{clip.source_preview_text}</p>
+              <p ref={quoteRef} className={`source-quote${quoteExpanded ? ' source-quote-expanded' : ''}`}>{clip.source_preview_text}</p>
             ) : clip.article_text || clip.source_excerpt || clip.transcript ? (
-              <p className="source-quote">“{clip.article_text || clip.source_excerpt || clip.transcript}”</p>
+              <p ref={quoteRef} className={`source-quote${quoteExpanded ? ' source-quote-expanded' : ''}`}>“{clip.article_text || clip.source_excerpt || clip.transcript}”</p>
             ) : (
               <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
+            )}
+            {isXPost && quoteExpandable && (
+              <button
+                type="button"
+                className="source-quote-more"
+                onClick={(event) => { event.preventDefault(); event.stopPropagation(); setQuoteExpanded((value) => !value); }}
+              >
+                {quoteExpanded ? 'Show less' : 'Read more'}
+              </button>
             )}
             {sourceTitle && sourceTitle !== commentary && <p className="source-title">{sourceTitle}</p>}
           </div>

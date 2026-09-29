@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
-import { communityStyle } from '../lib/community';
+import CommunityAvatar from './CommunityAvatar';
 
 const NAV_ITEMS = [
   { label: 'Home', path: '/', icon: '⌂', sort: null },
@@ -67,7 +67,7 @@ export default function AppSidebar() {
           <Link to="/explore" className="text-xs text-text-muted hover:text-accent-text">+</Link>
         </div>
         <nav className="flex flex-col gap-1">
-          {displayedCommunities.map((community) => <Link key={community.slug} to={`/c/${community.slug}`} className="community-link"><span className="community-dot" style={communityStyle(community.slug)}>{community.name[0]}</span><span className="truncate">{community.name}</span></Link>)}
+          {displayedCommunities.map((community) => <Link key={community.slug} to={`/c/${community.slug}`} className="community-link"><CommunityAvatar slug={community.slug} name={community.name} /><span className="truncate">{community.name}</span></Link>)}
           {user && !failed && communities.length === 0 && displayedCommunities.length === 0 && <p className="sidebar-empty">Explore communities and join one to pin it here.</p>}
         </nav>
       </div>

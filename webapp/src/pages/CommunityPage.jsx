@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import ClipCard from '../components/ClipCard';
 import { useToast } from '../components/ToastProvider';
-import { communityStyle } from '../lib/community';
+import CommunityAvatar from '../components/CommunityAvatar';
 
 const SORTS = [
   { label: 'Best', value: 'best' },
@@ -72,7 +72,7 @@ export default function CommunityPage() {
   return (
     <div className="section-page community-page">
       <div className="community-hero">
-        <div className="community-hero-mark" style={communityStyle(slug)}>{community.name[0]}</div>
+        <CommunityAvatar slug={slug} name={community.name} className="community-hero-mark" />
         <div className="flex-1 min-w-0">
           <p className="eyebrow">COMMUNITY</p>
           <h1>c/{community.name}</h1>

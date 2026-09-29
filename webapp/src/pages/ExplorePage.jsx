@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { communityStyle } from '../lib/community';
+import CommunityAvatar from '../components/CommunityAvatar';
 
 export default function ExplorePage() {
   const [communities, setCommunities] = useState([]);
@@ -34,7 +34,7 @@ export default function ExplorePage() {
           return (
             <Link key={community.slug} to={`/c/${community.slug}`} className="explore-community no-underline">
               <div className="flex items-center justify-between">
-                <span className="community-dot community-dot-lg" style={communityStyle(community.slug)}>{community.name[0]}</span>
+                <CommunityAvatar slug={community.slug} name={community.name} className="community-dot community-dot-lg" />
                 <span className="text-text-muted text-lg">↗</span>
               </div>
               <h2>{community.name}</h2>

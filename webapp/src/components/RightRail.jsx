@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
-import { communityStyle } from '../lib/community';
+import CommunityAvatar from './CommunityAvatar';
 import { getDemoClip } from '../lib/demoData';
 import { useToast } from './ToastProvider';
 
@@ -111,7 +111,7 @@ export default function RightRail() {
       {community ? (
         <section className="community-info-card">
           <div className="community-info-heading">
-            <span className="community-dot community-dot-lg" style={communityStyle(community.slug)}>{community.name?.[0]}</span>
+            <CommunityAvatar slug={community.slug} name={community.name} className="community-dot community-dot-lg" />
             <div className="min-w-0 flex-1">
               <p className="community-info-prefix">c/{community.name}</p>
               <h2>{community.name}</h2>
@@ -147,7 +147,7 @@ export default function RightRail() {
         <div className="flex flex-col gap-3">
           {communities.slice(0, 3).map((item) => (
             <Link key={item.slug} to={`/c/${item.slug}`} className="flex items-center gap-3 no-underline group">
-              <span className="community-dot community-dot-lg" style={communityStyle(item.slug)}>{item.name[0]}</span>
+              <CommunityAvatar slug={item.slug} name={item.name} className="community-dot community-dot-lg" />
               <span className="min-w-0 flex-1">
           <span className="block text-sm text-text-primary group-hover:text-accent-text truncate">c/{item.name}</span>
           <span className="block text-[11px] text-text-muted mt-0.5">{item.members} {item.members === 1 ? 'member' : 'members'}</span>
