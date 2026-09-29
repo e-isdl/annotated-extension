@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { deleteClip } from '../lib/api';
@@ -44,9 +44,16 @@ export default function ClipPage() {
   const [tweetExpandable, setTweetExpandable] = useState(false);
   const { push } = useToast();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = tweetTextRef.current;
-    if (el && !tweetExpanded) setTweetExpandable(el.scrollHeight - el.clientHeight > 4);
+    if (!el || tweetExpanded) return;
+    const wasClamped = el.classList.contains('x-text-card-text-clamped');
+    if (wasClamped) el.classList.remove('x-text-card-text-clamped');
+    const fullHeight = el.scrollHeight;
+    if (wasClamped) el.classList.add('x-text-card-text-clamped');
+    const clippedHeight = el.clientHeight;
+    const needsExpand = fullHeight - clippedHeight > 4;
+    setTweetExpandable((previous) => (previous === needsExpand ? previous : needsExpand));
   });
 
   const demoClip = getDemoClip(id);
