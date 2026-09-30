@@ -8,9 +8,8 @@ import { hasMoment } from '../lib/moment';
 import { createAnnotatedPost } from '../lib/mutations';
 import CommunityAvatar from '../components/CommunityAvatar';
 import { isXPostUrl } from '../lib/social';
+import { ANNOTATION_TYPES, ANNOTATION_LIMITS } from '../lib/annotationLimits';
 
-const TYPES = ['Reaction', 'Fact check', 'Explainer', 'Hot take', 'Question'];
-const ANNOTATION_LIMITS = { Reaction: 280, 'Fact check': 500, Explainer: 600, 'Hot take': 800, Question: 1000 };
 const POST_MODES = [
   { label: 'Source', value: 'source', helper: 'Share a source and your point of view.' },
   { label: 'Text', value: 'text', helper: 'Start with an idea when there is no external source.' },
@@ -155,7 +154,7 @@ export default function CreatePage() {
             <fieldset>
               <legend className="form-label">What kind of note is this?</legend>
               <div className="type-picker">
-                {TYPES.map((type) => <button key={type} type="button" onClick={() => update('type', type)} className={form.type === type ? 'type-option type-option-active' : 'type-option'}>{type}</button>)}
+                {ANNOTATION_TYPES.map((type) => <button key={type} type="button" onClick={() => update('type', type)} className={form.type === type ? 'type-option type-option-active' : 'type-option'}>{type}</button>)}
               </div>
             </fieldset>
           )}
