@@ -171,8 +171,8 @@ export default function CreatePage() {
             <input className="input" value={form.title} onChange={(event) => update('title', event.target.value)} placeholder={needsSource ? 'The original source title' : 'What is the conversation about?'} maxLength={titleLimit} />
             <span className="field-counter">{form.title.length}/{titleLimit}</span>
           </label>
-          <label className="form-label">The context <span className="text-text-muted font-normal">(quote, timestamp, or excerpt)</span>
-            <textarea className="input resize-none" rows={5} value={form.quote} onChange={(event) => update('quote', event.target.value)} placeholder="Point to the exact part people should look at..." maxLength={2000} />
+          <label className="form-label">{needsSource ? <>The context <span className="text-text-muted font-normal">(quote, timestamp, or excerpt)</span></> : 'The content'}
+            <textarea className="input resize-none" rows={5} value={form.quote} onChange={(event) => update('quote', event.target.value)} placeholder={needsSource ? 'Point to the exact part people should look at...' : 'Write the post people will respond to...'} maxLength={2000} />
             <span className="field-counter">{form.quote.length}/2000</span>
           </label>
           <label className="form-label">Your annotation

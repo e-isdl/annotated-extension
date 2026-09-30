@@ -112,11 +112,6 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .feed-heading p, .section-subtitle { margin: 6px 0 0; color: var(--text-muted); font-size: 13px; line-height: 1.55; }
 .section-title { margin: 10px 0 8px; }
 .section-subtitle { max-width: 580px; font-size: 14px; }
-.create-post-bar { display: flex; align-items: center; gap: 11px; margin: 4px 0 18px; padding: 10px 12px; border-radius: var(--radius-pill); background: rgba(255,255,255,.035); color: var(--text-muted); font-size: 13px; }
-.create-post-bar:hover { background: rgba(255,255,255,.065); }
-.create-post-avatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-dim); color: var(--accent-strong); }
-.create-post-placeholder { flex: 1; }
-.create-post-action { color: var(--text-secondary); font-size: 11px; }
 .feed-tabs, .profile-tabs { display: flex; gap: 5px; width: max-content; max-width: 100%; margin: 0 0 17px; padding: 0; overflow-x: auto; background: transparent; }
 .feed-tab, .profile-tab { flex: 0 0 auto; padding: 8px 14px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 600; cursor: pointer; }
 .feed-tab:hover, .profile-tab:hover { color: var(--text-primary); }

@@ -79,12 +79,6 @@ export default function Feed({ sortOverride = null }) {
         </div>
       </section>
 
-      <Link to="/create" className="create-post-bar no-underline">
-        <span className="create-post-avatar">A</span>
-        <span className="create-post-placeholder">Create a post</span>
-        <span className="create-post-action">Link or source</span>
-      </Link>
-
       <div className="feed-tabs" role="tablist" aria-label="Feed sort">
         {SORT_OPTIONS.map((option) => (
           <button
