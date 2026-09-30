@@ -36,7 +36,7 @@ export default function Auth() {
         }),
         new Promise((_, reject) => {
           setTimeout(() => reject(new Error(
-            `The sign-in window never came back to the extension. Supabase almost certainly redirected to your website instead — add ${redirectUri} to Authentication → URL Configuration → Redirect URLs, then reload the extension.`
+            `The sign-in window never came back to the extension. Supabase almost certainly redirected to your website instead. Add ${redirectUri} to Authentication → URL Configuration → Redirect URLs, then reload the extension.`
           )), 120000);
         }),
       ]);
@@ -76,7 +76,7 @@ export default function Auth() {
       const message = err.message || 'Failed to sign in. Please try again.';
       setError(
         /only one web auth flow/i.test(message)
-          ? 'Chrome still has a sign-in window open from an earlier attempt. Close any leftover Google/Annotated window — or restart Chrome — then try again.'
+          ? 'Chrome still has a sign-in window open from an earlier attempt. Close any leftover Google/Annotated window, or restart Chrome, then try again.'
           : message
       );
     } finally {

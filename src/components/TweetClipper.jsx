@@ -100,13 +100,13 @@ export default function TweetClipper({ pageInfo, onReady }) {
         const statusText = busy
           ? 'Preparing a high-quality screenshot of this post…'
           : capture === 'ready'
-            ? 'Screenshot captured — it will be the thumbnail of your post.'
+            ? 'Screenshot captured. It will be the thumbnail of your post.'
             : capture === 'text'
-              ? 'This post is taller than the screen — its text will be shown instead of a picture.'
+              ? 'This post is taller than the screen, so its text will be shown instead of a picture.'
               : capture === 'none'
-                ? 'No photo or video in this post — its text will be shown instead.'
+                ? 'No photo or video in this post, so its text will be shown instead.'
                 : capture === 'failed'
-                  ? 'Screenshot unavailable — the text will be shown instead.'
+                  ? 'Screenshot unavailable, so the text will be shown instead.'
                   : null;
         if (!statusText) return null;
         return (
