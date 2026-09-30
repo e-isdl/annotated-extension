@@ -238,6 +238,10 @@ export default function ClipPage() {
 
       {annotation?.audio_url && <div className="post-audio"><AudioPlayer src={annotation.audio_url} /></div>}
 
+      {clip.source_type === 'text' && clip.article_text && (
+        <section className="post-text-body post-text-body-detail" aria-label="Post content"><p>{clip.article_text}</p></section>
+      )}
+
       {clip.source_url && <section className="source-post" aria-label="Original source post">
         {clip.source_type === 'youtube' && (clip.source_title || clip.title) && (
           <p className="source-post-title">{clip.source_title || clip.title}</p>

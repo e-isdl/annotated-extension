@@ -88,8 +88,10 @@ export default function CreatePage() {
     const startSec = form.startSec === '' ? null : Number(form.startSec);
     const endSec = form.endSec === '' ? null : Number(form.endSec);
 
-    if (!title || !commentary) { setStatus('Add a title and your point of view first.'); return; }
-    if (commentary.length > annotationLimit) { setStatus(`This ${form.type.toLowerCase()} annotation is limited to ${annotationLimit} characters.`); return; }
+    if (!title) { setStatus('Add a title first.'); return; }
+    if (needsSource && !commentary) { setStatus('Add your point of view first.'); return; }
+    if (!needsSource && !form.quote.trim()) { setStatus('Write the post content first.'); return; }
+    if (needsSource && commentary.length > annotationLimit) { setStatus(`This ${form.type.toLowerCase()} annotation is limited to ${annotationLimit} characters.`); return; }
     if (needsSource && !url) { setStatus(mode === 'moment' ? 'Add the video or podcast URL for this moment.' : 'Add the source URL, or switch to Text.'); return; }
     if (url && !isValidUrl(url)) { setStatus('Use a complete source URL, including https://.'); return; }
     if (sourceType === 'social' && url && !isXPostUrl(url)) { setStatus('Share an X post link, like https://x.com/user/status/123.'); return; }
@@ -112,7 +114,7 @@ export default function CreatePage() {
         start_sec: mode === 'moment' ? startSec : null,
         end_sec: mode === 'moment' ? endSec : null,
         slug: generateSlug(title),
-        annotation: commentary,
+        annotation: needsSource ? commentary : title,
       });
       navigate(postHref({ ...clip, community_slug: selectedCommunity?.slug }));
     } catch (error) {
@@ -149,12 +151,14 @@ export default function CreatePage() {
             {communityLoadError && <span className="field-hint">Communities could not be loaded, but you can still post without one.</span>}
           </label>
 
-          <fieldset>
-            <legend className="form-label">What kind of note is this?</legend>
-            <div className="type-picker">
-              {TYPES.map((type) => <button key={type} type="button" onClick={() => update('type', type)} className={form.type === type ? 'type-option type-option-active' : 'type-option'}>{type}</button>)}
-            </div>
-          </fieldset>
+          {!needsSource ? null : (
+            <fieldset>
+              <legend className="form-label">What kind of note is this?</legend>
+              <div className="type-picker">
+                {TYPES.map((type) => <button key={type} type="button" onClick={() => update('type', type)} className={form.type === type ? 'type-option type-option-active' : 'type-option'}>{type}</button>)}
+              </div>
+            </fieldset>
+          )}
 
           {needsSource && <label className="form-label">Source URL
             <input className="input" value={form.url} onChange={(event) => update('url', event.target.value)} placeholder="https://..." inputMode="url" required />
@@ -175,10 +179,10 @@ export default function CreatePage() {
             <textarea className="input resize-none" rows={5} value={form.quote} onChange={(event) => update('quote', event.target.value)} placeholder={needsSource ? 'Point to the exact part people should look at...' : 'Write the post people will respond to...'} maxLength={2000} />
             <span className="field-counter">{form.quote.length}/2000</span>
           </label>
-          <label className="form-label">Your annotation
+          {needsSource && <label className="form-label">Your annotation
             <textarea className="input resize-none annotation-editor" rows={7} value={form.commentary} onChange={(event) => update('commentary', event.target.value)} placeholder="What do you want people to understand, question, or add?" maxLength={annotationLimit} />
             <span className={`field-counter ${form.commentary.length > annotationLimit * 0.9 ? 'field-counter-warning' : ''}`}>{form.commentary.length}/{annotationLimit}</span>
-          </label>
+          </label>}
           {status && <p className="form-status" role="alert">{status}</p>}
           <button type="submit" className="btn-primary w-full" disabled={publishing || !communitiesReady}>{publishing ? 'Publishing…' : user ? selectedCommunity ? `Post to c/${selectedCommunity.name}` : 'Post' : 'Sign in to post ↗'}</button>
         </div>
@@ -187,7 +191,8 @@ export default function CreatePage() {
           <p className="eyebrow">LIVE PREVIEW</p>
           <div className="create-preview">
             <p className="post-meta">{selectedCommunity ? <span className="community-pill"><CommunityAvatar slug={selectedCommunity.slug} name={selectedCommunity.name} /> c/{selectedCommunity.name}</span> : <span>Post</span>}<span>• just now</span></p>
-            <h2 className="post-annotation-preview">{form.commentary || 'Your point of view will be the center of the post.'}</h2>
+            <h2 className="post-annotation-preview">{needsSource ? (form.commentary || 'Your point of view will be the center of the post.') : (form.title || 'Your title will be the headline of the post.')}</h2>
+            {!needsSource && form.quote && <p className="post-text-body">{form.quote}</p>}
             {mode !== 'text' && <div className="source-preview source-preview-preview"><div className="source-preview-copy"><div className="source-label">↗ {form.url ? domain : 'your source'}</div><p className="source-title">{form.title || 'Your source title will appear here'}</p><p className="source-quote">{form.quote ? `“${form.quote}”` : 'Add a quote or source context so people know what you are discussing.'}</p></div></div>}
             {mode === 'moment' && hasMoment(form.startSec, form.endSec) && <div className="post-timestamp-row"><span className="timestamp">{formatTime(form.startSec)}</span><span className="text-text-muted text-xs">→</span><span className="timestamp">{formatTime(form.endSec)}</span></div>}
             <div className="post-actions"><span className="post-action">▲ 0</span><span className="post-action">▱ 0 comments</span><span className="post-action">↗ Share</span></div>

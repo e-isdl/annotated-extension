@@ -111,6 +111,9 @@ export default function ClipCard({ clip }) {
         )}
         {isYouTube && youtubeTitle && youtubeTitle !== commentary && <p className="post-source-title">{youtubeTitle}</p>}
 
+        {clip.source_type === 'text' ? (
+          clip.article_text && <p className="post-text-body">{clip.article_text}</p>
+        ) : (
         <div className="source-preview">
           <div className="source-preview-copy">
             {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
@@ -126,6 +129,7 @@ export default function ClipCard({ clip }) {
           </div>
           {sourceImage && <img src={sourceImage} alt="" className={`source-preview-image${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />}
         </div>
+        )}
         {hasMoment(clip.start_sec, clip.end_sec) && (
           <div className="post-timestamp-row" aria-label={`Source moment from ${formatTime(clip.start_sec)} to ${formatTime(clip.end_sec)}`}>
             <span className="timestamp">{formatTime(clip.start_sec)}</span>
