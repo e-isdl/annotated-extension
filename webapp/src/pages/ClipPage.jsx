@@ -11,6 +11,7 @@ import ReportButton from '../components/ReportButton';
 import CommentSection from '../components/CommentSection';
 import VoteButtons from '../components/VoteButtons';
 import AnnotationLead from '../components/AnnotationLead';
+import EditAnnotationButton from '../components/EditAnnotationButton';
 import { getDemoClip } from '../lib/demoData';
 import DemoClipPage from './DemoClipPage';
 import { useToast } from '../components/ToastProvider';
@@ -186,6 +187,14 @@ export default function ClipPage() {
       <DetailHeader clip={clip} profile={profile}>
         <div className="detail-header-actions">
           <span className="badge badge-article">{clip.annotation_type || 'Annotation'}</span>
+          {isOwner && annotation && (
+            <EditAnnotationButton
+              clipId={clip.id}
+              annotationType={clip.annotation_type || 'Annotation'}
+              text={annotation.text_content}
+              onSaved={(next) => setAnnotation((current) => ({ ...(current || {}), text_content: next }))}
+            />
+          )}
           <div className="detail-overflow detail-overflow-end relative">
             <button
               type="button"
