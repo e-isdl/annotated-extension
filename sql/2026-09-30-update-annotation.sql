@@ -5,6 +5,11 @@
 -- publish RPCs apply (2026-09-29-annotation-types.sql).
 -- Deliberately does not touch columns that may not exist on older installs;
 -- only text_content is written.
+--
+-- Intentionally left callable by authenticated as a definer function, which
+-- the security advisor flags with a WARN (like the publish RPCs): the edit
+-- path must enforce ownership and type limits server-side, and annotations
+-- deliberately has no UPDATE policy, so this RPC is the only way to edit.
 
 create or replace function public.update_annotation(
   p_clip_id uuid,
@@ -63,4 +68,5 @@ end;
 $function$;
 
 revoke all on function public.update_annotation(uuid, text) from anon;
+revoke execute on function public.update_annotation(uuid, text) from public;
 grant execute on function public.update_annotation(uuid, text) to authenticated;
