@@ -187,14 +187,6 @@ export default function ClipPage() {
       <DetailHeader clip={clip} profile={profile}>
         <div className="detail-header-actions">
           <span className="badge badge-article">{clip.annotation_type || 'Annotation'}</span>
-          {isOwner && annotation && (
-            <EditAnnotationButton
-              clipId={clip.id}
-              annotationType={clip.annotation_type || 'Annotation'}
-              text={annotation.text_content}
-              onSaved={(next) => setAnnotation((current) => ({ ...(current || {}), text_content: next }))}
-            />
-          )}
           <div className="detail-overflow detail-overflow-end relative">
             <button
               type="button"
@@ -244,6 +236,15 @@ export default function ClipPage() {
       </DetailHeader>
 
       <AnnotationLead text={annotation?.text_content} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} showAuthor={false} />
+
+      {isOwner && annotation && (
+        <EditAnnotationButton
+          clipId={clip.id}
+          annotationType={clip.annotation_type || 'Annotation'}
+          text={annotation.text_content}
+          onSaved={(next) => setAnnotation((current) => ({ ...(current || {}), text_content: next }))}
+        />
+      )}
 
       {annotation?.audio_url && <div className="post-audio"><AudioPlayer src={annotation.audio_url} /></div>}
 

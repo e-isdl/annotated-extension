@@ -47,14 +47,7 @@ begin
   from public.clips c
   where c.id = p_clip_id;
 
-  max_len := case clip_type
-    when 'Reaction' then 280
-    when 'Fact check' then 500
-    when 'Explainer' then 600
-    when 'Hot take' then 800
-    when 'Question' then 1000
-    else 1000
-  end;
+  max_len := 1000;
 
   if length(trim(p_text)) > max_len then
     raise exception 'This annotation is limited to % characters', max_len;

@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import AudioRecorder from './AudioRecorder';
 import { excerptYouTubeTranscript, fetchYouTubeTranscript, formatYouTubeTranscript } from '../lib/youtubeTranscript';
 
-const ANNOTATION_LIMITS = { Reaction: 280, 'Fact check': 500, Explainer: 600, 'Hot take': 800, Question: 1000 };
+const ANNOTATION_LIMITS = { Reaction: 1000, 'Fact check': 1000, Explainer: 1000, 'Hot take': 1000, Question: 1000 };
 const ANNOTATION_TYPES = Object.keys(ANNOTATION_LIMITS);
 
 async function fetchTranscriptDirect(videoId, startSec, endSec) {
