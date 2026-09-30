@@ -166,6 +166,7 @@ export default function Profile() {
       if (error) throw error;
 
       setProfile(updatedProfile);
+      window.dispatchEvent(new CustomEvent('annotated:profile-updated', { detail: updatedProfile }));
       const { error: authUpdateError } = await supabase.auth.updateUser({ data: {
         user_name: updatedProfile.handle,
         full_name: updatedProfile.display_name,

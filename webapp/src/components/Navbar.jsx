@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import { useToast } from './ToastProvider';
@@ -35,26 +35,64 @@ const NOTIF_ICONS = {
 
 export default function Navbar() {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [notifCount, setNotifCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const notifRef = useRef(null);
   const { push } = useToast();
 
   useEffect(() => {
-    getCurrentUser().then((user) => {
-      setUser(user);
-      if (user) loadNotifications(user.id);
+    let active = true;
+    async function loadProfile(userId) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('handle, display_name, avatar_url')
+        .eq('id', userId)
+        .single();
+      if (active) setProfile(data || null);
+    }
+    getCurrentUser().then((currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        loadProfile(currentUser.id);
+        loadNotifications(currentUser.id);
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) loadNotifications(session.user.id);
-      else { setNotifications([]); setNotifCount(0); }
+      if (session?.user) {
+        loadProfile(session.user.id);
+        loadNotifications(session.user.id);
+      } else {
+        setProfile(null);
+        setNotifications([]);
+        setNotifCount(0);
+      }
     });
-    return () => subscription.unsubscribe();
+    return () => { active = false; subscription.unsubscribe(); };
   }, []);
+
+  // Re-read the profile row as the user navigates so a freshly saved avatar
+  // or handle shows up in the top right immediately.
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    supabase
+      .from('profiles')
+      .select('handle, display_name, avatar_url')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => { if (active) setProfile(data || null); });
+    const onProfileUpdated = (event) => {
+      if (event.detail?.id === user.id) setProfile(event.detail);
+    };
+    window.addEventListener('annotated:profile-updated', onProfileUpdated);
+    return () => { active = false; window.removeEventListener('annotated:profile-updated', onProfileUpdated); };
+  }, [user?.id, location.pathname]);
 
   // Real-time subscription
   useEffect(() => {
@@ -232,10 +270,10 @@ export default function Navbar() {
                 </svg>
               </button>
 
-              <Link to={`/u/${user.user_metadata?.user_name || user.id}`} aria-label="Open your profile" className="flex items-center justify-center w-9 h-9 rounded-full">
+              <Link to={`/u/${profile?.handle || user.user_metadata?.user_name || user.id}`} aria-label="Open your profile" className="flex items-center justify-center w-9 h-9 rounded-full">
                 <Avatar profile={{
-                  handle: user.user_metadata?.user_name || user.email?.split('@')[0],
-                  avatar_url: user.user_metadata?.avatar_url,
+                  handle: profile?.handle || user.user_metadata?.user_name || user.email?.split('@')[0],
+                  avatar_url: profile ? profile.avatar_url : user.user_metadata?.avatar_url,
                 }} size="sm" />
               </Link>
             </>
