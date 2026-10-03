@@ -469,6 +469,19 @@ async function handleRecordClip(message, sendResponse) {
 
 const HIGHLIGHT_WORD_LIMIT = 200; // keep in sync with WORD_LIMIT in src/components/ArticleClipper.jsx
 let fallbackMarks = [];
+let clipMonitor = null;
+let clipMonitorOnPause = null;
+
+function stopClipPlaybackMonitor() {
+  if (clipMonitor) { clearInterval(clipMonitor); clipMonitor = null; }
+  if (clipMonitorOnPause) {
+    try {
+      const v = document.querySelector('video.html5-main-video') || document.querySelector('#movie_player video');
+      if (v) v.removeEventListener('pause', clipMonitorOnPause);
+    } catch (e) {}
+    clipMonitorOnPause = null;
+  }
+}
 
 function capRange(range, maxWords) {
   try {
@@ -720,8 +733,21 @@ if (!window.__annotatedContentLoaded) {
       const video = document.querySelector('video.html5-main-video')
         || document.querySelector('#movie_player video');
       if (video) {
+        const end = Number(message.end) || 0;
+        stopClipPlaybackMonitor();
         try { video.currentTime = Number(message.start) || 0; } catch (e) {}
         video.play().catch(() => {});
+        if (end > 0) {
+          clipMonitor = setInterval(() => {
+            try {
+              if (!video.paused && video.currentTime >= end) {
+                video.pause();
+              }
+            } catch (e) {}
+          }, 200);
+          clipMonitorOnPause = () => stopClipPlaybackMonitor();
+          video.addEventListener('pause', clipMonitorOnPause, { once: true });
+        }
         sendResponse({ ok: true });
       } else {
         sendResponse({ ok: false });

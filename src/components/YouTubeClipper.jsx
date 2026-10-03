@@ -174,7 +174,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const playFromStart = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (!tab?.id) return;
-      chrome.tabs.sendMessage(tab.id, { type: 'PLAY_FROM', start: startSec }).catch(() => {});
+      chrome.tabs.sendMessage(tab.id, { type: 'PLAY_FROM', start: startSec, end: endSec }).catch(() => {});
     });
   };
 

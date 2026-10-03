@@ -488,3 +488,16 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   `video.html5-main-video` to the clip start and plays, so the person previews the exact
   range they are about to clip. Disabled while recording/recorded (locked).
 - **Local commit only — NOT pushed.**
+
+---
+
+## Play clip: auto-pause at the clip end
+
+**Files touched:** `content.js`, `src/components/YouTubeClipper.jsx`, this changelog.
+
+- `PLAY_FROM` now carries `end` too. After seeking to the clip start and playing,
+  `content.js` runs a 200 ms monitor that pauses the video the moment it reaches the
+  clip end, so the preview plays exactly the selected range and stops.
+- A `pause` listener stops the monitor: if the person pauses (or seeks) manually, the
+  auto-pause never fires later. Monitor is also replaced on the next Play clip press.
+- **Local commit only — NOT pushed.**
