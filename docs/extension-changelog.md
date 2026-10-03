@@ -1019,3 +1019,16 @@ this changelog.
   mute stays respected and never auto-reverses.
 - A Tap for sound pill sits bottom-left whenever muted.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Floating button actually appears (scroll chain fix)
+
+Files touched: src/styles/panel.css, this changelog.
+
+- The floating actions button existed but never showed: the word area height was
+  unconstrained, so the outer panel scrolled instead of it, its onScroll never
+  fired, and the button stayed hidden (pinned at the bottom of a miles-long page).
+- word-clipper-full is now height-locked to its container and the word area gets
+  min-height 0, so the transcript pane itself is the scroller. Scroll down 120px
+  and the button appears.
+- Local commit only - NOT pushed.
