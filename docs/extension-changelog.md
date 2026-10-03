@@ -1084,3 +1084,12 @@ Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this cha
   Continue bar as a flex sibling after the transcript pane and readout, outside
   every scroll container. It is structurally impossible for it to scroll away.
 - Local commit only - NOT pushed.
+---
+
+## Release v2.3.4
+
+- Manifest bumped 2.3.3 to 2.3.4. Ships everything since the last release:
+  full-transcript word clipper (drag bars, double-click select, true caption
+  timings, live-position start, permanent Continue), empty-recording fix with
+  upload retry, play preview with live time, article copy trim.
+- Pushed to master. Webapp NOT deployed by this step.
