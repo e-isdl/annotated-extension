@@ -211,3 +211,13 @@ leftover mistake â€” "leave the text as it is". No code changed.
 - Clicking the armed button again disarms (both normal, nearest-handle drag back).
 - Armed handle gets focus on arm for arrow-key fine-tuning.
 - If no page video, the buttons still arm (drag to set); no error shown for that.
+
+---
+
+## T6 REMOVED entirely (master's order) — "those two buttons suck"
+
+- Set start / Set end buttons, the arming/ghosting state, `getPageVideoTime`
+  currentTime probe, handle refs, and `.btn-set` CSS all deleted.
+- Clip screen is back to: thumbnail + Preview chip, bar-handle scrub (nearest
+  handle wins on drag), Start/End cards with editable fields + -5s/+5s nudges.
+- T6 in the task list is now SKIPPED (both its original and its redesign rejected).

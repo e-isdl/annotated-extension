@@ -44,10 +44,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const [endInput, setEndInput] = useState('0:00:30');
   const [previewMode, setPreviewMode] = useState(false);
   const [dragging, setDragging] = useState(null);
-  const [armed, setArmed] = useState(null);
   const trackRef = useRef(null);
-  const startHandleRef = useRef(null);
-  const endHandleRef = useRef(null);
 
   useEffect(() => {
     if (data.duration && data.duration > 0) {
@@ -107,47 +104,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
     if (!isNaN(sec) && sec > startSec && sec <= duration) setEndSec(sec);
   };
 
-  const getPageVideoTime = async () => {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab?.id) return null;
-      const [res] = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          const v = document.querySelector('video');
-          return v ? v.currentTime : null;
-        },
-      });
-      return res?.result ?? null;
-    } catch {
-      return null;
-    }
-  };
-
-  const armStart = async () => {
-    if (armed === 'start') { setArmed(null); return; }
-    const t = await getPageVideoTime();
-    if (t != null) {
-      const sec = Math.min(duration, Math.max(0, Math.round(t)));
-      setStartSec(sec);
-      setStartInput(formatTime(sec));
-    }
-    setArmed('start');
-    setTimeout(() => startHandleRef.current?.focus(), 0);
-  };
-
-  const armEnd = async () => {
-    if (armed === 'end') { setArmed(null); return; }
-    const t = await getPageVideoTime();
-    if (t != null) {
-      const sec = Math.min(duration, Math.max(0, Math.round(t)));
-      setEndSec(sec);
-      setEndInput(formatTime(sec));
-    }
-    setArmed('end');
-    setTimeout(() => endHandleRef.current?.focus(), 0);
-  };
-
   const handleContinue = () => {
     if (endSec <= startSec) { setError('End time must be after start time.'); return; }
     if (clipLen > 90) { setError('Clip must be 90 seconds or less.'); return; }
@@ -183,7 +139,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
 
   const onTrackPointerDown = (e) => {
     const sec = secFromClientX(e.clientX);
-    const which = armed || (Math.abs(sec - startSec) <= Math.abs(sec - endSec) ? 'start' : 'end');
+    const which = Math.abs(sec - startSec) <= Math.abs(sec - endSec) ? 'start' : 'end';
     setDragging(which);
     e.currentTarget.setPointerCapture(e.pointerId);
     applyDrag(which, sec);
@@ -191,7 +147,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
 
   const onHandlePointerDown = (which) => (e) => {
     e.stopPropagation();
-    if (armed && armed !== which) return;
     setDragging(which);
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -204,7 +159,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const onTrackPointerUp = () => setDragging(null);
 
   const onHandleKeyDown = (which) => (e) => {
-    if (armed && armed !== which) return;
     const step = e.shiftKey ? 5 : 1;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
       e.preventDefault();
@@ -269,7 +223,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             aria-valuenow={startSec}
             aria-valuetext={formatTime(startSec)}
             style={{ left: `${startPct}%` }}
-            ref={startHandleRef}
             onPointerDown={onHandlePointerDown('start')}
             onKeyDown={onHandleKeyDown('start')}
           />
@@ -283,7 +236,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             aria-valuenow={endSec}
             aria-valuetext={formatTime(endSec)}
             style={{ left: `${endPct}%` }}
-            ref={endHandleRef}
             onPointerDown={onHandlePointerDown('end')}
             onKeyDown={onHandleKeyDown('end')}
           />
@@ -302,13 +254,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             placeholder="0:00:00"
             aria-label="Start time"
           />
-          <button
-            type="button"
-            className={`btn-set${armed === 'end' ? ' is-ghost' : ''}`}
-            onClick={armStart}
-          >
-            Set start
-          </button>
           <div className="nudge-row">
             <button type="button" className="nudge" onClick={() => updateStart(startSec - 5)}>-5s</button>
             <button type="button" className="nudge" onClick={() => updateStart(startSec + 5)}>+5s</button>
@@ -325,13 +270,6 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             placeholder="0:00:30"
             aria-label="End time"
           />
-          <button
-            type="button"
-            className={`btn-set${armed === 'start' ? ' is-ghost' : ''}`}
-            onClick={armEnd}
-          >
-            Set end
-          </button>
           <div className="nudge-row">
             <button type="button" className="nudge" onClick={() => updateEnd(endSec - 5)}>-5s</button>
             <button type="button" className="nudge" onClick={() => updateEnd(endSec + 5)}>+5s</button>

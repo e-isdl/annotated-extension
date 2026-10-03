@@ -175,13 +175,9 @@ button.flow-stop:focus-visible { outline: 2px solid var(--focus); outline-offset
 .nudge:hover { border-color: var(--border-strong); }
 .nudge:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-.btn-set { width: 100%; height: 48px; background: transparent; border: 1px solid var(--border-strong); border-radius: 12px; color: var(--text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
-.btn-set:hover { background: var(--surface-2); border-color: var(--text-3); }
-.btn-set:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .length-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; color: var(--text-2); }
 .length-row .over { color: var(--red); font-weight: 600; }
 .length-row .max { color: var(--text-3); }
 .clip-error { font-size: 14px; color: var(--red); margin: 0; }
 
-.btn-set.is-ghost { opacity: 0.4; }
