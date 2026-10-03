@@ -61,7 +61,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .badge-youtube .source-badge-icon { color: #ff5b4d; }
 .badge-social .source-badge-icon { color: var(--text); }
 .badge-article .source-badge-icon { color: var(--text-muted); }
-.timestamp { display: inline-flex; padding: 4px 10px; border-radius: var(--radius-pill); background: var(--surface-3); color: var(--text-secondary); font: 11px var(--reading-font); }
+.timestamp { display: inline-flex; padding: 4px 10px; border-radius: var(--radius-pill); background: var(--surface-3); color: var(--text-secondary); font: 500 11px/1.2 var(--ui-font); font-variant-numeric: tabular-nums; }
 .eyebrow, .sidebar-label, .rail-heading { color: var(--text-muted); font-size: 12px; line-height: 1.3; font-weight: 600; }
 
 .app-shell { display: grid; grid-template-columns: 240px minmax(0, 800px) 300px; gap: 20px; align-items: start; width: min(1400px, calc(100% - 48px)); margin: 0 auto; }
