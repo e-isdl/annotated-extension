@@ -344,7 +344,8 @@ export default function ClipPage() {
         <section className="source-transcript" aria-label="Transcript">
           <div className="source-transcript-head">
             {!annotation?.audio_url && <span className="source-transcript-label">Transcript</span>}
-            <button type="button" className={`post-action${showTranscript ? ' post-action-saved' : ''}`} aria-expanded={showTranscript} onClick={() => setShowTranscript((value) => !value)}>
+            <button type="button" className="source-transcript-toggle" aria-expanded={showTranscript} onClick={() => setShowTranscript((value) => !value)}>
+              <span className="source-transcript-caret" aria-hidden="true">{showTranscript ? '▾' : '▸'}</span>
               {showTranscript ? 'Hide transcript' : 'Show transcript'}
             </button>
           </div>
