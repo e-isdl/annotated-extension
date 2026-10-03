@@ -146,13 +146,13 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .source-quote-muted { color: var(--text-muted); font-style: italic; }
 .source-quote-poster { margin: 0 0 -4px; color: var(--text-secondary); font-size: 12px; font-weight: 650; }
 .source-title { overflow: hidden; margin: 7px 0 0; color: var(--text-muted); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
-.source-preview-image { display: block; width: 190px; height: 142px; flex: 0 0 190px; align-self: center; margin: 7px; border-radius: 9px; object-fit: cover; background: var(--bg); cursor: zoom-in; }
+.source-preview-image { display: block; width: 190px; height: 142px; flex: 0 0 190px; align-self: center; margin: 7px; border-radius: 9px; object-fit: cover; background: var(--card); cursor: zoom-in; }
 .source-preview-image-youtube { filter: brightness(1.32) saturate(1.12); }
 .source-thumb-fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px; color: var(--text-muted); font-size: 11px; text-align: center; }
 .source-thumb-fallback .source-badge-icon { width: 18px; height: 18px; }
 .source-preview-expanded { flex-direction: column; gap: 0; min-height: 0; }
 .source-preview-media { display: block; width: 100%; cursor: zoom-out; line-height: 0; }
-.source-preview-image-expanded { display: block; width: 100%; max-height: 64vh; object-fit: contain; background: var(--bg); }
+.source-preview-image-expanded { display: block; width: 100%; max-height: 64vh; object-fit: contain; background: var(--card); }
 .account-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; display: flex; flex-direction: column; min-width: 180px; padding: 5px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
 .account-menu-item { display: block; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text-secondary); text-align: left; text-decoration: none; font-size: 13px; cursor: pointer; }
 .account-menu-item:hover { background: var(--surface-3); color: var(--text-primary); }
