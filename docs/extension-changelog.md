@@ -982,3 +982,15 @@ Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this cha
 - Double-click redefined: start becomes the tapped word, end becomes the very next
   word beside it. No more window preserving.
 - Local commit only - NOT pushed.
+---
+
+## Word clipper white screen: crushed toggle restored
+
+Files touched: src/components/YouTubeClipper.jsx, this changelog.
+
+- Cause: the floating-actions edit matched the toggle inner if as a substring and
+  swallowed the toggleWordClipper opener, trapping closeWordClipper and friends
+  inside it. Opening the clipper then threw ReferenceError on first render.
+- Fix: rebuilt the toggle plus the four helpers as proper component-level
+  functions, verified the diff is purely structural, build passes.
+- Local commit only - NOT pushed.

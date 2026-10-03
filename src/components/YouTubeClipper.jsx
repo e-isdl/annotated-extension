@@ -461,6 +461,28 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   }, []);
 
   const toggleWordClipper = async () => {
+    if (wordClipperOpen) {
+      setWordClipperOpen(false);
+      setFabOpen(false);
+      setFabVisible(false);
+      return;
+    }
+    setWordClipperOpen(true);
+    setFabOpen(false);
+    setFabVisible(false);
+    if (segments || wordError) return;
+    setWordLoading(true);
+    setWordError('');
+    try {
+      const result = await fetchYouTubeTranscript(data.videoId);
+      setSegments(result.segments || []);
+    } catch (e) {
+      setWordError(e.message || 'Could not load the transcript.');
+    } finally {
+      setWordLoading(false);
+    }
+  };
+
   const closeWordClipper = () => {
     setWordClipperOpen(false);
     setFabOpen(false);
@@ -482,28 +504,6 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     setPlayMode('record');
     if (rec.state !== 'done') setWordClipperOpen(false);
     setFabOpen(false);
-  };
-
-  if (wordClipperOpen) {
-      setWordClipperOpen(false);
-      setFabOpen(false);
-      setFabVisible(false);
-      return;
-    }
-    setWordClipperOpen(true);
-    setFabOpen(false);
-    setFabVisible(false);
-    if (segments || wordError) return;
-    setWordLoading(true);
-    setWordError('');
-    try {
-      const result = await fetchYouTubeTranscript(data.videoId);
-      setSegments(result.segments || []);
-    } catch (e) {
-      setWordError(e.message || 'Could not load the transcript.');
-    } finally {
-      setWordLoading(false);
-    }
   };
 
   const canContinue = rec.state === 'done' || playMode === 'embed';
