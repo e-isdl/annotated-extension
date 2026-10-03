@@ -1042,3 +1042,15 @@ Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this cha
   the time screen, where watch, replay, record and embed all live. Removed the Back
   button, the Embed/Record toggle and the three now-dead helpers.
 - Local commit only - NOT pushed.
+---
+
+## Continue can never scroll away (sticky bar)
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this changelog.
+
+- The floating popup is gone. A full-width Continue bar now sits as the last child
+  of the transcript pane with sticky bottom positioning, so it sticks to the
+  bottom of whichever container scrolls (inner pane or outer panel) and is always
+  reachable, no scroll threshold, no tap-to-open menu.
+- Removed the fab state, menu JSX and its CSS.
+- Local commit only - NOT pushed.

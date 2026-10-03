@@ -70,8 +70,6 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const [wordStart, setWordStart] = useState(0);
   const [wordEnd, setWordEnd] = useState(0);
   const [draggingWord, setDraggingWord] = useState(null);
-  const [fabOpen, setFabOpen] = useState(false);
-  const [fabVisible, setFabVisible] = useState(false);
   const wordAreaRef = useRef(null);
   const durationRef = useRef(0);
   durationRef.current = duration;
@@ -501,13 +499,9 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const toggleWordClipper = async () => {
     if (wordClipperOpen) {
       setWordClipperOpen(false);
-      setFabOpen(false);
-      setFabVisible(false);
       return;
     }
     setWordClipperOpen(true);
-    setFabOpen(false);
-    setFabVisible(false);
     if (segments || wordError) return;
     setWordLoading(true);
     setWordError('');
@@ -523,8 +517,6 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const closeWordClipper = () => {
     setWordClipperOpen(false);
-    setFabOpen(false);
-    setFabVisible(false);
   };
 
   const canContinue = rec.state === 'done' || playMode === 'embed';
@@ -603,7 +595,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             <p className="word-clipper-msg">No transcript available for this video.</p>
           ) : (
             <>
-              <div className={`word-area${draggingWord ? ' is-dragging' : ''}`} data-drag={draggingWord || ''} ref={wordAreaRef} onWheel={disarmWordScroll} onTouchMove={disarmWordScroll} onScroll={(e) => { const st = e.currentTarget.scrollTop > 120; setFabVisible((prev) => (prev === st ? prev : st)); }}>
+              <div className={`word-area${draggingWord ? ' is-dragging' : ''}`} data-drag={draggingWord || ''} ref={wordAreaRef} onWheel={disarmWordScroll} onTouchMove={disarmWordScroll}>
                 {words.map((w, i) => (
                   <Word
                     key={i}
@@ -615,21 +607,14 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
                 ))}
                 <div ref={handleStartRef} className="word-handle-float" data-handle="start" onPointerDown={(e) => onWordHandleEvent('start', 'down', e)} />
                 <div ref={handleEndRef} className="word-handle-float" data-handle="end" onPointerDown={(e) => onWordHandleEvent('end', 'down', e)} />
+                <div className="word-sticky-continue">
+                  <button type="button" className="btn-primary w-full" onClick={closeWordClipper}>Continue</button>
+                </div>
               </div>
               <div className="word-clipper-foot">
                 <span>{formatShort(words[wordStart]?.start ?? startSec)} – {formatShort(words[wordEnd]?.end ?? endSec)}</span>
                 <span className="word-clipper-hint">Double-click a word to select it · Drag the bars to adjust</span>
               </div>
-              {fabVisible && (
-                <div className="word-fab-wrap">
-                  {fabOpen && (
-                    <div className="word-fab-menu" role="menu">
-                      <button type="button" className="word-fab-item is-primary" onClick={closeWordClipper} role="menuitem">Continue</button>
-                    </div>
-                  )}
-                  <button type="button" className="word-fab" onClick={() => setFabOpen((v) => !v)} aria-label="Clip actions" aria-expanded={fabOpen}>⋯</button>
-                </div>
-              )}
             </>
           )}
         </div>
