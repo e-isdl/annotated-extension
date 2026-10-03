@@ -334,6 +334,7 @@
 .word-area[data-drag="start"] .word-handle-float[data-handle="start"], .word-area[data-drag="end"] .word-handle-float[data-handle="end"] { cursor: grabbing; background: var(--red); }
 .word-area.is-dragging .word-handle-float { pointer-events: none; }
 
-/* Sticky Continue: last child of the transcript pane, sticks to the bottom of
-   whichever container scrolls, so it can never scroll away */
-.word-sticky-continue { position: sticky; bottom: 0; z-index: 5; padding: 10px 2px 4px; background: linear-gradient(transparent, var(--surface) 45%); }
+/* Permanent Continue: flex sibling after the transcript pane and readout, outside
+   every scroll container, so no scroll can take it away */
+.word-perma-continue { padding: 0 2px; }
+.word-perma-continue .btn-primary { width: 100%; height: 48px; }

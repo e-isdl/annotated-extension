@@ -1073,3 +1073,14 @@ src/components/YouTubeClipper.jsx, this changelog.
   then one pass over the final word list capitalizes true sentence starts, so the
   display reads exactly as before.
 - Local commit only - NOT pushed.
+---
+
+## Continue bar outside the scroll flow
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this changelog.
+
+- A sticky element at the end of scrolled content rides up with the page, so the
+  previous bar scrolled away like everything else. Replaced it with a full-width
+  Continue bar as a flex sibling after the transcript pane and readout, outside
+  every scroll container. It is structurally impossible for it to scroll away.
+- Local commit only - NOT pushed.
