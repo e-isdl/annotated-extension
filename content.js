@@ -362,6 +362,14 @@ async function handleRecordClip(message, sendResponse) {
   disableYouTubeCaptions();
 
   try {
+    const player = document.querySelector('#movie_player');
+    if (player && typeof player.setPlaybackQualityRange === 'function') {
+      player.setPlaybackQualityRange('small');
+    }
+  } catch (e) {}
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+
+  try {
     video.pause();
     video.currentTime = start;
     await waitForEvent(video, 'seeked', 5000);

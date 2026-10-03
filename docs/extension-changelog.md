@@ -638,3 +638,38 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   `create_extension_post` now has the 20-arg signature ending in
   `p_video_url text default null`, and `clips.video_url` exists.
 - Record-clip posting (upload -> video_url -> post) is now unblocked.
+
+---
+
+## 240p recording + background upload + webapp Uploading state
+
+**Files touched:** `content.js`, `src/lib/postPublishing.js`, `src/components/ClipCreator.jsx`,
+`webapp/src/pages/ClipPage.jsx`, `webapp/src/styles/globals.css`,
+`supabase/migrations/20261003000100_background_clip_upload.sql` (applied to production), this changelog.
+
+### 240p
+- `handleRecordClip` now calls `player.setPlaybackQualityRange('small')` (YouTube 'small'
+  = 240p) and waits 1.5 s for the quality switch before capturing, so recordings are
+  240p per the master''s standing order.
+
+### Background upload (production DB migration applied)
+- `clips.video_status text` ('uploading' | 'ready' | 'failed', default 'ready');
+  `create_extension_post` gains `p_video_status`; new owner-only RPC
+  `update_clip_video_url(clip_id, video_url, video_status)`.
+- Posting a recorded clip now creates the post **immediately** with
+  `video_status = 'uploading'` and no file — the person lands on the success screen
+  instantly. The blob uploads in the background (`uploadRecordedClip`), then flips the
+  post to `ready` with the public URL (or `failed` on error, web app falls back to embed).
+- The 15 MB pre-check still blocks posting with "This clip is too big. Record a
+  shorter one." + Use embed instead. The old blocking "Uploading" stage is gone.
+
+### Web app
+- `ClipPage`: while `video_status === 'uploading'` the source area shows an
+  **Uploading…** spinner block (16:9, black) instead of the embed; once `ready` with a
+  `video_url` it plays the recorded file in the `<video>` player (embed branch skipped).
+- **The web app changes are committed locally but NOT yet deployed to Cloudflare
+  Pages** — production still serves the old build, which is why the owner saw only the
+  embed. Deploying the web app is a production deploy and needs the master''s OK
+  (AGENTS.md) — requested next.
+
+Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.**

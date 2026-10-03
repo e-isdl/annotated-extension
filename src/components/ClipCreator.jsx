@@ -7,10 +7,26 @@ import AnnotationForm from './AnnotationForm';
 import SuccessScreen from './SuccessScreen';
 import FlowHeader from './FlowHeader';
 import { supabase } from '../lib/supabase';
-import { createExtensionPost } from '../lib/postPublishing';
+import { createExtensionPost, updateClipVideoUrl } from '../lib/postPublishing';
 import { pageIdentity } from '../lib/pageInfo';
 
 const MAX_CLIP_BYTES = 15 * 1024 * 1024;
+
+async function uploadRecordedClip(supabase, recorded, clipId) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('not signed in');
+    const ext = (recorded.mime || '').includes('mp4') ? 'mp4' : 'webm';
+    const contentType = recorded.mime || (ext === 'mp4' ? 'video/mp4' : 'video/webm');
+    const filename = `clips/recordings/${user.id}/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('clips').upload(filename, recorded.blob, { contentType });
+    if (uploadError) throw uploadError;
+    const publicUrl = supabase.storage.from('clips').getPublicUrl(filename).data.publicUrl;
+    await updateClipVideoUrl(supabase, clipId, publicUrl, 'ready');
+  } catch (e) {
+    try { await updateClipVideoUrl(supabase, clipId, null, 'failed'); } catch (e2) {}
+  }
+}
 
 function generateSlug(title) {
   if (!title) return Math.random().toString(36).slice(2, 10);
@@ -119,29 +135,11 @@ export default function ClipCreator({ pageInfo, session }) {
 
   const handlePublish = async (annotationData) => {
     const stage = annotationData.onStage || (() => {});
-    let video_url = null;
     const recorded = clipData.recorded_clip;
-    if (recorded?.blob) {
-      if (recorded.blob.size > MAX_CLIP_BYTES) {
-        const err = new Error('This clip is too big. Record a shorter one.');
-        err.code = 'clip_too_big';
-        throw err;
-      }
-      stage('uploading');
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('not signed in');
-        const ext = (recorded.mime || '').includes('mp4') ? 'mp4' : 'webm';
-        const contentType = recorded.mime || (ext === 'mp4' ? 'video/mp4' : 'video/webm');
-        const filename = `clips/recordings/${user.id}/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from('clips').upload(filename, recorded.blob, { contentType });
-        if (uploadError) throw uploadError;
-        video_url = supabase.storage.from('clips').getPublicUrl(filename).data.publicUrl;
-      } catch (e) {
-        const err = new Error("Couldn't upload the clip.");
-        err.code = 'upload_failed';
-        throw err;
-      }
+    if (recorded?.blob && recorded.blob.size > MAX_CLIP_BYTES) {
+      const err = new Error('This clip is too big. Record a shorter one.');
+      err.code = 'clip_too_big';
+      throw err;
     }
     stage('creating');
     const sourceUrl = clipData.source_url;
@@ -167,8 +165,13 @@ export default function ClipCreator({ pageInfo, session }) {
       slug: generateSlug(clipData.title),
       annotation_text: annotationData.text_content,
       annotation_audio_url: annotationData.audio_url,
-      video_url: video_url,
+      video_url: null,
+      video_status: recorded?.blob ? 'uploading' : 'ready',
     });
+
+    if (recorded?.blob) {
+      uploadRecordedClip(supabase, recorded, clip.id);
+    }
 
     let published = clip;
     try {

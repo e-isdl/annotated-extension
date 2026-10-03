@@ -20,6 +20,17 @@ export async function createExtensionPost(client, payload) {
     p_annotation: payload.annotation_text ?? null,
     p_annotation_audio_url: payload.annotation_audio_url ?? null,
     p_video_url: payload.video_url ?? null,
+    p_video_status: payload.video_status ?? null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateClipVideoUrl(client, clipId, videoUrl, videoStatus) {
+  const { data, error } = await client.rpc('update_clip_video_url', {
+    p_clip_id: clipId,
+    p_video_url: videoUrl,
+    p_video_status: videoStatus,
   });
   if (error) throw error;
   return data;
