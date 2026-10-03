@@ -183,3 +183,5 @@ button.flow-stop:focus-visible { outline: 2px solid var(--focus); outline-offset
 .length-row .over { color: var(--red); font-weight: 600; }
 .length-row .max { color: var(--text-3); }
 .clip-error { font-size: 14px; color: var(--red); margin: 0; }
+
+.btn-set.is-ghost { opacity: 0.4; }

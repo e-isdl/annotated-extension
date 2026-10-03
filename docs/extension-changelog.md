@@ -198,3 +198,16 @@ leftover mistake â€” "leave the text as it is". No code changed.
   (14px red, `.clip-error`) and Continue stays disabled. Slider fill clamps to 0 width.
 - No video on the page -> "No video found on this page." error.
 - Continue label/logic unchanged (T7's job).
+
+---
+
+## T6 redesign (master's order) — Set start / Set end arm one handle at a time
+
+- Labels changed: "Set start here"/"Set end here" -> **"Set start" / "Set end"**.
+- New interaction: clicking **Set start** captures the page video's currentTime
+  (if a video exists), then **arms the start handle** — the Set end button ghosts
+  (40% opacity, still clickable) and only the start `|` may be dragged/typed via
+  arrows; clicking **Set end** switches it (Set start ghosts, end `|` free).
+- Clicking the armed button again disarms (both normal, nearest-handle drag back).
+- Armed handle gets focus on arm for arrow-key fine-tuning.
+- If no page video, the buttons still arm (drag to set); no error shown for that.
