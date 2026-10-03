@@ -735,9 +735,9 @@ if (!window.__annotatedContentLoaded) {
         || document.querySelector('video');
       if (video) {
         const end = Number(message.end) || 0;
-        const restart = message.action === 'replay' || video.paused;
+        const shouldPlay = message.action === 'replay' || video.paused;
         stopClipPlaybackMonitor();
-        if (restart) {
+        if (shouldPlay) {
           try { video.currentTime = Number(message.start) || 0; } catch (e) {}
           video.play().catch(() => {});
           if (end > 0) {
@@ -751,8 +751,10 @@ if (!window.__annotatedContentLoaded) {
             clipMonitorOnPause = () => stopClipPlaybackMonitor();
             video.addEventListener('pause', clipMonitorOnPause, { once: true });
           }
+        } else {
+          video.pause();
         }
-        sendResponse({ ok: true, playing: restart });
+        sendResponse({ ok: true, playing: shouldPlay });
       } else {
         sendResponse({ ok: false });
       }

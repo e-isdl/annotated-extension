@@ -572,3 +572,17 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 - `PLAY_FROM` now takes `action: 'start' | 'replay'` and falls back to any `video`
   element if the YouTube selectors miss. All three disabled while recording/recorded.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Play clip: single play/pause toggle + Replay
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `content.js`, `src/styles/panel.css`, this changelog.
+
+- The separate Start/Pause buttons were redundant: the main button is now a single
+  **Play / Pause toggle** (icon + label flip with the real video state reported by
+  `content.js`), and **Replay** restarts the clip from its start even mid-playback.
+- `PLAY_FROM` with `action: 'toggle'` pauses when the video is playing and seeks to the
+  clip start + plays (auto-pause at end) when paused; `action: 'replay'` always
+  restarts. Video lookup falls back to any `video` element.
+- **Local commit only — NOT pushed.**

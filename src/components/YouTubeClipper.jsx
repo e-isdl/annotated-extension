@@ -171,19 +171,21 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     }
   };
 
-  const sendToTab = (message) => {
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+
+  const sendToTab = (message, onResponse) => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (!tab?.id) return;
-      chrome.tabs.sendMessage(tab.id, message).catch(() => {});
+      chrome.tabs.sendMessage(tab.id, message, (res) => {
+        if (onResponse) onResponse(res);
+      }).catch(() => {});
     });
   };
 
-  const playFromStart = () => {
-    sendToTab({ type: 'PLAY_FROM', start: startSec, end: endSec, action: 'start' });
-  };
-
-  const pauseVideo = () => {
-    sendToTab({ type: 'PAUSE_MEDIA' });
+  const togglePlay = () => {
+    sendToTab({ type: 'PLAY_FROM', start: startSec, end: endSec, action: 'toggle' }, (res) => {
+      if (res && typeof res.playing === 'boolean') setPreviewPlaying(res.playing);
+    });
   };
 
   const replayClip = () => {
@@ -334,27 +336,21 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
         <div className="play-clip">
           <button
             type="button"
-            className="play-clip-btn"
-            onClick={playFromStart}
+            className="play-clip-btn play-clip-main"
+            onClick={togglePlay}
             disabled={locked}
-            aria-label="Start clip"
+            aria-label={previewPlaying ? 'Pause video' : 'Play clip'}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8 5v14l11-7z" fill="currentColor" />
-            </svg>
-            <span>Start</span>
-          </button>
-          <button
-            type="button"
-            className="play-clip-btn"
-            onClick={pauseVideo}
-            disabled={locked}
-            aria-label="Pause video"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor" />
-            </svg>
-            <span>Pause</span>
+            {previewPlaying ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5v14l11-7z" fill="currentColor" />
+              </svg>
+            )}
+            <span>{previewPlaying ? 'Pause' : 'Play'}</span>
           </button>
           <button
             type="button"
