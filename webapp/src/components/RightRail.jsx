@@ -140,26 +140,25 @@ export default function RightRail() {
       ) : null}
 
       {communities.length > 0 && <section className="rail-card">
-        <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="rail-heading">Communities to explore</h2>
-          <Link to="/explore" className="text-[10px] text-accent-text hover:text-accent">See all</Link>
+          <Link to="/explore" className="text-[11px] text-accent-text hover:text-accent">See all</Link>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {communities.slice(0, 3).map((item) => (
-            <Link key={item.slug} to={`/c/${item.slug}`} className="flex items-center gap-2.5 no-underline group">
-              <CommunityAvatar slug={item.slug} name={item.name} className="community-dot" />
+            <Link key={item.slug} to={`/c/${item.slug}`} className="flex items-center gap-3 no-underline group">
+              <CommunityAvatar slug={item.slug} name={item.name} className="community-dot community-dot-lg" />
               <span className="min-w-0 flex-1">
-          <span className="block text-xs text-text-primary group-hover:text-accent-text truncate">c/{item.name}</span>
-          {item.members > 1 && <span className="block text-[10px] text-text-muted mt-0.5">{item.members} members</span>}
+          <span className="block text-sm text-text-primary group-hover:text-accent-text truncate">c/{item.name}</span>
+          <span className="block text-[11px] text-text-muted mt-0.5">{item.members || 0} {item.members === 1 ? 'member' : 'members'}</span>
               </span>
             </Link>
           ))}
         </div>
       </section>}
 
-      <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer" className="rail-extension-link">Get the extension</a>
-
       <footer className="rail-footer">
+        <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
         <a href="https://github.com/e-isdl/annotated-extension" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </footer>
     </aside>
