@@ -143,7 +143,7 @@ export default function RightRail() {
         </Link>
       ) : null}
 
-      {communities.length > 0 && <section className="rail-card">
+      {communities.length > 0 && takes.length === 0 && <section className="rail-card">
         <div className="flex items-center justify-between mb-4">
           <h2 className="rail-heading">Communities to explore</h2>
           <Link to="/explore" className="text-[11px] text-accent-text hover:text-accent">See all</Link>
