@@ -329,8 +329,8 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
       source_type: 'youtube',
       title: data.title,
       youtube_id: data.videoId,
-      start_sec: startSec,
-      end_sec: endSec,
+      start_sec: Math.floor(startSec),
+      end_sec: Math.ceil(endSec),
       duration: duration || null,
       thumbnail: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`,
       ...(playMode === 'record' && rec.blob

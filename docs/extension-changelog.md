@@ -1128,3 +1128,14 @@ into communities.
 - New community Politics (slug politics) live in the database, with a red/blue
   split ballot-box SVG pfp wired into the pfp map.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Publish sends whole seconds
+
+Files touched: src/components/YouTubeClipper.jsx, this changelog.
+
+- The invalid-input-syntax-for-integer errors came from the word clipper keeping
+  sub-second times all the way into create_extension_post, whose timestamp args
+  are integers. handleContinue now floors start and ceils end, which also keeps
+  end after start for every valid clip. Webapp embed already floored its inputs.
+- Local commit only - NOT pushed.
