@@ -1093,3 +1093,19 @@ Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this cha
   timings, live-position start, permanent Continue), empty-recording fix with
   upload retry, play preview with live time, article copy trim.
 - Pushed to master. Webapp NOT deployed by this step.
+---
+
+## TV and Film community + searchable extension picker
+
+Files touched: src/components/AnnotationForm.jsx, src/styles/panel.css,
+webapp/public/pfps/tv-and-film.svg (new), webapp/src/lib/community.js,
+this changelog. Production: one row inserted into communities.
+
+- New community TV and Film (slug tv-and-film) live in the database with a
+  clapperboard SVG pfp (cinema red/gold, same 160px family style) wired into the
+  pfp map, so its avatar renders everywhere CommunityAvatar does.
+- The extension take screen community select is now a searchable picker: button
+  shows the current pick, opens a menu with autofocus search over the live
+  Supabase list (name + slug), No community always present, Escape/backdrop
+  close, empty state included.
+- Local commit only - NOT pushed. Webapp NOT deployed.

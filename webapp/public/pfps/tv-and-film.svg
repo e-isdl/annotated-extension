@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <defs>
+    <linearGradient id="tvfilmBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7f1d1d"/>
+      <stop offset="1" stop-color="#dc2626"/>
+    </linearGradient>
+    <radialGradient id="tvfilmShine" cx="0.3" cy="0.18" r="0.95">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="tvfilmShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#450a0a" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="160" height="160" fill="url(#tvfilmBg)"/>
+  <rect width="160" height="160" fill="url(#tvfilmShine)"/>
+  <circle cx="80" cy="80" r="71" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="2"/>
+  <g filter="url(#tvfilmShadow)">
+    <g transform="rotate(-8 46 58)">
+      <rect x="46" y="48" width="68" height="18" rx="7" fill="none" stroke="#fcd34d" stroke-width="8"/>
+      <path d="M62 48v18M78 48v18M94 48v18" stroke="#fcd34d" stroke-width="5" stroke-linecap="round"/>
+    </g>
+    <rect x="46" y="72" width="68" height="42" rx="8" fill="none" stroke="#fcd34d" stroke-width="9"/>
+    <path d="M72 82l18 11-18 11z" fill="#fcd34d"/>
+  </g>
+</svg>

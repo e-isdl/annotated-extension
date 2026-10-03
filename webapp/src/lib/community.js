@@ -13,6 +13,7 @@ const COMMUNITY_PFPS = {
   'media-literacy': '/pfps/media-literacy.svg',
   startups: '/pfps/startups.svg',
   'internet-culture': '/pfps/internet-culture.svg',
+  'tv-and-film': '/pfps/tv-and-film.svg',
 };
 
 export function communityPfpUrl(slug = '') {

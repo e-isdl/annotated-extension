@@ -75,6 +75,13 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
   const [transcriptRetry, setTranscriptRetry] = useState(0);
   const [editedText, setEditedText] = useState('');
   const [editedFullText, setEditedFullText] = useState('');
+  const [communityOpen, setCommunityOpen] = useState(false);
+  const [communityQuery, setCommunityQuery] = useState('');
+  const selectedCommunity = communities.find((community) => community.id === communityId) || null;
+  const communityFilter = communityQuery.trim().toLowerCase();
+  const filteredCommunities = communityFilter
+    ? communities.filter((community) => (`c/${community.name} ${community.slug || ''}`).toLowerCase().includes(communityFilter))
+    : communities;
   const fileInputRef = useRef(null);
   const isYouTube = clipData?.source_type === 'youtube';
   const isArticle = clipData?.source_type === 'article';
@@ -433,13 +440,65 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
         </div>
       )}
 
-      <label className="take-select-label">
-        Community <span className="text-text-muted">Optional</span>
-        <select value={communityId} onChange={(event) => onCommunityChange?.(event.target.value)} className="input take-select">
-          <option value="">No community</option>
-          {communities.map((community) => <option key={community.id} value={community.id}>c/{community.name}</option>)}
-        </select>
-      </label>
+      <div className="take-select-label">
+        <span>Community <span className="text-text-muted">Optional</span></span>
+        <div className="community-picker">
+          <button
+            type="button"
+            className="take-select community-picker-btn"
+            onClick={() => { setCommunityOpen((v) => !v); setCommunityQuery(''); }}
+            aria-haspopup="listbox"
+            aria-expanded={communityOpen}
+          >
+            <span className="community-picker-value">{selectedCommunity ? `c/${selectedCommunity.name}` : 'No community'}</span>
+            <svg className="community-picker-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          {communityOpen && (
+            <>
+              <button type="button" aria-hidden="true" tabIndex={-1} className="community-picker-backdrop" onClick={() => setCommunityOpen(false)} />
+              <div className="community-picker-menu" role="listbox" onKeyDown={(e) => { if (e.key === 'Escape') setCommunityOpen(false); }}>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Search communities"
+                  value={communityQuery}
+                  onChange={(e) => setCommunityQuery(e.target.value)}
+                  className="community-picker-search"
+                  aria-label="Search communities"
+                />
+                <div className="community-picker-list">
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={!communityId}
+                    className={`community-picker-item${!communityId ? ' is-selected' : ''}`}
+                    onClick={() => { onCommunityChange?.(''); setCommunityOpen(false); }}
+                  >
+                    No community
+                  </button>
+                  {filteredCommunities.map((community) => (
+                    <button
+                      key={community.id}
+                      type="button"
+                      role="option"
+                      aria-selected={community.id === communityId}
+                      className={`community-picker-item${community.id === communityId ? ' is-selected' : ''}`}
+                      onClick={() => { onCommunityChange?.(community.id); setCommunityOpen(false); }}
+                    >
+                      c/{community.name}
+                    </button>
+                  ))}
+                  {filteredCommunities.length === 0 && (
+                    <p className="community-picker-empty">No communities match.</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       <label className="take-select-label">
         Post type
