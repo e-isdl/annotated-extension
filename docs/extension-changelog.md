@@ -836,3 +836,38 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   once on release. Times are set with sub-second precision instead of full-second
   clamps, so the start bar no longer snaps back.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Smooth word drag, double-click moves window, uploads visible
+
+Files touched: src/components/YouTubeClipper.jsx, src/components/ClipCreator.jsx,
+src/components/SuccessScreen.jsx, src/styles/panel.css,
+webapp/src/pages/ClipPage.jsx,
+supabase/migrations/20261003000200_clip_video_view.sql, this changelog.
+
+### Word clipper smoothness
+- Handles are now absolutely-positioned overlays pinned to the boundary words via
+  direct style writes (no React state, no extra renders). The text never reflows
+  during a drag - that reflow of the whole word area every frame was the remaining
+  jank. Each word is a single flat span (wrapper spans removed, DOM nodes halved).
+- Double-clicking a word now moves the whole clip window there, preserving the clip
+  length (clamped to the video end), so jumping to the bottom of a long transcript
+  takes one action instead of scrolling plus dragging.
+- Opening the word clipper auto-scrolls the current selection into view
+  (block: center), so a clip at the bottom of the transcript is right there.
+
+### Recorded uploads actually play
+- Root cause of only-the-embed-plays: ClipPage reads clips_with_scores first,
+  and that view was created before video_url / video_status existed, so the player
+  could never see uploads even when they succeeded. New migration recreates the view
+  with both columns appended (needs applying to prod - no DB access from here).
+- Belt and suspenders in the webapp: if the view row lacks the video fields, ClipPage
+  fetches them from the base clips table; while video_status is uploading it
+  re-checks every 4s so the video appears without a reload; if the video element
+  errors (e.g. unreachable URL) it falls back to the YouTube embed.
+- Extension: upload failures are no longer silent - the success screen shows
+  Uploading recorded video... while it runs and a failure box with a
+  Retry upload button if it fails; failures are console.error-logged. Empty
+  recordings are rejected before upload.
+- Local commit only - NOT pushed. Webapp NOT deployed.
