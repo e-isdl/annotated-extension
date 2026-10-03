@@ -731,29 +731,28 @@ if (!window.__annotatedContentLoaded) {
     }
     if (message.type === 'PLAY_FROM') {
       const video = document.querySelector('video.html5-main-video')
-        || document.querySelector('#movie_player video');
+        || document.querySelector('#movie_player video')
+        || document.querySelector('video');
       if (video) {
-        if (!video.paused) {
-          video.pause();
-          sendResponse({ ok: true, playing: false });
-          return true;
-        }
         const end = Number(message.end) || 0;
+        const restart = message.action === 'replay' || video.paused;
         stopClipPlaybackMonitor();
-        try { video.currentTime = Number(message.start) || 0; } catch (e) {}
-        video.play().catch(() => {});
-        if (end > 0) {
-          clipMonitor = setInterval(() => {
-            try {
-              if (!video.paused && video.currentTime >= end) {
-                video.pause();
-              }
-            } catch (e) {}
-          }, 200);
-          clipMonitorOnPause = () => stopClipPlaybackMonitor();
-          video.addEventListener('pause', clipMonitorOnPause, { once: true });
+        if (restart) {
+          try { video.currentTime = Number(message.start) || 0; } catch (e) {}
+          video.play().catch(() => {});
+          if (end > 0) {
+            clipMonitor = setInterval(() => {
+              try {
+                if (!video.paused && video.currentTime >= end) {
+                  video.pause();
+                }
+              } catch (e) {}
+            }, 200);
+            clipMonitorOnPause = () => stopClipPlaybackMonitor();
+            video.addEventListener('pause', clipMonitorOnPause, { once: true });
+          }
         }
-        sendResponse({ ok: true, playing: true });
+        sendResponse({ ok: true, playing: restart });
       } else {
         sendResponse({ ok: false });
       }

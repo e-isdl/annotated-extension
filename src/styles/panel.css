@@ -250,13 +250,14 @@
 .article-helper { font-size: 14px; color: var(--text-2); text-align: center; margin: 0; }
 .article-helper.over { color: var(--red); }
 
-/* Play clip button (replaces thumbnail) */
-.play-clip { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 56px; padding: 12px 16px; border-radius: var(--r-card); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
-.play-clip:hover { background: var(--surface-2); border-color: var(--border-strong); }
-.play-clip:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.play-clip:disabled { opacity: 0.4; cursor: not-allowed; }
-.play-clip svg { flex-shrink: 0; color: var(--red-btn); }
-.play-clip-range { font-size: 14px; font-weight: 400; color: var(--text-2); font-variant-numeric: tabular-nums; }
+/* Play clip controls (replaces thumbnail) */
+.play-clip { display: flex; align-items: center; gap: 8px; width: 100%; }
+.play-clip-btn { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; min-height: 48px; padding: 8px 10px; border-radius: var(--r-btn); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.play-clip-btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.play-clip-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.play-clip-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.play-clip-btn svg { flex-shrink: 0; color: var(--red-btn); }
+.play-clip-range { font-size: 14px; font-weight: 400; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 
 /* Take screen (T13/T14) */
 .take-box { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden; }

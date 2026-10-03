@@ -171,19 +171,23 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     }
   };
 
-  const [previewPlaying, setPreviewPlaying] = useState(false);
-
-  const playFromStart = () => {
+  const sendToTab = (message) => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (!tab?.id) return;
-      chrome.tabs.sendMessage(
-        tab.id,
-        { type: 'PLAY_FROM', start: startSec, end: endSec },
-        (res) => {
-          if (res && typeof res.playing === 'boolean') setPreviewPlaying(res.playing);
-        }
-      ).catch(() => {});
+      chrome.tabs.sendMessage(tab.id, message).catch(() => {});
     });
+  };
+
+  const playFromStart = () => {
+    sendToTab({ type: 'PLAY_FROM', start: startSec, end: endSec, action: 'start' });
+  };
+
+  const pauseVideo = () => {
+    sendToTab({ type: 'PAUSE_MEDIA' });
+  };
+
+  const replayClip = () => {
+    sendToTab({ type: 'PLAY_FROM', start: startSec, end: endSec, action: 'replay' });
   };
 
   const cancelRecording = async () => {
@@ -327,24 +331,45 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          className="play-clip"
-          onClick={playFromStart}
-          disabled={locked}
-        >
-          {previewPlaying ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor" />
+        <div className="play-clip">
+          <button
+            type="button"
+            className="play-clip-btn"
+            onClick={playFromStart}
+            disabled={locked}
+            aria-label="Start clip"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5v14l11-7z" fill="currentColor" />
             </svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8 5.5v13l11-6.5-11-6.5z" fill="currentColor" />
+            <span>Start</span>
+          </button>
+          <button
+            type="button"
+            className="play-clip-btn"
+            onClick={pauseVideo}
+            disabled={locked}
+            aria-label="Pause video"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor" />
             </svg>
-          )}
-          <span className="play-clip-label">{previewPlaying ? 'Pause' : 'Play clip'}</span>
+            <span>Pause</span>
+          </button>
+          <button
+            type="button"
+            className="play-clip-btn"
+            onClick={replayClip}
+            disabled={locked}
+            aria-label="Replay clip"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor" />
+            </svg>
+            <span>Replay</span>
+          </button>
           <span className="play-clip-range">{formatShort(startSec)} – {formatShort(endSec)}</span>
-        </button>
+        </div>
       )}
 
       <div

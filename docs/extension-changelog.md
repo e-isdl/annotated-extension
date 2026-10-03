@@ -556,3 +556,19 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   needed — logged as verified.
 
 Checks: `npm run build` passes. **Local commit only — NOT pushed.**
+
+---
+
+## Play clip: Start / Pause / Replay buttons
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `content.js`, `src/styles/panel.css`, this changelog.
+
+- The single Play clip button is replaced by three explicit controls + the range label:
+  **Start** (play triangle), **Pause** (pause bars), **Replay** (circular arrow).
+- Start: seeks to the clip start and plays only if the video is paused (auto-pauses at
+  the clip end, monitor unchanged). Replay: always seeks back to the clip start and plays
+  again, even mid-playback. Pause: sends the existing `PAUSE_MEDIA` message (pauses all
+  page media; the clip monitor stops via its pause listener).
+- `PLAY_FROM` now takes `action: 'start' | 'replay'` and falls back to any `video`
+  element if the YouTube selectors miss. All three disabled while recording/recorded.
+- **Local commit only — NOT pushed.**
