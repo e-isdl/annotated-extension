@@ -347,7 +347,11 @@ export function parseYouTubeJson3(payload) {
     const explicitEnd = start + Number(event.dDurationMs || 0) / 1000;
     const nextStart = Number(events[index + 1]?.tStartMs) / 1000;
     const end = explicitEnd > start ? explicitEnd : (nextStart > start ? nextStart : start + 4);
-    return [{ start, end, text }];
+    const segs = (event.segs || []).map((segment) => ({
+      text: String(segment.utf8 ?? ''),
+      offset: Number(segment.tOffsetMs),
+    }));
+    return [{ start, end, text, segs }];
   });
 }
 

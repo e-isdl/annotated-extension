@@ -342,19 +342,46 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const words = useMemo(() => {
     if (!segments?.length) return [];
     const out = [];
-    segments.forEach((seg) => {
-      const cleaned = cleanTranscript(seg.text);
+    const pushSpan = (rawText, spanStart, spanEnd, caps) => {
+      const cleaned = cleanTranscript(rawText, caps);
       const parts = cleaned.trim().split(/\s+/).filter(Boolean);
       if (!parts.length) return;
-      const span = Math.max(0.001, seg.end - seg.start);
+      const span = Math.max(0.001, spanEnd - spanStart);
       parts.forEach((text, i) => {
-        let start = seg.start + (span * i) / parts.length;
-        let end = seg.start + (span * (i + 1)) / parts.length;
+        let start = spanStart + (span * i) / parts.length;
+        let end = spanStart + (span * (i + 1)) / parts.length;
         const prev = out[out.length - 1];
         if (prev && start < prev.end) start = prev.end;
         if (end <= start) end = start + 0.01;
         out.push({ text, start, end });
       });
+    };
+    segments.forEach((seg) => {
+      const timed = [];
+      (seg.segs || []).forEach((s) => {
+        if (!String(s.text ?? '').trim()) return;
+        let off = Number(s.offset);
+        if (!Number.isFinite(off)) off = timed.length ? timed[timed.length - 1].offset : 0;
+        timed.push({ text: s.text, offset: Math.max(0, off) });
+      });
+      const hasTrueOffsets = (seg.segs || []).some((s) => Number.isFinite(Number(s.offset)));
+      if (!hasTrueOffsets || !timed.length) {
+        pushSpan(seg.text, seg.start, seg.end, true);
+        return;
+      }
+      timed.forEach((ts, k) => {
+        const spanStart = Math.min(Math.max(seg.start, seg.start + ts.offset / 1000), seg.end);
+        const nextOff = timed[k + 1]?.offset;
+        let spanEnd = (nextOff != null && nextOff > ts.offset) ? seg.start + nextOff / 1000 : seg.end;
+        if (!(spanEnd > spanStart)) spanEnd = spanStart + 0.01;
+        pushSpan(ts.text, spanStart, spanEnd, false);
+      });
+    });
+    out.forEach((w, i) => {
+      const prevText = i === 0 ? '' : out[i - 1].text;
+      if ((i === 0 || /[.!?]["')\]]*$/.test(prevText)) && /^[a-z]/.test(w.text)) {
+        w.text = w.text.charAt(0).toUpperCase() + w.text.slice(1);
+      }
     });
     return out;
   }, [segments]);

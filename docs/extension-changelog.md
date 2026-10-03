@@ -1054,3 +1054,22 @@ Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this cha
   reachable, no scroll threshold, no tap-to-open menu.
 - Removed the fab state, menu JSX and its CSS.
 - Local commit only - NOT pushed.
+---
+
+## Word times from caption data, not guesswork
+
+Files touched: src/lib/youtubeTranscript.js, src/lib/text.js,
+src/components/YouTubeClipper.jsx, this changelog.
+
+- The replay path was verified innocent: replay always seeks to the chosen start.
+  The offset came from the word clock. Words were spread evenly across whole
+  caption events, so any uneven speech put the replay seconds away from the
+  highlighted word.
+- The json3 caption feed carries per-word offsets and the parser now keeps them.
+  Word times come from those real offsets (interpolated only inside sub-second
+  caption pieces), with the old event-wide spread as fallback when a track has
+  no offsets. Sequential guard retained so time-to-word still round-trips.
+- cleanTranscript gained a caps flag: piece-level cleaning skips capitalization,
+  then one pass over the final word list capitalizes true sentence starts, so the
+  display reads exactly as before.
+- Local commit only - NOT pushed.
