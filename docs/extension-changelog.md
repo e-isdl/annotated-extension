@@ -605,3 +605,14 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 - **Animation**: the play icon gently pulses while the video is playing
   (`play-pulse` keyframes on `.play-clip-main.playing svg`).
 - **Local commit only — NOT pushed.**
+
+---
+
+## Play clip: video title instead of the range/time label
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`, this changelog.
+
+- The label right of Replay now shows the current video''s title (truncated with an
+  ellipsis) instead of the clip range / moving time. The `VIDEO_TIME` poll stays —
+  it only keeps the Play/Pause icon in sync with the real video state now.
+- **Local commit only — NOT pushed.**

@@ -172,7 +172,6 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   };
 
   const [previewPlaying, setPreviewPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
     if (!previewPlaying) return undefined;
@@ -180,10 +179,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
       chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
         if (!tab?.id) return;
         chrome.tabs.sendMessage(tab.id, { type: 'VIDEO_TIME' }, (res) => {
-          if (res && res.ok) {
-            setCurrentTime(res.time);
-            if (res.paused) setPreviewPlaying(false);
-          }
+          if (res && res.ok && res.paused) setPreviewPlaying(false);
         }).catch(() => {});
       });
     }, 250);
@@ -201,10 +197,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const togglePlay = () => {
     sendToTab({ type: 'PLAY_FROM', start: startSec, end: endSec, action: 'toggle' }, (res) => {
-      if (res && typeof res.playing === 'boolean') {
-        setPreviewPlaying(res.playing);
-        if (res.ok && typeof res.time === 'number') setCurrentTime(res.time);
-      }
+      if (res && typeof res.playing === 'boolean') setPreviewPlaying(res.playing);
     });
   };
 
@@ -384,7 +377,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             </svg>
             <span>Replay</span>
           </button>
-          <span className="play-clip-range">{formatShort(currentTime)}</span>
+          <span className="play-clip-range">{data.title}</span>
         </div>
       )}
 
