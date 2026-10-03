@@ -373,7 +373,7 @@ export default function AudioRecorder({ uploadButton, onUseFile, disabled = fals
           <button
             onClick={useRecording}
             disabled={saving}
-            className="btn-primary flex-1 disabled:opacity-40"
+            className="btn-primary flex-1"
           >
             {saving ? 'Uploading...' : 'Use recording'}
           </button>

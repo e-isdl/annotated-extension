@@ -119,7 +119,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
       <button
         onClick={handleContinue}
         disabled={busy}
-        className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
+        className="btn-primary w-full disabled:cursor-not-allowed"
       >
         {busy ? 'Preparing screenshot…' : 'Continue to Annotate →'}
       </button>

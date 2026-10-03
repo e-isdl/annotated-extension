@@ -110,6 +110,32 @@ leftover mistake — "leave the text as it is". No code changed.
 
 ---
 
+## T4 — Progress rail + source strip
+
+**Files touched:** `src/components/FlowHeader.jsx` (new), `src/components/ClipCreator.jsx`,
+`src/styles/panel.css`, `AnnotationForm.jsx`, `ArticleClipper.jsx`, `AudioRecorder.jsx`,
+`TweetClipper.jsx`, `YouTubeClipper.jsx` (removed `disabled:opacity-40`), changelog.
+
+- New `FlowHeader` renders under the header on clip/annotate steps (hidden on success):
+  - Two-stop rail: videos/podcast → **Clip — Take**, article/x → **Quote — Take**.
+    Filled red dot + `--text` label on the reached stops, hollow dot + `--text-3` on
+    the unreached one; 2px line red up to the current stop, `--border` after. On the
+    Take screen the first stop is a button that returns to the clip step with state
+    intact (the step panels stay mounted, so nothing is lost).
+  - Source strip: 3px `--border-strong` left rule, platform icon + word
+    (YouTube/Article/X/Podcast) + "Open source" ghost button (`chrome.tabs.create`),
+    title below at 16px/600 clamped to 2 lines. No card fill.
+  - Screen heading 26px/700: "Which part matters?" / "Pick your quote." /
+    "Say what you think."
+- Replaced the old numbered-circle step indicator (removed `getStepLabel`).
+- Button spec from T4 applied globally in `panel.css`: primary 52px / 16px/600 /
+  radius 12 with the disabled state (surface-2 fill, `--text-3`, no opacity trick);
+  new `.btn-secondary` (48px, surface-2, border); `.btn-ghost` now text-only 44px
+  `--text-2`. Focus ring: 2px solid `--focus`, 2px offset on all buttons/links.
+- Panel padding 20px on the flow header (`.flow-pad`).
+
+---
+
 ## Pre-list task (master's request) — Extension light mode (webapp palette), default
 
 - `src/styles/tokens.css` — light block = webapp warm-pastel values, now the CSS

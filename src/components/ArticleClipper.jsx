@@ -74,7 +74,7 @@ export default function ArticleClipper({ pageInfo, onReady }) {
       <button
         onClick={handleContinue}
         disabled={!selectedText.trim() || isOverLimit}
-        className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
+        className="btn-primary w-full disabled:cursor-not-allowed"
       >
         Continue to Annotate
       </button>
