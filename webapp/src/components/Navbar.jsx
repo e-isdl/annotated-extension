@@ -45,6 +45,7 @@ export default function Navbar() {
   const notifRef = useRef(null);
   const menuRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [theme, setTheme] = useState(() => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'));
   const { push } = useToast();
 
   useEffect(() => {
@@ -187,12 +188,20 @@ export default function Navbar() {
 
   const accountHandle = profile?.handle || user?.user_metadata?.user_name || user?.id || '';
 
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('annotated-theme', next);
+  };
+
+
   return (
     <nav className="border-b border-border-subtle bg-bg-base sticky top-0 z-10">
       <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between gap-5">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center">
-            <span className="text-white font-bold text-xs">A</span>
+            <span className="text-[var(--on-red)] font-bold text-xs">A</span>
           </div>
           <span className="font-semibold text-sm text-text-primary">Annotated</span>
         </Link>
@@ -216,6 +225,24 @@ export default function Navbar() {
         </form>
 
         <div className="flex items-center gap-4 shrink-0">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
+            className="flex items-center justify-center w-9 h-9 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors"
+          >
+            {theme === 'dark' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
           <Link to="/explore" className="hidden sm:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Explore</Link>
           <Link to="/leaderboard" className="hidden md:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
           <Link to="/create" className="btn-primary h-9 text-xs">Create</Link>
@@ -226,14 +253,14 @@ export default function Navbar() {
                   <button
                   aria-label="Open notifications"
                   onClick={() => { setShowNotifs(!showNotifs); if (!showNotifs) markAllRead(); }}
-                  className="relative flex items-center justify-center w-9 h-9 rounded-full text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
+                  className="relative flex items-center justify-center w-9 h-9 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                   </svg>
                   {notifCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent text-[var(--on-red)] text-[9px] font-bold rounded-full flex items-center justify-center">
                       {notifCount}
                     </span>
                   )}

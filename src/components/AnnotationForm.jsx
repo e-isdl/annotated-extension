@@ -323,7 +323,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
             </div>
           ) : transcriptError ? (
             <div className="flex flex-col gap-3">
-              <p className="text-sm text-red-400">{transcriptError}</p>
+              <p className="text-sm text-[var(--red)]">{transcriptError}</p>
               <button
                 onClick={() => setTranscriptRetry((count) => count + 1)}
                 className="text-sm text-accent hover:text-accent-strong transition-colors"
@@ -343,7 +343,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
         <button
           onClick={() => setMode('text')}
           className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-            mode === 'text' ? 'bg-accent text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'
+            mode === 'text' ? 'bg-accent text-[var(--on-red)] shadow-sm' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           Text
@@ -351,7 +351,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
         <button
           onClick={() => setMode('audio')}
           className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-            mode === 'audio' ? 'bg-accent text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'
+            mode === 'audio' ? 'bg-accent text-[var(--on-red)] shadow-sm' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           Audio
@@ -376,7 +376,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
               <audio ref={el => { if (el) el.src = audioUrl; }} controls className="w-full" />
               <button
                 onClick={() => setAudioUrl(null)}
-                className="text-sm text-red-400 hover:text-red-300 transition-colors"
+                className="text-sm text-[var(--red)] hover:text-[var(--red-btn-hover)] transition-colors"
               >
                 Remove audio
               </button>
@@ -416,14 +416,14 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
                 className="hidden"
               />
               {uploadError && (
-                <p className="text-sm text-red-400">{uploadError}</p>
+                <p className="text-sm text-[var(--red)]">{uploadError}</p>
               )}
             </div>
           )}
         </div>
       )}
 
-      {publishError && <p className="text-sm text-red-400 text-center">{publishError}</p>}
+      {publishError && <p className="text-sm text-[var(--red)] text-center">{publishError}</p>}
 
       <button
         onClick={handlePublish}

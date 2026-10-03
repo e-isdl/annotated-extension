@@ -105,7 +105,7 @@ export default function Auth() {
         <button 
           onClick={signInWithGoogle} 
           disabled={loadingProvider !== null}
-          className="w-full flex items-center justify-center gap-3 bg-accent hover:bg-accent/90 rounded-lg py-3 px-4 text-sm font-medium text-white transition-colors disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-3 bg-accent hover:bg-accent/90 rounded-lg py-3 px-4 text-sm font-medium text-[var(--on-red)] transition-colors disabled:opacity-50"
         >
           <GoogleIcon />
           {loadingProvider === 'google' ? 'Signing in...' : 'Continue with Google'}

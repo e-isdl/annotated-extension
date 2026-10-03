@@ -342,7 +342,7 @@ export default function AudioRecorder({ uploadButton, onUseFile, disabled = fals
           )}
           <button
             onClick={stopRecording}
-            className="ml-auto px-3 py-1.5 text-xs font-medium rounded-md bg-accent text-white hover:opacity-90 transition-opacity"
+            className="ml-auto px-3 py-1.5 text-xs font-medium rounded-md bg-accent text-[var(--on-red)] hover:opacity-90 transition-opacity"
           >
             Stop
           </button>
@@ -399,7 +399,7 @@ export default function AudioRecorder({ uploadButton, onUseFile, disabled = fals
       </div>
       {error && (
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] text-red-400">{error}</p>
+          <p className="text-[11px] text-[var(--red)]">{error}</p>
           {blocked && (
             <button
               onClick={openPermissionPage}

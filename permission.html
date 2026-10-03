@@ -5,34 +5,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Microphone access - Annotated</title>
   <style>
+    :root, [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0D0D0F;
+      --surface: #17171A;
+      --surface-2: #212126;
+      --surface-3: #2B2B32;
+      --border: #3A3A42;
+      --border-strong: #53535E;
+      --text: #FAFAFA;
+      --text-2: #D0D0D6;
+      --text-3: #A8A8B3;
+      --red: #FF4545;
+      --red-btn: #E5192B;
+      --red-btn-hover: #FF2E3F;
+      --on-red: #FFFFFF;
+      --red-soft: rgba(255, 69, 69, 0.14);
+      --yellow: #FFE14D;
+      --yellow-soft: rgba(255, 225, 77, 0.30);
+      --on-yellow: #111114;
+      --ok: #3DDC84;
+      --warn: #FFB020;
+      --focus: #FFE14D;
+    }
     body {
       margin: 0;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #0E0E12;
-      color: #EEECEA;
+      background: var(--bg);
+      color: var(--text);
       font: 14px/1.5 Inter, -apple-system, 'Segoe UI', sans-serif;
     }
     main { width: 360px; text-align: center; }
     h1 { margin: 0 0 8px; font-size: 15px; }
-    p { margin: 0 0 14px; color: #8C8C9E; font-size: 13px; }
-    p.granted { color: #2F9E44; }
-    p code { color: #EF5350; font-size: 12px; word-break: break-all; }
+    p { margin: 0 0 14px; color: var(--text-3); font-size: 14px; }
+    p.granted { color: var(--ok); }
+    p code { color: var(--red); font-size: 14px; word-break: break-all; }
     .row { display: flex; gap: 8px; justify-content: center; }
     button {
       padding: 9px 16px;
       border: 0;
       border-radius: 8px;
-      background: #E53935;
-      color: #fff;
+      background: var(--red-btn);
+      color: var(--on-red);
       font: inherit;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
     }
-    button.secondary { background: #202028; color: #EEECEA; border: 1px solid #2C2C38; }
+    button.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
     button[hidden] { display: none; }
   </style>
 </head>

@@ -206,12 +206,12 @@ export default function ClipPage() {
                 <FileClaimButton clipId={clip.id} />
                 {isOwner && (confirmDelete ? (
                   <div className="flex items-center gap-2 p-1.5">
-                    <span className="text-[11px] text-red-400">Delete post?</span>
+                    <span className="text-[11px] text-[var(--red)]">Delete post?</span>
                     <button
                       type="button"
                       onClick={handleDeleteClip}
                       disabled={deleting}
-                      className="text-[11px] px-2 py-1 rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-40"
+                      className="text-[11px] px-2 py-1 rounded-md text-[var(--on-red)] bg-[var(--red-btn)] hover:bg-[var(--red-btn-hover)] transition-colors disabled:opacity-40"
                     >
                       {deleting ? '...' : 'Yes'}
                     </button>
@@ -228,7 +228,7 @@ export default function ClipPage() {
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(true)}
-                    className="w-full text-left text-[11px] px-2 py-1.5 rounded-md text-red-400 hover:bg-red-400/10 transition-colors"
+                    className="w-full text-left text-[11px] px-2 py-1.5 rounded-md text-[var(--red)] hover:bg-[var(--red-soft)] transition-colors"
                   >
                     Delete
                   </button>

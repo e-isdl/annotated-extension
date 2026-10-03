@@ -4,12 +4,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: { base: '#0E1113', surface: '#181C1F', raised: '#24292D' },
-        border: { DEFAULT: '#343A3E', subtle: 'rgba(255,255,255,0.09)' },
-        text: { primary: '#F7F8F9', secondary: '#D3D9DD', muted: '#AAB5BC' },
-        accent: { DEFAULT: '#E53935', hover: '#C62828', dim: 'rgba(229,57,53,0.16)', text: '#EF5350' },
-        claim: { DEFAULT: '#E53935', dim: 'rgba(229,57,53,0.16)' },
-        success: '#8EB59B',
+        bg: { base: 'var(--bg)', surface: 'var(--surface)', raised: 'var(--surface-2)' },
+        border: { DEFAULT: 'var(--border)', subtle: 'var(--border-strong)' },
+        text: { primary: 'var(--text)', secondary: 'var(--text-2)', muted: 'var(--text-3)' },
+        accent: { DEFAULT: 'var(--red-btn)', hover: 'var(--red-btn-hover)', dim: 'var(--red-soft)', text: 'var(--red)' },
+        claim: { DEFAULT: 'var(--red-btn)', dim: 'var(--red-soft)' },
+        success: 'var(--ok)',
         podcast: '#B8C5CC',
       },
       fontFamily: {

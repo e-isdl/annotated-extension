@@ -6,38 +6,38 @@
   * { box-sizing: border-box; }
   body {
     font-family: 'Inter', -apple-system, sans-serif;
-    background-color: #0E0E12;
-    color: #EEECEA;
+    background-color: var(--bg);
+    color: var(--text);
     -webkit-font-smoothing: antialiased;
     margin: 0;
     padding: 0;
   }
   ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #0E0E12; }
-  ::-webkit-scrollbar-thumb { background: #2C2C38; border-radius: 2px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 }
 
 @layer components {
   .annotation-mark {
-    border-left: 3px solid #E53935;
+    border-left: 3px solid var(--red);
     padding-left: 12px;
   }
   .clip-card {
-    background: #17171D;
-    border: 1px solid #2C2C38;
-    border-left: 3px solid #E53935;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--red);
     border-radius: 12px;
     padding: 16px;
     transition: background 0.15s, border-color 0.15s;
     cursor: pointer;
   }
   .clip-card:hover {
-    background: #202028;
-    border-color: #E53935;
+    background: var(--surface-2);
+    border-color: var(--red);
   }
   .btn-primary {
-    background: #E53935;
-    color: #FFFFFF;
+    background: var(--red-btn);
+    color: var(--on-red);
     font-weight: 600;
     font-size: 14px;
     padding: 10px 20px;
@@ -52,8 +52,8 @@
   .btn-primary:hover { opacity: 0.85; }
   .btn-ghost {
     background: transparent;
-    color: #8C8C9E;
-    border: 1px solid #2C2C38;
+    color: var(--text-3);
+    border: 1px solid var(--border);
     font-size: 14px;
     padding: 9px 18px;
     border-radius: 8px;
@@ -63,12 +63,12 @@
     align-items: center;
     justify-content: center;
   }
-  .btn-ghost:hover { background: #202028; color: #EEECEA; }
+  .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
   .btn-claim {
-    background: rgba(224,49,49,0.10);
-    color: #E03131;
-    border: 1px solid rgba(224,49,49,0.25);
-    font-size: 13px;
+    background: var(--red-soft);
+    color: var(--red);
+    border: 1px solid color-mix(in srgb, var(--red) 25%, transparent);
+    font-size: 14px;
     font-weight: 500;
     padding: 8px 14px;
     border-radius: 8px;
@@ -78,12 +78,12 @@
     align-items: center;
     gap: 6px;
   }
-  .btn-claim:hover { background: rgba(224,49,49,0.18); }
+  .btn-claim:hover { background: color-mix(in srgb, var(--red) 18%, transparent); }
   .input {
-    background: #202028;
-    border: 1px solid #2C2C38;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: 8px;
-    color: #EEECEA;
+    color: var(--text);
     font-size: 14px;
     padding: 10px 12px;
     width: 100%;
@@ -91,11 +91,11 @@
     transition: border-color 0.15s;
     font-family: inherit;
   }
-  .input:focus { border-color: #E53935; }
-  .input::placeholder { color: #52525E; }
+  .input:focus { border-color: var(--red); }
+  .input::placeholder { color: var(--text-3); }
   .badge {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
+    font-size: 14px;
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -103,17 +103,20 @@
     border-radius: 9999px;
     display: inline-block;
   }
-  .badge-youtube { background: rgba(229,57,53,0.12); color: #EF5350; }
+  .badge-youtube { background: var(--red-soft); color: var(--red); }
   .badge-article { background: rgba(0,121,211,0.12); color: #0079D3; }
   .badge-podcast { background: rgba(168,85,247,0.12); color: #A855F7; }
   .badge-social { background: rgba(29,155,240,0.12); color: #1DA1F2; }
   .timestamp {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: #EF5350;
-    background: rgba(229,57,53,0.10);
+    font-size: 14px;
+    color: var(--red);
+    background: var(--red-soft);
     padding: 2px 8px;
     border-radius: 4px;
     display: inline-block;
   }
 }
+
+/* A1 design tokens: enforce a 14px minimum font size across the panel. */
+.text-xs, .text-[9px], .text-[10px], .text-\[10px\], .text-\[11px\], .text-\[12px\], .text-\[13px\] { font-size: 14px; }

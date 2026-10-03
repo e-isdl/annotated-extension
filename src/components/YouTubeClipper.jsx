@@ -137,7 +137,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <div className="text-center">
               <p className="text-base text-white/80 mb-2">Clip from</p>
-              <p className="text-3xl font-bold text-white font-mono">{formatTime(startSec)} → {formatTime(endSec)}</p>
+              <p className="text-3xl font-bold text-[var(--on-red)] font-mono">{formatTime(startSec)} → {formatTime(endSec)}</p>
               <p className="text-sm text-white/60 mt-1">{clipLen}s selected</p>
             </div>
           </div>
@@ -155,7 +155,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
       <div className="bg-bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm font-mono text-text-secondary">{formatTime(startSec)}</span>
-          <span className={`text-sm font-semibold ${clipLen > 90 ? 'text-red-400' : 'text-accent-text'}`}>{clipLen}s</span>
+          <span className={`text-sm font-semibold ${clipLen > 90 ? 'text-[var(--red)]' : 'text-accent-text'}`}>{clipLen}s</span>
           <span className="text-sm font-mono text-text-secondary">{formatTime(endSec)}</span>
         </div>
 
@@ -257,7 +257,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-[var(--red)]">{error}</p>}
 
       <button
         onClick={handleContinue}

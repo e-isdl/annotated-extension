@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent } from "react";
 
 
-const PANEL = "var(--audio-panel, #0d1114)";   // same inset color as the text commentary panel
-const PLAYED = "#E7E9EA";
-const UNPLAYED = "#38414a";
-const MUTED = "#8b949e";
+const PANEL = "var(--audio-panel, var(--surface))";   // same inset color as the text commentary panel
+const PLAYED = "var(--text)";
+const UNPLAYED = "var(--border)";
+const MUTED = "var(--text-3)";
 const BARS = 56;
 
 
@@ -50,7 +50,7 @@ const CSS = `
 .ap-btn{transition:transform .12s ease,filter .12s ease}
 .ap-btn:hover{filter:brightness(1.12)}
 .ap-btn:active{transform:scale(.94)}
-.ap-btn:focus-visible,.ap-wave:focus-visible{outline:2px solid #E7E9EA;outline-offset:3px}
+.ap-btn:focus-visible,.ap-wave:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
 .ap-wave span{transition:background-color .12s ease}
 .ap-wave:hover span{filter:brightness(1.15)}
 @media (prefers-reduced-motion:reduce){.ap-btn,.ap-wave span{transition:none}}
@@ -167,7 +167,7 @@ export function AudioPlayer({ src, compact = false }: { src: string; compact?: b
           display: "grid", placeItems: "center", cursor: "pointer",
         }}
       >
-        <svg width={size * 0.42} height={size * 0.42} viewBox="0 0 24 24" fill="#0d1114" aria-hidden="true">
+        <svg width={size * 0.42} height={size * 0.42} viewBox="0 0 24 24" fill="var(--bg)" aria-hidden="true">
           {playing ? (
             <>
               <rect x="5.5" y="4.5" width="4.5" height="15" rx="1.2" />

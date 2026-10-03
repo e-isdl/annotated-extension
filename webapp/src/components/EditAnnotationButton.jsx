@@ -65,13 +65,13 @@ export default function EditAnnotationButton({ clipId, annotationType, text, onS
         aria-label="Edit annotation"
       />
       <div className="annotation-edit-footer">
-        <span className={`text-xs ${value.trim().length > limit * 0.9 ? 'text-red-400' : 'text-text-muted'}`}>{value.trim().length}/{limit}</span>
+        <span className={`text-xs ${value.trim().length > limit * 0.9 ? 'text-[var(--red)]' : 'text-text-muted'}`}>{value.trim().length}/{limit}</span>
         <div className="flex gap-2">
           <button type="button" className="btn-ghost text-xs py-1.5 px-3" onClick={() => setEditing(false)}>Cancel</button>
           <button type="submit" className="btn-primary text-xs py-1.5 px-3" disabled={saving || unchanged}>{saving ? 'Saving…' : 'Save'}</button>
         </div>
       </div>
-      {error && <p className="text-xs text-red-400" role="alert">{error}</p>}
+      {error && <p className="text-xs text-[var(--red)]" role="alert">{error}</p>}
     </form>
   );
 }
