@@ -262,7 +262,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
       <button
         onClick={handleContinue}
         disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
-        className="btn-primary w-full"
+        className="btn-primary w-full disabled:opacity-40"
       >
         {clipLen > 90 ? `${clipLen}s (max 90s to annotate)` : 'Continue to Annotate'}
       </button>

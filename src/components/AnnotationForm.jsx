@@ -428,7 +428,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
       <button
         onClick={handlePublish}
         disabled={(!text && !audioUrl) || publishing || uploading}
-        className="btn-primary w-full"
+        className="btn-primary w-full disabled:opacity-40"
       >
         {publishing ? 'Publishing...' : 'Publish'}
       </button>
