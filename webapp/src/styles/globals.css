@@ -4,18 +4,19 @@
 
 :root {
   color-scheme: dark;
-  --bg-base: #0e1113;
-  --bg-surface: #181c1f;
-  --bg-raised: #24292d;
-  --border: #343a3e;
+  --bg-base: #0f0f12;
+  --bg-surface: #161a20;
+  --bg-raised: #242a34;
+  --border: #343b46;
   --border-soft: rgba(255,255,255,.09);
   --text-primary: #f7f8f9;
   --text-secondary: #d3d9dd;
-  --text-muted: #aab5bc;
+  --text-muted: #9aa4b2;
   --accent: #e53935;
   --accent-strong: #ef5350;
-  --accent-hover: #c62828;
-  --accent-dim: rgba(229,57,53,.16);
+  --accent-hover: #d62828;
+  --accent-dim: rgba(229,57,53,.14);
+  --accent-text: #ffd1d1;
   --vote-down: #6ea8fe;
   --ui-font: 'Reddit Sans', Inter, 'Segoe UI Variable', 'Segoe UI', Arial, sans-serif;
   --reading-font: 'Source Serif 4', Georgia, serif;
@@ -51,7 +52,7 @@
 .btn-ghost { border: 0; background: rgba(255,255,255,.06); color: var(--text-secondary); }
 .btn-ghost:hover { background: var(--bg-raised); color: var(--text-primary); }
 .btn-claim { border: 1px solid rgba(229,57,53,.32); background: var(--accent-dim); color: var(--accent-strong); }
-.input { width: 100%; border: 1px solid #3a4146; border-radius: var(--radius-sm); background: #181c1f; color: var(--text-primary); padding: 10px 12px; font-size: 14px; outline: none; }
+.input { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-primary); padding: 12px 14px; font-size: 15px; outline: none; }
 .input:focus { border-color: var(--accent); }
 .input::placeholder { color: #6d7479; }
 nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-pill) !important; background: #252a2e !important; }
@@ -128,7 +129,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .post-annotation-preview::first-letter, .annotation-lead-copy::first-letter { text-transform: uppercase; }
 .post-commentary-more { color: var(--text-muted); }
 .post-annotation-preview-clamped { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 5; -webkit-box-orient: vertical; }
-.read-more-wrap { display: flex; justify-content: flex-end; }
+.read-more-wrap { display: flex; justify-content: flex-start; }
 .read-more-toggle { display: inline-block; margin: 4px 0 0; padding: 0; border: 0; background: none; color: var(--text-muted); font: 500 13px/1.4 var(--ui-font); cursor: pointer; }
 .read-more-toggle:hover { color: var(--text-primary); }
 .post-audio { margin: 10px 0; }

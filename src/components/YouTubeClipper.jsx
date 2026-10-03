@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 function formatTime(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2, '0')}`;
+  return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
 function parseTime(str) {
@@ -32,7 +32,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
       return;
     }
     fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${data.videoId}&format=json`)
-      .then(r => r.json())
+      .then((r) => r.json())
       .then(() => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (!tabs[0]?.id) return;
@@ -102,33 +102,33 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const endPct = (endSec / duration) * 100;
 
   return (
-    <div className="p-4 flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+    <div className="p-6 flex flex-col gap-5">
+      <div className="flex items-center gap-3">
         <span className="badge badge-youtube">YouTube</span>
-        <span className="text-xs text-text-secondary truncate">{data.title}</span>
+        <span className="text-sm text-text-secondary truncate">{data.title}</span>
       </div>
 
       {previewMode ? (
-        <div className="rounded-lg overflow-hidden border border-border aspect-video bg-black flex items-center justify-center">
+        <div className="rounded-xl overflow-hidden border border-border aspect-video bg-black">
           <a
             href={`https://www.youtube.com/watch?v=${data.videoId}&t=${Math.floor(startSec)}s`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-col items-center gap-3 text-center p-6"
+            className="flex flex-col items-center gap-4 text-center p-6"
           >
-            <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" className="text-accent ml-1">
-                <path d="M8 5v14l11-7z"/>
+            <div className="w-18 h-18 rounded-full bg-accent/20 flex items-center justify-center">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="text-accent">
+                <path d="M8 5v14l11-7z" />
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-text-primary">Watch clip on YouTube</p>
-              <p className="text-xs text-text-muted mt-1">{formatTime(startSec)} → {formatTime(endSec)}</p>
+              <p className="text-lg font-medium text-text-primary">Watch clip on YouTube</p>
+              <p className="text-base text-text-secondary mt-1">{formatTime(startSec)} → {formatTime(endSec)}</p>
             </div>
           </a>
         </div>
       ) : (
-        <div className="rounded-lg overflow-hidden border border-border aspect-video bg-bg-raised relative">
+        <div className="rounded-xl overflow-hidden border border-border aspect-video bg-bg-raised relative">
           <img
             src={`https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`}
             alt={data.title}
@@ -136,9 +136,9 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
           />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <div className="text-center">
-              <p className="text-sm text-white/80 mb-1">Clip from</p>
-              <p className="text-2xl font-bold text-white font-mono">{formatTime(startSec)} → {formatTime(endSec)}</p>
-              <p className="text-xs text-white/60 mt-1">{clipLen}s selected</p>
+              <p className="text-base text-white/80 mb-2">Clip from</p>
+              <p className="text-3xl font-bold text-white font-mono">{formatTime(startSec)} → {formatTime(endSec)}</p>
+              <p className="text-sm text-white/60 mt-1">{clipLen}s selected</p>
             </div>
           </div>
         </div>
@@ -146,21 +146,21 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
 
       <button
         onClick={() => setPreviewMode(!previewMode)}
-        className="text-xs text-accent-text hover:text-accent transition-colors text-center"
+        className="text-sm font-medium text-accent-text hover:text-accent transition-colors"
       >
         {previewMode ? 'Hide preview' : 'Preview clip'}
       </button>
 
       {/* SLIDERS */}
-      <div className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between text-xs font-mono text-text-muted">
-          <span>{formatTime(startSec)}</span>
-          <span className={`font-medium ${clipLen > 90 ? 'text-red-400' : 'text-accent-text'}`}>{clipLen}s</span>
-          <span>{formatTime(endSec)}</span>
+      <div className="bg-bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-mono text-text-secondary">{formatTime(startSec)}</span>
+          <span className={`text-sm font-semibold ${clipLen > 90 ? 'text-red-400' : 'text-accent-text'}`}>{clipLen}s</span>
+          <span className="text-sm font-mono text-text-secondary">{formatTime(endSec)}</span>
         </div>
 
-        <div className="relative h-10 flex items-center">
-          <div className="absolute w-full h-1.5 bg-bg-raised rounded-full">
+        <div className="relative h-12 flex items-center">
+          <div className="absolute w-full h-2 bg-bg-raised rounded-full">
             <div
               className="absolute h-full bg-accent rounded-full"
               style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
@@ -178,7 +178,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
                 setStartInput(formatTime(v));
               }
             }}
-            className="absolute w-full h-7 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:cursor-grab z-10"
+            className="absolute w-full h-8 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:cursor-grab z-10"
           />
           <input
             type="range"
@@ -192,24 +192,24 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
                 setEndInput(formatTime(v));
               }
             }}
-            className="absolute w-full h-7 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:cursor-grab z-20"
+            className="absolute w-full h-8 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:cursor-grab z-20"
           />
         </div>
 
-        <div className="flex items-center justify-between text-xs text-text-muted">
-          <span>0:00</span>
-          <span>{formatTime(duration)}</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-mono text-text-secondary">0:00</span>
+          <span className="text-sm font-mono text-text-secondary">{formatTime(duration)}</span>
         </div>
       </div>
 
       {/* TIME INPUTS + ADJUST BUTTONS */}
-      <div className="bg-bg-surface border border-border rounded-lg p-3 flex items-center gap-2">
+      <div className="bg-bg-surface border border-border rounded-xl p-4 flex items-center gap-3">
         <div className="flex-1">
-          <label className="text-[10px] text-text-muted block mb-1">Start</label>
-          <div className="flex items-center gap-1">
+          <label className="text-sm font-medium text-text-secondary block mb-1.5">Start</label>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => updateStart(startSec - 5)}
-              className="px-2 py-1.5 text-xs rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
+              className="px-3 py-2 text-sm rounded-lg bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
             >
               -5
             </button>
@@ -218,24 +218,24 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
               value={startInput}
               onChange={(e) => handleStartInput(e.target.value)}
               onBlur={() => setStartInput(formatTime(startSec))}
-              className="input text-sm font-mono flex-1 text-center"
+              className="input text-base font-mono flex-1 text-center"
               placeholder="0:00"
             />
             <button
               onClick={() => updateStart(startSec + 5)}
-              className="px-2 py-1.5 text-xs rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
+              className="px-3 py-2 text-sm rounded-lg bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
             >
               +5
             </button>
           </div>
         </div>
-        <span className="text-text-muted mt-4">→</span>
+        <span className="text-text-muted mt-4 text-sm">→</span>
         <div className="flex-1">
-          <label className="text-[10px] text-text-muted block mb-1">End</label>
-          <div className="flex items-center gap-1">
+          <label className="text-sm font-medium text-text-secondary block mb-1.5">End</label>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => updateEnd(endSec - 5)}
-              className="px-2 py-1.5 text-xs rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
+              className="px-3 py-2 text-sm rounded-lg bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
             >
               -5
             </button>
@@ -244,12 +244,12 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
               value={endInput}
               onChange={(e) => handleEndInput(e.target.value)}
               onBlur={() => setEndInput(formatTime(endSec))}
-              className="input text-sm font-mono flex-1 text-center"
+              className="input text-base font-mono flex-1 text-center"
               placeholder="0:30"
             />
             <button
               onClick={() => updateEnd(endSec + 5)}
-              className="px-2 py-1.5 text-xs rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
+              className="px-3 py-2 text-sm rounded-lg bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
             >
               +5
             </button>
@@ -257,7 +257,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         </div>
       </div>
 
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
 
       <button
         onClick={handleContinue}

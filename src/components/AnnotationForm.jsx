@@ -162,19 +162,19 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
   };
 
   return (
-    <div className="p-4 flex flex-col gap-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-xs font-medium text-accent-text hover:text-accent bg-accent/10 px-3 py-1.5 rounded-md self-start transition-colors">
+    <div className="p-6 flex flex-col gap-5">
+      <button onClick={onBack} className="flex items-center gap-1 text-sm font-medium text-accent-text hover:text-accent bg-accent/10 px-4 py-2 rounded-lg self-start transition-colors">
         ← Back to clip
       </button>
 
-      <div className="bg-bg-surface border border-border rounded-lg p-3 flex items-start gap-3">
+      <div className="bg-bg-surface border border-border rounded-xl p-5 flex items-start gap-4">
         {clipData.thumbnail && (
-          <img src={clipData.thumbnail} className="w-12 h-8 object-cover rounded" />
+          <img src={clipData.thumbnail} className="w-14 h-10 object-cover rounded" />
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-text-primary truncate">{clipData.title}</p>
+          <p className="text-sm font-medium text-text-primary truncate">{clipData.title}</p>
           {hasMoment(clipData.start_sec, clipData.end_sec) && (
-            <div className="flex items-center gap-1 mt-0.5">
+            <div className="flex items-center gap-1.5 mt-1">
               <span className="timestamp">{formatTime(clipData.start_sec)}</span>
               <span className="text-text-muted text-xs">→</span>
               <span className="timestamp">{formatTime(clipData.end_sec)}</span>
@@ -183,7 +183,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
         </div>
       </div>
 
-      <label className="flex flex-col gap-1.5 text-xs text-text-secondary">
+      <label className="flex flex-col gap-2 text-sm text-text-secondary">
         Community <span className="text-text-muted">Optional</span>
         <select value={communityId} onChange={(event) => onCommunityChange?.(event.target.value)} className="input">
           <option value="">No community</option>
@@ -191,7 +191,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
         </select>
       </label>
 
-      <label className="flex flex-col gap-1.5 text-xs text-text-secondary">
+      <label className="flex flex-col gap-2 text-sm text-text-secondary">
         Post type
         <select value={annotationType} onChange={(event) => setAnnotationType(event.target.value)} className="input">
           {ANNOTATION_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
@@ -199,9 +199,9 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
       </label>
 
       {isYouTube && (
-        <div className="bg-bg-surface border border-border rounded-lg p-3">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] text-accent font-medium uppercase tracking-widest">Transcript</p>
+        <div className="bg-bg-surface border border-border rounded-xl p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-accent uppercase tracking-widest">Transcript</p>
             {transcript && !transcriptLoading && (
               <button
                 onClick={() => {
@@ -212,7 +212,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
                     setEditingTranscript(true);
                   }
                 }}
-                className="text-[10px] text-text-muted hover:text-text-secondary transition-colors"
+                className="text-sm text-text-muted hover:text-text-secondary transition-colors"
               >
                 {editingTranscript ? 'Cancel' : 'Edit'}
               </button>
@@ -220,121 +220,121 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
           </div>
 
           {transcriptLoading ? (
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-accent/30 animate-pulse" />
-              <p className="text-xs text-text-muted">Loading transcript...</p>
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 rounded-full bg-accent/30 animate-pulse" />
+              <p className="text-sm text-text-muted">Loading transcript...</p>
             </div>
           ) : editingTranscript ? (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <textarea
                 value={editedText}
                 onChange={(e) => setEditedText(e.target.value)}
-                rows={6}
-                className="input resize-none text-xs leading-relaxed"
+                rows={8}
+                className="input resize-none text-base leading-relaxed"
               />
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setEditedText(contractTranscript(editedText, 5))}
                   disabled={editedText.trim().split(/\s+/).filter(Boolean).length <= 5}
-                  className="px-2 py-1 text-[10px] font-medium rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors disabled:opacity-30"
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors disabled:opacity-30"
                 >
-                  −5 words
+                  -5 words
                 </button>
                 <button
                   onClick={() => setEditedText(expandTranscript(editedText, fullTranscript, 5))}
-                  className="px-2 py-1 text-[10px] font-medium rounded bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
                 >
                   +5 words
                 </button>
-                <span className="text-[10px] text-text-muted ml-1">{editedText.trim().split(/\s+/).filter(Boolean).length} words</span>
+                <span className="text-sm text-text-muted ml-2 tabular-nums">{editedText.trim().split(/\s+/).filter(Boolean).length} words</span>
                 <button
                   onClick={() => { setTranscript(editedText); setEditingTranscript(false); }}
-                  className="btn-primary text-xs py-1.5 ml-auto"
+                  className="btn-primary text-sm py-2 ml-auto"
                 >
                   Save Changes
                 </button>
               </div>
             </div>
           ) : transcript ? (
-            <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{transcript}</p>
-          ) : transcriptError ? (
-            <p className="text-xs text-red-400">{transcriptError}</p>
-          ) : (
-            <p className="text-xs text-text-muted italic">No transcript available for this clip</p>
-          )}
-
-          {fullTranscript && !transcriptLoading && !editingTranscript && (
-            <div className="mt-3 border-t border-border pt-3">
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{transcript}</p>
               <button
                 onClick={() => setShowFull(!showFull)}
-                className="flex items-center gap-1.5 text-[10px] text-text-muted hover:text-text-secondary transition-colors w-full"
+                className="flex items-center gap-2 text-sm font-medium text-accent hover:text-accent-strong transition-colors text-left w-full"
               >
-                <span className="text-[8px]">{showFull ? '\u25BE' : '\u25B8'}</span>
-                Full Transcript
-                <span className="text-text-muted/50 ml-auto">{fullTranscript.split(/\s+/).filter(Boolean).length} words</span>
+                <span className={`text-xs ${showFull ? 'rotate-180' : ''}`} style={{ transition: 'transform 0.15s ease' }}>▸</span>
+                Show transcript ({fullTranscript?.split(/\s+/).filter(Boolean).length ?? 0} words)
               </button>
-
               {showFull && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[10px] text-text-muted">Complete transcript</p>
-                    <button
-                      onClick={() => {
-                        if (editingFull) {
-                          setEditingFull(false);
-                        } else {
-                          setEditedFullText(fullTranscript);
-                          setEditingFull(true);
-                        }
-                      }}
-                      className="text-[10px] text-text-muted hover:text-text-secondary transition-colors"
-                    >
-                      {editingFull ? 'Cancel' : 'Edit'}
-                    </button>
-                  </div>
-
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-text-muted">Complete transcript</p>
+                  <button
+                    onClick={() => {
+                      if (editingFull) {
+                        setEditingFull(false);
+                      } else {
+                        setEditedFullText(fullTranscript);
+                        setEditingFull(true);
+                      }
+                    }}
+                    className="text-sm text-text-muted hover:text-text-secondary transition-colors"
+                  >
+                    {editingFull ? 'Cancel' : 'Edit'}
+                  </button>
                   {editingFull ? (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-3 mt-2">
                       <textarea
                         value={editedFullText}
                         onChange={(e) => setEditedFullText(e.target.value)}
-                        rows={8}
-                        className="input resize-none text-xs leading-relaxed"
+                        rows={10}
+                        className="input resize-none text-base leading-relaxed"
                       />
                       <button
                         onClick={() => { setFullTranscript(editedFullText); setEditingFull(false); }}
-                        className="btn-primary text-xs py-1.5"
+                        className="btn-primary text-sm py-2"
                       >
                         Save Changes
                       </button>
                     </div>
                   ) : (
-                    <p className="text-[11px] text-text-muted leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto rounded bg-bg-base p-2">
+                    <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto rounded-lg bg-bg-base p-4">
                       {fullTranscript}
                     </p>
                   )}
                 </div>
               )}
             </div>
+          ) : transcriptError ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-red-400">{transcriptError}</p>
+              <button
+                onClick={() => setTranscriptLoading(true)}
+                className="text-sm text-accent hover:text-accent-strong transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-text-muted italic">No transcript available for this clip</p>
           )}
         </div>
       )}
 
-      <p className="text-[10px] text-accent font-medium uppercase tracking-widest">Your commentary</p>
+      <p className="text-sm font-medium text-accent uppercase tracking-widest">Your commentary</p>
 
-      <div className="flex gap-1 bg-bg-surface border border-border rounded-lg p-1">
+      <div className="flex gap-1 bg-bg-surface border border-border rounded-xl p-1">
         <button
           onClick={() => setMode('text')}
-          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            mode === 'text' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
+          className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+            mode === 'text' ? 'bg-accent text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           Text
         </button>
         <button
           onClick={() => setMode('audio')}
-          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            mode === 'audio' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
+          className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+            mode === 'audio' ? 'bg-accent text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           Audio
@@ -342,30 +342,30 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
       </div>
 
       {mode === 'text' ? (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={isArticle || isSocial ? "What's your take on this?" : "What's your take on this clip?"}
-            rows={5}
+            rows={7}
             maxLength={annotationLimit}
-            className="input resize-none text-sm leading-relaxed"
+            className="input resize-none text-base leading-relaxed"
           />
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {audioUrl ? (
-            <div className="bg-bg-surface border border-border rounded-lg p-3">
+            <div className="bg-bg-surface border border-border rounded-xl p-4">
               <audio ref={el => { if (el) el.src = audioUrl; }} controls className="w-full" />
               <button
                 onClick={() => setAudioUrl(null)}
-                className="text-[11px] text-red-400 hover:text-red-300 mt-2 transition-colors"
+                className="text-sm text-red-400 hover:text-red-300 transition-colors"
               >
                 Remove audio
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <AudioRecorder
                 onUseFile={uploadAudioFile}
                 disabled={uploading}
@@ -373,17 +373,17 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs font-medium rounded-lg bg-bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors disabled:opacity-40"
+                    className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-sm font-medium rounded-xl bg-bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors disabled:opacity-40"
                   >
                     {uploading ? (
                       <>
-                        <div className="w-3 h-3 rounded-full bg-accent/50 animate-pulse" />
+                        <div className="w-4 h-4 rounded-full bg-accent/50 animate-pulse" />
                         Uploading...
                       </>
                     ) : (
                       <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
                         </svg>
                         Upload audio file
                       </>
@@ -399,14 +399,14 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
                 className="hidden"
               />
               {uploadError && (
-                <p className="text-[11px] text-red-400">{uploadError}</p>
+                <p className="text-sm text-red-400">{uploadError}</p>
               )}
             </div>
           )}
         </div>
       )}
 
-      {publishError && <p className="text-xs text-red-400 text-center">{publishError}</p>}
+      {publishError && <p className="text-sm text-red-400 text-center">{publishError}</p>}
 
       <button
         onClick={handlePublish}
@@ -416,7 +416,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
         {publishing ? 'Publishing...' : 'Publish'}
       </button>
       {!text && !audioUrl && (
-        <p className="text-[11px] text-text-muted text-center -mt-2">Text or audio commentary required</p>
+        <p className="text-sm text-text-muted text-center">Text or audio commentary required</p>
       )}
     </div>
   );
@@ -432,5 +432,5 @@ function hasMoment(start, end) {
 function formatTime(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2, '0')}`;
+  return `${m}:${String(sec).padStart(2, '0')}`;
 }
