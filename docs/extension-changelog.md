@@ -928,3 +928,24 @@ this changelog.
 - Removed the Everyone can see this. It links to the original. note from under
   Post annotation.
 - Local commit only - NOT pushed.
+---
+
+## Recordings no longer empty + premium hover player
+
+Files touched: content.js, src/components/YouTubeClipper.jsx,
+webapp/src/components/ClipPlayer.jsx (new), webapp/src/styles/globals.css,
+webapp/src/pages/ClipPage.jsx, this changelog.
+
+- Root cause of the flash-then-embed: the uploaded file was 0 bytes. Two bugs:
+  recorder posted done before the final chunks finished base64 encoding (encode is
+  async, done was sync), so short clips assembled zero parts; and the panel pushed
+  chunks in arrival order, ignoring the index, so any file could be scrambled.
+- content.js now counts in-flight chunk encodes and only posts done once all are
+  flushed, and reports the total chunk count. The panel assembles parts in index
+  order and, if chunks are missing or the total is 0 bytes, shows Recording
+  captured no video. Try again. instead of posting an empty file.
+- New ClipPlayer on the post page: no native controls. Click toggles play, one
+  frosted play button when paused, and a slim bar (play, time, seek with buffered
+  fill, mute, fullscreen) that fades in only on hover, over a gradient scrim.
+  A spinner covers buffering. Broken video URLs still fall back to the embed.
+- Local commit only - NOT pushed. Webapp NOT deployed.

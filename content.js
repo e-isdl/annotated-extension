@@ -422,20 +422,9 @@ async function handleRecordClip(message, sendResponse) {
     rec.recorder = recorder;
 
     let chunkIndex = 0;
-    recorder.ondataavailable = (e) => {
-      if (!e.data || e.data.size === 0 || rec.cancelled) return;
-      const i = chunkIndex;
-      chunkIndex += 1;
-      encodeBlobBase64(e.data).then((b64) => {
-        if (rec.cancelled) return;
-        try { port.postMessage({ type: 'chunk', i, data: b64 }); } catch (err) {}
-      }).catch(() => {});
-    };
-
-    recorder.onstop = () => {
-      clearInterval(rec.pollId);
-      clearInterval(rec.progressId);
-      try { video.pause(); } catch (e) {}
+    let pendingChunks = 0;
+    let stopRequested = false;
+    const postDone = () => {
       if (rec.cancelled) return;
       rec.done = true;
       try {
@@ -443,9 +432,35 @@ async function handleRecordClip(message, sendResponse) {
           type: 'done',
           mime: recorder.mimeType || mimeType || 'video/webm',
           seconds: Math.max(0, Math.min(end, video.currentTime) - start),
+          chunks: chunkIndex,
         });
       } catch (e) {}
       activeRecording = null;
+    };
+    recorder.ondataavailable = (e) => {
+      if (!e.data || e.data.size === 0 || rec.cancelled) return;
+      const i = chunkIndex;
+      chunkIndex += 1;
+      pendingChunks += 1;
+      encodeBlobBase64(e.data).then((b64) => {
+        pendingChunks -= 1;
+        if (!rec.cancelled) {
+          try { port.postMessage({ type: 'chunk', i, data: b64 }); } catch (err) {}
+        }
+        if (stopRequested && pendingChunks === 0) postDone();
+      }).catch(() => {
+        pendingChunks -= 1;
+        if (stopRequested && pendingChunks === 0) postDone();
+      });
+    };
+
+    recorder.onstop = () => {
+      clearInterval(rec.pollId);
+      clearInterval(rec.progressId);
+      try { video.pause(); } catch (e) {}
+      if (rec.cancelled) return;
+      stopRequested = true;
+      if (pendingChunks === 0) postDone();
     };
 
     rec.progressId = setInterval(() => {

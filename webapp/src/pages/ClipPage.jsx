@@ -5,6 +5,7 @@ import { deleteClip } from '../lib/api';
 import Avatar from '../components/Avatar';
 import CommunityAvatar from '../components/CommunityAvatar';
 import YouTubeEmbed from '../components/YouTubeEmbed';
+import ClipPlayer from '../components/ClipPlayer';
 import AudioPlayer from '../components/AudioPlayer';
 import FileClaimButton from '../components/FileClaimButton';
 import ReportButton from '../components/ReportButton';
@@ -365,7 +366,7 @@ export default function ClipPage() {
         )}
         {clip.video_url && clip.video_status !== 'uploading' && !videoFailed && (
           <div className="source-media">
-            <video className="post-video" src={clip.video_url} controls playsInline preload="metadata" onError={() => setVideoFailed(true)} />
+            <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} />
           </div>
         )}
         {(!clip.video_url || videoFailed) && clip.video_status !== 'uploading' && clip.source_type === 'youtube' && (

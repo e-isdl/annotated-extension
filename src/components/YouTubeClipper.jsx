@@ -134,12 +134,29 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             const bin = atob(msg.data);
             const bytes = new Uint8Array(bin.length);
             for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-            parts.push(bytes);
+            parts[msg.i] = bytes;
           } catch (e) {}
         } else if (msg.type === 'done') {
           finished = true;
+          const expected = typeof msg.chunks === 'number' ? msg.chunks : null;
+          const ordered = [];
+          let complete = true;
+          if (expected !== null) {
+            for (let k = 0; k < expected; k += 1) {
+              if (!parts[k]) { complete = false; break; }
+              ordered.push(parts[k]);
+            }
+          } else {
+            parts.forEach((p) => { if (p) ordered.push(p); });
+          }
+          const totalBytes = ordered.reduce((n, p) => n + p.length, 0);
+          parts.length = 0;
+          if (!complete || totalBytes === 0) {
+            setRec({ state: 'error', t: 0, error: 'Recording captured no video. Try again.', blob: null, mime: null, url: null });
+            return;
+          }
           const mime = msg.mime || 'video/webm';
-          const blob = new Blob(parts, { type: mime });
+          const blob = new Blob(ordered, { type: mime });
           setRec({ state: 'done', t: msg.seconds || 0, error: null, blob, mime, url: URL.createObjectURL(blob) });
         } else if (msg.type === 'error') {
           finished = true;
