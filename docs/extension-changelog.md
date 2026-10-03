@@ -221,3 +221,20 @@ leftover mistake â€” "leave the text as it is". No code changed.
 - Clip screen is back to: thumbnail + Preview chip, bar-handle scrub (nearest
   handle wins on drag), Start/End cards with editable fields + -5s/+5s nudges.
 - T6 in the task list is now SKIPPED (both its original and its redesign rejected).
+
+---
+
+## Clip screen de-clutter (master''s order) — remove Open source + Preview, strip dead UI
+
+**Files touched:** `src/components/FlowHeader.jsx`, `src/components/YouTubeClipper.jsx`,
+`src/styles/panel.css`, this changelog.
+
+- **Open source button deleted** from the source strip (strip = platform icon + word + title).
+- **Preview chip deleted** from the thumbnail, plus the whole preview mechanism
+  (previewMode state, in-panel YouTube iframe, Stop state). Thumbnail is a plain image now.
+- Dead UI removed: unreachable error line (`.clip-error`, `error` state), the
+  unreachable "End needs to come after the start." line, `.source-strip-open`,
+  `.thumb-preview` CSS. Continue keeps silent guards; its disabled state + over-limit
+  label already communicate validation.
+- Kept: duration chip, heading, rail, Start/End cards, nudges, length row, Continue.
+- **Local commit only — NOT pushed** (master''s order).

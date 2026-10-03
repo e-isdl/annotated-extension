@@ -138,9 +138,6 @@ button.flow-stop:focus-visible { outline: 2px solid var(--focus); outline-offset
 .source-strip-row { display: flex; align-items: center; gap: 8px; }
 .source-strip-icon { display: inline-flex; color: var(--text-2); flex: none; }
 .source-strip-platform { font-size: 14px; font-weight: 600; color: var(--text-2); }
-.source-strip-open { margin-left: auto; background: none; border: 0; padding: 4px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--red); cursor: pointer; border-radius: 6px; }
-.source-strip-open:hover { text-decoration: underline; }
-.source-strip-open:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .source-strip-title { margin: 4px 0 0; font-size: 15px; font-weight: 600; line-height: 1.35; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .flow-heading { margin: 12px 0 0; font-size: 18px; font-weight: 700; line-height: 1.3; color: var(--text); }
 
@@ -150,9 +147,6 @@ button.flow-stop:focus-visible { outline: 2px solid var(--focus); outline-offset
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .chip { position: absolute; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 600; line-height: 1; color: #fff; }
-.thumb-preview { left: 8px; bottom: 8px; background: color-mix(in srgb, var(--bg) 80%, transparent); border: 0; cursor: pointer; font-family: inherit; }
-.thumb-preview:hover { background: color-mix(in srgb, var(--bg) 95%, transparent); }
-.thumb-preview:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .thumb-duration { right: 8px; bottom: 8px; background: color-mix(in srgb, var(--bg) 80%, transparent); font-family: 'JetBrains Mono', monospace; }
 
 .scrub { padding: 6px 24px; touch-action: none; }
@@ -179,5 +173,4 @@ button.flow-stop:focus-visible { outline: 2px solid var(--focus); outline-offset
 .length-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; color: var(--text-2); }
 .length-row .over { color: var(--red); font-weight: 600; }
 .length-row .max { color: var(--text-3); }
-.clip-error { font-size: 14px; color: var(--red); margin: 0; }
 

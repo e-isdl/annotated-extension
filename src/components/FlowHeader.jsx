@@ -44,12 +44,6 @@ export default function FlowHeader({ step, pageInfo, onBackToFirst }) {
   const title = pageInfo.data?.title || pageInfo.url || '';
   const heading = isTake ? 'Say what you think.' : firstLabel === 'Quote' ? 'Pick your quote.' : 'Which part matters?';
 
-  const openSource = () => {
-    if (pageInfo.url && typeof chrome !== 'undefined' && chrome.tabs) {
-      chrome.tabs.create({ url: pageInfo.url });
-    }
-  };
-
   return (
     <div className="flow-pad">
       <div className="flow-rail" aria-label="Progress">
@@ -75,7 +69,6 @@ export default function FlowHeader({ step, pageInfo, onBackToFirst }) {
         <div className="source-strip-row">
           <span className="source-strip-icon">{platform.icon}</span>
           <span className="source-strip-platform">{platform.word}</span>
-          <button type="button" className="source-strip-open" onClick={openSource}>Open source</button>
         </div>
         <p className="source-strip-title">{title}</p>
       </div>

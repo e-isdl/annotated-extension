@@ -39,10 +39,8 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const [duration, setDuration] = useState(data.duration || 300);
   const [startSec, setStartSec] = useState(0);
   const [endSec, setEndSec] = useState(Math.min(30, data.duration || 300));
-  const [error, setError] = useState('');
   const [startInput, setStartInput] = useState('0:00:00');
   const [endInput, setEndInput] = useState('0:00:30');
-  const [previewMode, setPreviewMode] = useState(false);
   const [dragging, setDragging] = useState(null);
   const trackRef = useRef(null);
 
@@ -105,10 +103,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   };
 
   const handleContinue = () => {
-    if (endSec <= startSec) { setError('End time must be after start time.'); return; }
-    if (clipLen > 90) { setError('Clip must be 90 seconds or less.'); return; }
-    if (clipLen <= 0) { setError('Clip must be at least 1 second.'); return; }
-    setError('');
+    if (endSec <= startSec || clipLen <= 0 || clipLen > 90) return;
     onReady({
       source_url: pageInfo.url,
       source_type: 'youtube',
@@ -172,31 +167,10 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   return (
     <div className="clip-body">
       <div className="thumb">
-        {previewMode ? (
-          <iframe
-            src={`https://www.youtube.com/embed/${data.videoId}?start=${Math.floor(startSec)}&end=${Math.ceil(endSec)}&autoplay=1&rel=0`}
-            title="Clip preview"
-            allow="autoplay; encrypted-media; picture-in-picture"
-            allowFullScreen
-          />
-        ) : (
-          <img
-            src={`https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`}
-            alt={data.title}
-          />
-        )}
-        <button
-          type="button"
-          className="chip thumb-preview"
-          onClick={() => setPreviewMode(!previewMode)}
-        >
-          {previewMode ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-          ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-          )}
-          {previewMode ? 'Stop' : 'Preview'}
-        </button>
+        <img
+          src={`https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`}
+          alt={data.title}
+        />
         <span className="chip thumb-duration">{formatShort(duration)}</span>
       </div>
 
@@ -277,14 +251,10 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         </div>
       </div>
 
-      {endSec <= startSec && <p className="clip-error">End needs to come after the start.</p>}
-
       <div className="length-row">
         <span className={clipLen > 90 ? 'over' : ''}>Clip length {formatLength(clipLen)}</span>
         <span className="max">Max 1:30</span>
       </div>
-
-      {error && <p className="clip-error">{error}</p>}
 
       <button
         onClick={handleContinue}
