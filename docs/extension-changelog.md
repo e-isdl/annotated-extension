@@ -792,3 +792,23 @@ master''s OK per AGENTS.md).
   (interpolated per segment), so two-way sync with the time clipper still holds.
 
 Checks: `npm run build` passes. **Local commit only — NOT pushed.**
+
+---
+
+## Word clipper performance: glide like butter
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, this changelog.
+
+- Root cause of the lag: `wordIndexFromX` called `getBoundingClientRect()` on every
+  one of the ~225 word elements on every pointermove (forced layout each time), and
+  every word span re-rendered on each move.
+- Word centers are now cached once per drag (on pointerdown) and moves read the cached
+  array — zero layout reads during the drag.
+- The drag handler is a single stable `useCallback` that reads live state from a ref
+  (no stale closures, no re-created handlers), and moves are batched through
+  `requestAnimationFrame` (one update per frame).
+- Word spans are `React.memo`-ized: only the words whose selection/handle state
+  actually changes re-render (typically 2-4 per move), not all 225.
+- Pointerdown no longer moves the selection — it only caches rects and arms the drag,
+  so a plain click does not jump.
+- **Local commit only — NOT pushed.**

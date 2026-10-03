@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { fetchYouTubeTranscript } from '../lib/youtubeTranscript';
 import { cleanTranscript } from '../lib/text';
 
@@ -35,6 +35,32 @@ function formatBytes(n) {
 }
 
 const IDLE_REC = { state: 'idle', t: 0, error: null, blob: null, mime: null, url: null };
+
+const WordSpan = memo(function WordSpan({ w, selected, showStartHandle, showEndHandle, draggingWord, onHandleEvent }) {
+  return (
+    <span>
+      {showStartHandle && (
+        <span
+          className={`word-handle${draggingWord === 'start' ? ' dragging' : ''}`}
+          onPointerDown={(e) => onHandleEvent('start', 'down', e)}
+          onPointerMove={(e) => onHandleEvent('start', 'move', e)}
+          onPointerUp={(e) => onHandleEvent('start', 'up', e)}
+          onPointerCancel={(e) => onHandleEvent('start', 'up', e)}
+        />
+      )}
+      <span className={selected ? 'word is-selected' : 'word'}>{w.text} </span>
+      {showEndHandle && (
+        <span
+          className={`word-handle${draggingWord === 'end' ? ' dragging' : ''}`}
+          onPointerDown={(e) => onHandleEvent('end', 'down', e)}
+          onPointerMove={(e) => onHandleEvent('end', 'move', e)}
+          onPointerUp={(e) => onHandleEvent('end', 'up', e)}
+          onPointerCancel={(e) => onHandleEvent('end', 'up', e)}
+        />
+      )}
+    </span>
+  );
+});
 
 function parseTime(str) {
   const parts = str.split(':').map(Number);
@@ -319,46 +345,68 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     setWordEnd(e);
   }, [words, startSec, endSec]);
 
-  const wordIndexFromX = (clientX) => {
-    const area = wordAreaRef.current;
-    if (!area) return null;
-    const els = area.querySelectorAll('[data-word-index]');
-    let best = null;
-    let bestDist = Infinity;
-    els.forEach((el) => {
-      const rect = el.getBoundingClientRect();
-      const dist = Math.abs(clientX - (rect.left + rect.width / 2));
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = Number(el.getAttribute('data-word-index'));
+  const wordStateRef = useRef(null);
+  wordStateRef.current = {
+    draggingWord, wordStart, wordEnd, words, updateStart, updateEnd, setWordStart, setWordEnd,
+  };
+  const wordRectsRef = useRef(null);
+  const wordRafRef = useRef(0);
+  const wordPendingXRef = useRef(0);
+
+  const onWordHandleEvent = useCallback((which, phase, e) => {
+    const st = wordStateRef.current;
+    if (phase === 'down') {
+      e.preventDefault();
+      e.stopPropagation();
+      setDraggingWord(which);
+      const area = wordAreaRef.current;
+      if (area) {
+        const els = area.querySelectorAll('[data-word-index]');
+        const rects = [];
+        els.forEach((el) => {
+          const r = el.getBoundingClientRect();
+          rects.push(r.left + r.width / 2);
+        });
+        wordRectsRef.current = rects;
+      }
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+      return;
+    }
+    if (phase === 'up') {
+      setDraggingWord(null);
+      wordRectsRef.current = null;
+      if (wordRafRef.current) {
+        cancelAnimationFrame(wordRafRef.current);
+        wordRafRef.current = 0;
+      }
+      return;
+    }
+    if (!st.draggingWord) return;
+    wordPendingXRef.current = e.clientX;
+    if (wordRafRef.current) return;
+    wordRafRef.current = requestAnimationFrame(() => {
+      wordRafRef.current = 0;
+      const rects = wordRectsRef.current;
+      if (!rects || !rects.length) return;
+      const x = wordPendingXRef.current;
+      let best = 0;
+      let bestDist = Infinity;
+      for (let i = 0; i < rects.length; i++) {
+        const d = Math.abs(x - rects[i]);
+        if (d < bestDist) { bestDist = d; best = i; }
+      }
+      const s = wordStateRef.current;
+      if (s.draggingWord === 'start') {
+        const clamped = Math.min(best, s.wordEnd);
+        s.setWordStart(clamped);
+        s.updateStart(s.words[clamped].start);
+      } else {
+        const clamped = Math.max(best, s.wordStart);
+        s.setWordEnd(clamped);
+        s.updateEnd(s.words[clamped].end);
       }
     });
-    return best;
-  };
-
-  const onWordHandleDown = (which) => (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDraggingWord(which);
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
-  };
-
-  const onWordHandleMove = (e) => {
-    if (!draggingWord || !words.length) return;
-    const idx = wordIndexFromX(e.clientX);
-    if (idx == null) return;
-    if (draggingWord === 'start') {
-      const clamped = Math.min(idx, wordEnd);
-      setWordStart(clamped);
-      updateStart(words[clamped].start);
-    } else {
-      const clamped = Math.max(idx, wordStart);
-      setWordEnd(clamped);
-      updateEnd(words[clamped].end);
-    }
-  };
-
-  const onWordHandleUp = () => setDraggingWord(null);
+  }, []);
 
   const toggleWordClipper = async () => {
     if (wordClipperOpen) {
@@ -455,29 +503,15 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             <>
               <div className="word-area" ref={wordAreaRef}>
                 {words.map((w, i) => (
-                  <span key={i}>
-                    {i === wordStart && (
-                      <span
-                        className={`word-handle${draggingWord === 'start' ? ' dragging' : ''}`}
-                        data-handle="start"
-                        onPointerDown={onWordHandleDown('start')}
-                        onPointerMove={onWordHandleMove}
-                        onPointerUp={onWordHandleUp}
-                        onPointerCancel={onWordHandleUp}
-                      />
-                    )}
-                    <span data-word-index={i} className={i >= wordStart && i <= wordEnd ? 'word is-selected' : 'word'}>{w.text} </span>
-                    {i === wordEnd && (
-                      <span
-                        className={`word-handle${draggingWord === 'end' ? ' dragging' : ''}`}
-                        data-handle="end"
-                        onPointerDown={onWordHandleDown('end')}
-                        onPointerMove={onWordHandleMove}
-                        onPointerUp={onWordHandleUp}
-                        onPointerCancel={onWordHandleUp}
-                      />
-                    )}
-                  </span>
+                  <WordSpan
+                    key={i}
+                    w={w}
+                    selected={i >= wordStart && i <= wordEnd}
+                    showStartHandle={i === wordStart}
+                    showEndHandle={i === wordEnd}
+                    draggingWord={draggingWord}
+                    onHandleEvent={onWordHandleEvent}
+                  />
                 ))}
               </div>
               <div className="word-clipper-foot">
