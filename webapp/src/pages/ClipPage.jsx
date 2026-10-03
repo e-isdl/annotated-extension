@@ -11,7 +11,7 @@ import ReportButton from '../components/ReportButton';
 import CommentSection from '../components/CommentSection';
 import VoteButtons from '../components/VoteButtons';
 import AnnotationLead from '../components/AnnotationLead';
-import EditAnnotationButton from '../components/EditAnnotationButton';
+import AnnotationEditForm, { EditAnnotationMenuItem } from '../components/EditAnnotationButton';
 import { getDemoClip } from '../lib/demoData';
 import DemoClipPage from './DemoClipPage';
 import { useToast } from '../components/ToastProvider';
@@ -41,6 +41,7 @@ export default function ClipPage() {
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
   const [postMenuOpen, setPostMenuOpen] = useState(false);
+  const [editingAnnotation, setEditingAnnotation] = useState(false);
   const tweetTextRef = useRef(null);
   const [tweetExpanded, setTweetExpanded] = useState(false);
   const [tweetExpandable, setTweetExpandable] = useState(false);
@@ -203,8 +204,13 @@ export default function ClipPage() {
             </button>
             {postMenuOpen && (
               <div className="overflow-menu">
-                <FileClaimButton clipId={clip.id} />
-                {isOwner && (confirmDelete ? (
+              <FileClaimButton clipId={clip.id} />
+              {isOwner && annotation && (
+                <EditAnnotationMenuItem
+                  onEdit={() => { setPostMenuOpen(false); setEditingAnnotation(true); }}
+                />
+              )}
+              {isOwner && (confirmDelete ? (
                   <div className="flex items-center gap-2 p-1.5">
                     <span className="text-[11px] text-[var(--red)]">Delete post?</span>
                     <button
@@ -242,10 +248,12 @@ export default function ClipPage() {
       <AnnotationLead text={annotation?.text_content} profile={profile} annotationType={clip.annotation_type || 'Annotation'} asHeading showType={false} showAuthor={false} />
 
       {isOwner && annotation && (
-        <EditAnnotationButton
+        <AnnotationEditForm
           clipId={clip.id}
           annotationType={clip.annotation_type || 'Annotation'}
           text={annotation.text_content}
+          active={editingAnnotation}
+          onDone={() => setEditingAnnotation(false)}
           onSaved={(next) => setAnnotation((current) => ({ ...(current || {}), text_content: next }))}
         />
       )}

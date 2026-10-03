@@ -119,24 +119,26 @@ export default function YouTubeEmbed({ videoId, startSec, endSec, autoplay = fal
   };
 
   return (
-    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-      {apiFailed ? (
-        <iframe
-          src={youtubeEmbedUrl(videoId, { startSec: start, endSec: end, autoplay })}
-          className="absolute inset-0 w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          title="Source video"
-        />
-      ) : (
-        <div ref={hostRef} className="yt-player-host" />
-      )}
-      {ended && !apiFailed && (
-        <button type="button" className="yt-replay" aria-label="Replay clip from its start" onClick={replayClip}>
-          <span className="yt-replay__icon" aria-hidden="true">↻</span>
-          <span className="yt-replay__label">Replay clip</span>
-        </button>
-      )}
+    <div className="yt-frame">
+      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+        {apiFailed ? (
+          <iframe
+            src={youtubeEmbedUrl(videoId, { startSec: start, endSec: end, autoplay })}
+            className="absolute inset-0 w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title="Source video"
+          />
+        ) : (
+          <div ref={hostRef} className="yt-player-host" />
+        )}
+        {ended && !apiFailed && (
+          <button type="button" className="yt-replay" aria-label="Replay clip from its start" onClick={replayClip}>
+            <span className="yt-replay__icon" aria-hidden="true">↻</span>
+            <span className="yt-replay__label">Replay clip</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
