@@ -886,3 +886,20 @@ Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this cha
 - The top-bar button now reads Continue when ready, otherwise Record clip which goes
   back to the time screen - it never starts a blind recording from the word screen.
 - Local commit only - NOT pushed.
+---
+
+## Word clipper lands exactly where dropped
+
+Files touched: src/components/YouTubeClipper.jsx, this changelog.
+
+- Root cause of the 2-3-words-back jump: YouTube caption segments overlap (segment B
+  starts before segment A ends), so the interpolated word times overlapped too. The
+  time-to-word derivation (first word with end > start) then matched an earlier
+  overlapped word and overwrote the dragged / double-clicked pick on release. The
+  double-click case proved it - the index was passed directly, no pointing involved,
+  yet it still jumped back.
+- Fix: word times are now forced strictly sequential when the list is built (each
+  start clamped to the previous end, each end kept after its start), so time-to-index
+  round-trips exactly. Drag and double-click also set exact word times instead of
+  padded clamps, which could themselves disagree with the derivation at the edges.
+- Local commit only - NOT pushed.

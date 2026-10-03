@@ -296,11 +296,12 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
       if (!parts.length) return;
       const span = Math.max(0.001, seg.end - seg.start);
       parts.forEach((text, i) => {
-        out.push({
-          text,
-          start: seg.start + (span * i) / parts.length,
-          end: seg.start + (span * (i + 1)) / parts.length,
-        });
+        let start = seg.start + (span * i) / parts.length;
+        let end = seg.start + (span * (i + 1)) / parts.length;
+        const prev = out[out.length - 1];
+        if (prev && start < prev.end) start = prev.end;
+        if (end <= start) end = start + 0.01;
+        out.push({ text, start, end });
       });
     });
     return out;
@@ -408,17 +409,16 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
         if (Number.isNaN(best) || !s.words[best]) return;
         if (s.draggingWord === 'start') {
           if (best > s.wordEnd) return;
-          const t = Math.max(0, Math.min(s.words[best].start, s.endSec - 0.05));
+          const t = Math.max(0, s.words[best].start);
           s.setWordStart(best);
           s.setStartSec(t);
           s.setStartInput(formatTime(t));
         } else {
           if (best < s.wordStart) return;
           const t = Math.min(s.words[best].end, s.duration);
-          const clamped = Math.max(t, s.startSec + 0.05);
           s.setWordEnd(best);
-          s.setEndSec(clamped);
-          s.setEndInput(formatTime(clamped));
+          s.setEndSec(t);
+          s.setEndInput(formatTime(t));
         }
       });
     };
