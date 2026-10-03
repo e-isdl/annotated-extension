@@ -501,3 +501,16 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 - A `pause` listener stops the monitor: if the person pauses (or seeks) manually, the
   auto-pause never fires later. Monitor is also replaced on the next Play clip press.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Play clip is now a play/pause toggle
+
+**Files touched:** `content.js`, `src/components/YouTubeClipper.jsx`, this changelog.
+
+- The Play clip button toggles: if the YouTube video is playing it pauses it; if it is
+  paused it seeks to the clip start and plays (still auto-pausing at the clip end).
+- The decision uses the video''s real state in `content.js` (not panel state), and the
+  response reports the new state so the button flips between play / pause icons and
+  "Play clip" / "Pause" labels.
+- **Local commit only — NOT pushed.**

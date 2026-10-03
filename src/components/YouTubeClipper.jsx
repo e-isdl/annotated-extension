@@ -171,10 +171,18 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     }
   };
 
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+
   const playFromStart = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (!tab?.id) return;
-      chrome.tabs.sendMessage(tab.id, { type: 'PLAY_FROM', start: startSec, end: endSec }).catch(() => {});
+      chrome.tabs.sendMessage(
+        tab.id,
+        { type: 'PLAY_FROM', start: startSec, end: endSec },
+        (res) => {
+          if (res && typeof res.playing === 'boolean') setPreviewPlaying(res.playing);
+        }
+      ).catch(() => {});
     });
   };
 
@@ -325,10 +333,16 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
           onClick={playFromStart}
           disabled={locked}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M8 5.5v13l11-6.5-11-6.5z" fill="currentColor" />
-          </svg>
-          <span className="play-clip-label">Play clip</span>
+          {previewPlaying ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5.5v13l11-6.5-11-6.5z" fill="currentColor" />
+            </svg>
+          )}
+          <span className="play-clip-label">{previewPlaying ? 'Pause' : 'Play clip'}</span>
           <span className="play-clip-range">{formatShort(startSec)} – {formatShort(endSec)}</span>
         </button>
       )}

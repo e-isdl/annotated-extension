@@ -733,6 +733,11 @@ if (!window.__annotatedContentLoaded) {
       const video = document.querySelector('video.html5-main-video')
         || document.querySelector('#movie_player video');
       if (video) {
+        if (!video.paused) {
+          video.pause();
+          sendResponse({ ok: true, playing: false });
+          return true;
+        }
         const end = Number(message.end) || 0;
         stopClipPlaybackMonitor();
         try { video.currentTime = Number(message.start) || 0; } catch (e) {}
@@ -748,7 +753,7 @@ if (!window.__annotatedContentLoaded) {
           clipMonitorOnPause = () => stopClipPlaybackMonitor();
           video.addEventListener('pause', clipMonitorOnPause, { once: true });
         }
-        sendResponse({ ok: true });
+        sendResponse({ ok: true, playing: true });
       } else {
         sendResponse({ ok: false });
       }
