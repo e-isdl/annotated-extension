@@ -18,6 +18,7 @@ import { useToast } from '../components/ToastProvider';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
 import { isXPostUrl, matchStatusUrl } from '../lib/social';
+import { cleanTranscript } from '../lib/text';
 
 const MEDIA_FRAME = /youtube\.com\/embed|youtube-nocookie\.com\/embed|platform\.twitter\.com|twimg\.com/;
 
@@ -43,6 +44,8 @@ export default function ClipPage() {
   const tweetTextRef = useRef(null);
   const [tweetExpanded, setTweetExpanded] = useState(false);
   const [tweetExpandable, setTweetExpandable] = useState(false);
+  const [verbatimTranscript, setVerbatimTranscript] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
   const { push } = useToast();
 
   useLayoutEffect(() => {
@@ -172,6 +175,7 @@ export default function ClipPage() {
 
   const isX = isXPostUrl(clip.source_url);
   const posterHandle = isX ? (matchStatusUrl(clip.source_url)?.handle || String(clip.author || '').replace(/^@/, '')) : '';
+  const hasSourceImage = !isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && Boolean(clip.source_image_url || clip.thumbnail);
 
   const range = hasMoment(clip.start_sec, clip.end_sec) && clip.duration > clip.end_sec
     ? (() => {
@@ -263,9 +267,9 @@ export default function ClipPage() {
           </div>
           <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
         </div>}
-        {isX && (clip.thumbnail ? (
+        {isX && (clip.thumbnail && !imageFailed ? (
           <div className="source-media source-media-x">
-            <img src={clip.thumbnail} alt={clip.title || 'X post'} className="source-post-image source-post-image-x" loading="lazy" />
+            <img src={clip.thumbnail} alt={clip.title || 'X post'} className="source-post-image source-post-image-x" loading="lazy" onError={() => setImageFailed(true)} />
             <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
               ↗ view original on x
             </a>
@@ -325,8 +329,11 @@ export default function ClipPage() {
         {!isX && clip.source_type === 'article' && clip.article_text && (
           <div className="source-article-body"><p>{clip.article_text}</p></div>
         )}
-        {!isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && (clip.source_image_url || clip.thumbnail) && (
-          <img src={clip.source_image_url || clip.thumbnail} alt="" className="source-post-image" />
+        {hasSourceImage && !imageFailed && (
+          <img src={clip.source_image_url || clip.thumbnail} alt="" className="source-post-image" loading="lazy" onError={() => setImageFailed(true)} />
+        )}
+        {hasSourceImage && imageFailed && (
+          <div className="source-text-placeholder">The image for this source could not be loaded.</div>
         )}
         {!isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && !clip.source_image_url && !clip.thumbnail && (
           <div className="source-text-placeholder">This post is anchored to a source conversation. Open the original or expand the context below.</div>
@@ -335,8 +342,11 @@ export default function ClipPage() {
 
       {transcript && (
         <section className="source-transcript" aria-label="Transcript">
-          {!annotation?.audio_url && <span className="source-transcript-label">Transcript</span>}
-          <p className="source-transcript-text">{transcript}</p>
+          <div className="source-transcript-head">
+            {!annotation?.audio_url && <span className="source-transcript-label">Transcript</span>}
+            <button type="button" className={`post-action${verbatimTranscript ? ' post-action-saved' : ''}`} aria-pressed={verbatimTranscript} onClick={() => setVerbatimTranscript((value) => !value)}>Verbatim</button>
+          </div>
+          <p className="source-transcript-text">{verbatimTranscript ? transcript : cleanTranscript(transcript)}</p>
         </section>
       )}
 
@@ -355,13 +365,13 @@ export default function ClipPage() {
           rel="noopener noreferrer"
           className="source-link real-source-link"
         >
-          <span>↗ {sourceDomain(clip.source_url)}</span>
+          <span>↗ {clip.source_type === 'youtube' ? sourceDomain(clip.source_url) : 'Open source'}</span>
         </a>
       )}
 
       {isOwner && claims.length > 0 && (
         <div className="flex flex-col gap-3">
-              <p className="text-xs text-text-muted font-medium uppercase tracking-wide">Claims ({claims.length})</p>
+              <p className="text-xs text-text-muted font-medium">Claims ({claims.length})</p>
           {claims.map((claim) => (
             <div key={claim.id} className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
@@ -386,7 +396,7 @@ export default function ClipPage() {
 
       {thread.length > 0 && (
         <div className="flex flex-col gap-3 mt-2">
-          <p className="text-xs text-text-muted font-medium uppercase tracking-wide">Thread</p>
+          <p className="text-xs text-text-muted font-medium">Thread</p>
           {thread.map((threadClip, i) => (
             <div key={threadClip.id} className="flex gap-3">
               <div className="flex flex-col items-center">

@@ -127,7 +127,7 @@ export default function CreatePage() {
     <div className="create-page">
       <Link to="/" className="back-link">← Back home</Link>
       <div className="create-header">
-        <p className="eyebrow">CREATE A POST</p>
+        <p className="eyebrow">Create a post</p>
         <h1>Start a conversation.</h1>
         <p>Post like a community, but keep the source, exact moment, and your point of view attached.</p>
       </div>
@@ -187,7 +187,7 @@ export default function CreatePage() {
         </div>
 
         <div className="create-preview-wrap">
-          <p className="eyebrow">LIVE PREVIEW</p>
+          <p className="eyebrow">Live preview</p>
           <div className="create-preview">
             <p className="post-meta">{selectedCommunity ? <span className="community-pill"><CommunityAvatar slug={selectedCommunity.slug} name={selectedCommunity.name} /> c/{selectedCommunity.name}</span> : <span>Post</span>}<span>• just now</span></p>
             <h2 className="post-annotation-preview">{needsSource ? (form.commentary || 'Your point of view will be the center of the post.') : (form.title || 'Your title will be the headline of the post.')}</h2>

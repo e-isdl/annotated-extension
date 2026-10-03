@@ -41,7 +41,7 @@ export default function SavedPage() {
 
   return (
     <div className="section-page saved-page">
-      <p className="eyebrow">YOUR READING LIST</p>
+      <p className="eyebrow">Your reading list</p>
       <h1 className="section-title">Saved for later.</h1>
       <p className="section-subtitle">Keep the arguments, sources, and moments that deserve a second look.</p>
 

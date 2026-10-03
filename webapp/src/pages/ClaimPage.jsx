@@ -29,7 +29,7 @@ export default function ClaimPage() {
   return (
     <article className="section-page claim-page">
       <Link to={clip ? postHref(clip) : '/'} className="back-link">← Back to post</Link>
-      <p className="eyebrow">SOURCE CLAIM</p>
+      <p className="eyebrow">Source claim</p>
       <h1 className="section-title">Claim about {clip?.title || 'this annotation'}</h1>
       <p className="section-subtitle">Filed {new Date(claim.created_at).toLocaleDateString()}</p>
       <div className="claim-thread-card">

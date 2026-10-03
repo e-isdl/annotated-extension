@@ -74,7 +74,7 @@ export default function CommunityPage() {
       <div className="community-hero">
         <CommunityAvatar slug={slug} name={community.name} className="community-hero-mark" />
         <div className="flex-1 min-w-0">
-          <p className="eyebrow">COMMUNITY</p>
+          <p className="eyebrow">Community</p>
           <h1>c/{community.name}</h1>
           <p>{community.description}</p>
         </div>

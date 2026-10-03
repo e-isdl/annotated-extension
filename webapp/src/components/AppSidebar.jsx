@@ -6,8 +6,8 @@ import CommunityAvatar from './CommunityAvatar';
 
 const NAV_ITEMS = [
   { label: 'Home', path: '/', icon: '⌂', sort: null },
-  { label: 'Popular', path: '/popular', icon: '✦', sort: 'top' },
-  { label: 'Latest', path: '/latest', icon: '◷', sort: 'new' },
+  { label: 'Top', path: '/popular', icon: '✦', sort: 'top' },
+  { label: 'New', path: '/latest', icon: '◷', sort: 'new' },
   { label: 'Explore', path: '/explore', icon: '⌕' },
   { label: 'Saved', path: '/saved', icon: '▱' },
 ];

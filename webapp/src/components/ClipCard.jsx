@@ -11,6 +11,9 @@ import Avatar from './Avatar';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
 import { isXPostUrl, matchStatusUrl } from '../lib/social';
+import { cleanTranscript, stripWrappingQuotes } from '../lib/text';
+
+const SOURCE_LABELS = { youtube: 'YouTube', social: 'X post', article: 'Article', text: 'Text', podcast: 'Podcast' };
 
 export default function ClipCard({ clip }) {
   const navigate = useNavigate();
@@ -28,10 +31,12 @@ export default function ClipCard({ clip }) {
   const isYouTube = clip.source_type === 'youtube';
   const youtubeTitle = clip.source_title || clip.title;
   const sourceTitle = isYouTube || isXPostUrl(clip.source_url) ? null : clip.source_title || clip.title;
-  const sourceLabel = clip.source_type === 'social' ? 'x' : clip.source_type;
+  const sourceLabel = SOURCE_LABELS[clip.source_type] || clip.source_type;
   const [score, setScore] = useState(clip.score ?? 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+  const [tweetOpen, setTweetOpen] = useState(false);
   const isXPost = isXPostUrl(clip.source_url);
   const posterHandle = isXPost ? (matchStatusUrl(clip.source_url)?.handle || String(clip.author || '').replace(/^@/, '')) : '';
   const href = postHref(clip);
@@ -52,6 +57,13 @@ export default function ClipCard({ clip }) {
     });
     return () => { active = false; };
   }, [clip.id]);
+
+  useEffect(() => {
+    if (!tweetOpen) return undefined;
+    const onKey = (event) => { if (event.key === 'Escape') setTweetOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [tweetOpen]);
 
   const handleShare = async (event) => {
     event.preventDefault();
@@ -115,7 +127,6 @@ export default function ClipCard({ clip }) {
                 <button type="button" className="read-more-toggle" aria-expanded="false" onClick={expandCommentary}>Show more</button>
               </div>
             )}
-            <span className="annotation-rule" aria-hidden="true" />
           </>
         )}
 
@@ -136,7 +147,7 @@ export default function ClipCard({ clip }) {
             {clip.source_preview_text ? (
               <p ref={quoteRef} className={quoteClassName}>{clip.source_preview_text}</p>
             ) : clip.article_text || clip.source_excerpt || clip.transcript ? (
-              <p ref={quoteRef} className={quoteClassName}>“{clip.article_text || clip.source_excerpt || clip.transcript}”</p>
+              <p ref={quoteRef} className={quoteClassName}>“{stripWrappingQuotes(clip.source_type === 'youtube' ? cleanTranscript(clip.article_text || clip.source_excerpt || clip.transcript) : (clip.article_text || clip.source_excerpt || clip.transcript))}”</p>
             ) : (
               <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
             )}
@@ -147,7 +158,13 @@ export default function ClipCard({ clip }) {
             )}
             {sourceTitle && sourceTitle !== commentary && <p className="source-title">{sourceTitle}</p>}
           </div>
-          {sourceImage && <img src={sourceImage} alt="" className={`source-preview-image${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />}
+          {sourceImage && !imageFailed && <img src={sourceImage} alt="" className={`source-preview-image${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" onError={() => setImageFailed(true)} />}
+          {sourceImage && imageFailed && (
+            <div className="source-preview-image source-thumb-fallback">
+              <SourceIcon type={clip.source_type} />
+              <span>{clip.source_domain || sourceDomain(clip.source_url)}</span>
+            </div>
+          )}
         </div>
         )}
         {hasMoment(clip.start_sec, clip.end_sec) && (
@@ -167,10 +184,27 @@ export default function ClipCard({ clip }) {
         <button type="button" onClick={handleShare} className="post-action">
           <span>↗</span> <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span>
         </button>
-        <button type="button" onClick={handleSave} className={`post-action post-action-last ${saved ? 'post-action-saved' : ''}`}>
+        <button type="button" onClick={handleSave} className={`post-action ${isXPost && sourceImage ? '' : 'post-action-last '}${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
         </button>
+        {isXPost && sourceImage && (
+          <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setTweetOpen(true); }} className="post-action post-action-last" aria-haspopup="dialog">
+            <SourceIcon type="social" /> See tweet
+          </button>
+        )}
       </div>
+
+      {tweetOpen && (
+        <div className="tweet-lightbox" role="dialog" aria-modal="true" aria-label="X post screenshot" onClick={() => setTweetOpen(false)}>
+          <div className="tweet-lightbox-inner" onClick={(event) => event.stopPropagation()}>
+            <img src={sourceImage} alt={clip.title || 'X post screenshot'} className="tweet-lightbox-image" />
+            <div className="tweet-lightbox-actions">
+              {clip.source_url && <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="post-action no-underline">Open on X ↗</a>}
+              <button type="button" className="post-action" onClick={() => setTweetOpen(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </article>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import AudioRecorder from './AudioRecorder';
 import { excerptYouTubeTranscript, fetchYouTubeTranscript, formatYouTubeTranscript } from '../lib/youtubeTranscript';
+import { cleanTranscript } from '../lib/text';
 
 const ANNOTATION_LIMITS = { Reaction: 1000, 'Fact check': 1000, Explainer: 1000, 'Hot take': 1000, Question: 1000 };
 const ANNOTATION_TYPES = Object.keys(ANNOTATION_LIMITS);
@@ -69,6 +70,8 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
   const [editingTranscript, setEditingTranscript] = useState(false);
   const [editingFull, setEditingFull] = useState(false);
   const [showFull, setShowFull] = useState(false);
+  const [showClipTranscript, setShowClipTranscript] = useState(false);
+  const [transcriptRetry, setTranscriptRetry] = useState(0);
   const [editedText, setEditedText] = useState('');
   const [editedFullText, setEditedFullText] = useState('');
   const fileInputRef = useRef(null);
@@ -98,6 +101,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
       setEditingTranscript(false);
       setEditingFull(false);
       setShowFull(false);
+      setShowClipTranscript(false);
       fetchTranscriptDirect(clipData.youtube_id, clipData.start_sec, clipData.end_sec)
         .then(({ filtered, full, segments }) => {
           setTranscript(filtered);
@@ -109,7 +113,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
         })
         .finally(() => setTranscriptLoading(false));
     }
-  }, [clipData]);
+  }, [clipData, transcriptRetry]);
 
   useEffect(() => {
     if (onTranscriptChange) onTranscriptChange(transcript);
@@ -201,8 +205,8 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
       {isYouTube && (
         <div className="bg-bg-surface border border-border rounded-xl p-5">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-accent uppercase tracking-widest">Transcript</p>
-            {transcript && !transcriptLoading && (
+            <p className="text-sm font-medium text-text-secondary">Transcript</p>
+            {transcript && !transcriptLoading && (showClipTranscript || editingTranscript) && (
               <button
                 onClick={() => {
                   if (editingTranscript) {
@@ -248,7 +252,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
                 </button>
                 <span className="text-sm text-text-muted ml-2 tabular-nums">{editedText.trim().split(/\s+/).filter(Boolean).length} words</span>
                 <button
-                  onClick={() => { setTranscript(editedText); setEditingTranscript(false); }}
+                  onClick={() => { setTranscript(editedText); setEditingTranscript(false); setShowClipTranscript(true); }}
                   className="btn-primary text-sm py-2 ml-auto"
                 >
                   Save Changes
@@ -257,13 +261,26 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
             </div>
           ) : transcript ? (
             <div className="flex flex-col gap-3">
-              <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{transcript}</p>
+              <button
+                type="button"
+                onClick={() => setShowClipTranscript(!showClipTranscript)}
+                aria-expanded={showClipTranscript}
+                className="flex items-center gap-2 text-sm font-medium text-accent hover:text-accent-strong transition-colors text-left w-full"
+              >
+                <span className={`text-xs ${showClipTranscript ? 'rotate-180' : ''}`} style={{ transition: 'transform 0.15s ease' }}>▸</span>
+                {showClipTranscript ? 'Hide clip transcript' : 'Show clip transcript'}
+              </button>
+
+              {showClipTranscript && (
+                <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{cleanTranscript(transcript)}</p>
+              )}
+
               <button
                 onClick={() => setShowFull(!showFull)}
                 className="flex items-center gap-2 text-sm font-medium text-accent hover:text-accent-strong transition-colors text-left w-full"
               >
                 <span className={`text-xs ${showFull ? 'rotate-180' : ''}`} style={{ transition: 'transform 0.15s ease' }}>▸</span>
-                Show transcript ({fullTranscript?.split(/\s+/).filter(Boolean).length ?? 0} words)
+                Show full transcript ({fullTranscript?.split(/\s+/).filter(Boolean).length ?? 0} words)
               </button>
               {showFull && (
                 <div className="flex flex-col gap-2">
@@ -298,7 +315,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
                     </div>
                   ) : (
                     <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto rounded-lg bg-bg-base p-4">
-                      {fullTranscript}
+                      {cleanTranscript(fullTranscript)}
                     </p>
                   )}
                 </div>
@@ -308,7 +325,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
             <div className="flex flex-col gap-3">
               <p className="text-sm text-red-400">{transcriptError}</p>
               <button
-                onClick={() => setTranscriptLoading(true)}
+                onClick={() => setTranscriptRetry((count) => count + 1)}
                 className="text-sm text-accent hover:text-accent-strong transition-colors"
               >
                 Retry
@@ -320,7 +337,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
         </div>
       )}
 
-      <p className="text-sm font-medium text-accent uppercase tracking-widest">Your commentary</p>
+      <p className="text-sm font-medium text-text-secondary">Your commentary</p>
 
       <div className="flex gap-1 bg-bg-surface border border-border rounded-xl p-1">
         <button

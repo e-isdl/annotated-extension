@@ -32,7 +32,7 @@ export default function NotificationsPage() {
 
   return (
     <section className="section-page notifications-page">
-      <p className="eyebrow">YOUR ACTIVITY</p>
+      <p className="eyebrow">Your activity</p>
       <h1 className="section-title">Notifications</h1>
       <p className="section-subtitle">Replies, follows, claims, and other signals around your annotations.</p>
       {!notifications.length ? <p className="empty-state text-sm text-text-muted">Nothing new here yet.</p> : (

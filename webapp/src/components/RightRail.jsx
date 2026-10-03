@@ -122,7 +122,7 @@ export default function RightRail() {
           </div>
           {community.description && <p className="community-info-description">{community.description}</p>}
           <div className="community-stats">
-            <span><strong>{community.members ?? '—'}</strong> {community.members === 1 ? 'member' : 'members'}</span>
+            {community.members > 1 && <span><strong>{community.members}</strong> members</span>}
             <span>Public community</span>
           </div>
           <div className="community-info-actions">
@@ -133,7 +133,7 @@ export default function RightRail() {
         </section>
       ) : authStateLoaded && !signedIn ? (
         <Link to="/create" className="create-prompt no-underline">
-          <p className="text-xs font-semibold text-text-muted">ANNOTATED</p>
+          <p className="text-xs font-semibold text-text-muted">Annotated</p>
           <h2 className="text-base font-semibold text-text-primary mt-2 leading-tight">Add context to a moment</h2>
           <p className="text-xs text-text-secondary leading-relaxed mt-2">Bring a source, add your perspective, and discuss it with the community.</p>
         </Link>
@@ -150,15 +150,20 @@ export default function RightRail() {
               <CommunityAvatar slug={item.slug} name={item.name} className="community-dot community-dot-lg" />
               <span className="min-w-0 flex-1">
           <span className="block text-sm text-text-primary group-hover:text-accent-text truncate">c/{item.name}</span>
-          <span className="block text-[11px] text-text-muted mt-0.5">{item.members} {item.members === 1 ? 'member' : 'members'}</span>
+          {item.members > 1 && <span className="block text-[11px] text-text-muted mt-0.5">{item.members} members</span>}
               </span>
             </Link>
           ))}
         </div>
       </section>}
 
+      <section className="rail-card rail-extension-card">
+        <h2 className="rail-heading">Get the extension</h2>
+        <p className="rail-extension-copy">Annotate any video or article in two clicks.</p>
+        <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer" className="btn-primary rail-extension-button">Add to Chrome</a>
+      </section>
+
       <footer className="rail-footer">
-        <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
         <a href="https://github.com/e-isdl/annotated-extension" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </footer>
     </aside>

@@ -24,7 +24,7 @@ export default function ExplorePage() {
 
   return (
     <div className="section-page">
-      <p className="eyebrow">EXPLORE</p>
+      <p className="eyebrow">Explore</p>
       <h1 className="section-title">Find your corner of the conversation.</h1>
       <p className="section-subtitle">Communities are where source material turns into a shared point of view.</p>
 
@@ -40,8 +40,8 @@ export default function ExplorePage() {
               <h2>{community.name}</h2>
               <p>{community.description}</p>
               <div className="flex items-center gap-3 mt-5 text-[11px] text-text-muted font-mono">
-                <span>{community.members} {community.members === 1 ? 'member' : 'members'}</span>
-                <span>•</span>
+                {community.members > 1 && <span>{community.members} members</span>}
+                {community.members > 1 && <span>•</span>}
                 <span>{postCount} featured threads</span>
               </div>
             </Link>
@@ -51,7 +51,7 @@ export default function ExplorePage() {
 
       <div className="explore-callout">
         <div>
-          <p className="eyebrow">NO PERFECT CATEGORY?</p>
+          <p className="eyebrow">No perfect category?</p>
           <h2>Start a conversation around the source.</h2>
           <p>Good communities emerge from good posts. Give the first one a reason to exist.</p>
         </div>

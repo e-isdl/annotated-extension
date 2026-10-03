@@ -65,7 +65,7 @@ export default function SearchPage() {
   return (
     <div className="section-page search-page">
       <div className="search-results-header">
-        <p className="eyebrow">SEARCH</p>
+        <p className="eyebrow">Search</p>
         <h1 className="section-title">Results for <span>“{query}”</span></h1>
         <p className="section-subtitle">Find posts, people, and the source context around a conversation.</p>
         <p className="text-sm text-text-muted search-results-inline">

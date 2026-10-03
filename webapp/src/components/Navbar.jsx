@@ -43,6 +43,8 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const notifRef = useRef(null);
+  const menuRef = useRef(null);
+  const [showMenu, setShowMenu] = useState(false);
   const { push } = useToast();
 
   useEffect(() => {
@@ -122,6 +124,16 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showNotifs]);
 
+  // Click outside to close the account menu
+  useEffect(() => {
+    if (!showMenu) return;
+    function handleClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showMenu]);
+
   async function loadNotifications(userId) {
     const { data } = await supabase
       .from('notifications')
@@ -172,6 +184,8 @@ export default function Navbar() {
       navigate('/');
     }
   };
+
+  const accountHandle = profile?.handle || user?.user_metadata?.user_name || user?.id || '';
 
   return (
     <nav className="border-b border-border-subtle bg-bg-base sticky top-0 z-10">
@@ -256,26 +270,29 @@ export default function Navbar() {
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={signOut}
-                aria-label="Sign out"
-                title="Sign out"
-                className="flex items-center justify-center w-9 h-9 rounded-full text-text-secondary hover:text-accent transition-colors"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </button>
-
-              <Link to={`/u/${profile?.handle || user.user_metadata?.user_name || user.id}`} aria-label="Open your profile" className="flex items-center justify-center w-9 h-9 rounded-full">
-                <Avatar profile={{
-                  handle: profile?.handle || user.user_metadata?.user_name || user.email?.split('@')[0],
-                  avatar_url: profile ? profile.avatar_url : user.user_metadata?.avatar_url,
-                }} size="sm" />
-              </Link>
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowMenu((value) => !value)}
+                  aria-label="Account menu"
+                  aria-haspopup="menu"
+                  aria-expanded={showMenu}
+                  className="flex items-center justify-center w-9 h-9 rounded-full"
+                >
+                  <Avatar profile={{
+                    handle: profile?.handle || user.user_metadata?.user_name || user.email?.split('@')[0],
+                    avatar_url: profile ? profile.avatar_url : user.user_metadata?.avatar_url,
+                  }} size="sm" />
+                </button>
+                {showMenu && (
+                  <div className="account-menu" role="menu">
+                    <Link to={`/u/${accountHandle}`} onClick={() => setShowMenu(false)} className="account-menu-item" role="menuitem">Your profile</Link>
+                    <Link to="/saved" onClick={() => setShowMenu(false)} className="account-menu-item" role="menuitem">Saved</Link>
+                    <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer" onClick={() => setShowMenu(false)} className="account-menu-item" role="menuitem">Install the extension</a>
+                    <button type="button" onClick={() => { setShowMenu(false); signOut(); }} className="account-menu-item" role="menuitem">Sign out</button>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <button onClick={signIn} className="btn-primary h-9 text-xs">
