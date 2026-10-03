@@ -306,6 +306,10 @@ function stopActiveRecording(reason) {
   clearInterval(rec.pollId);
   clearInterval(rec.progressId);
   try { rec.video.pause(); } catch (e) {}
+  try { if (rec.drawRaf) cancelAnimationFrame(rec.drawRaf); } catch (e) {}
+  try {
+    if (rec.canvasStream) rec.canvasStream.getVideoTracks().forEach((track) => { try { track.stop(); } catch (e2) {} });
+  } catch (e) {}
   try {
     if (rec.recorder && rec.recorder.state !== 'inactive') rec.recorder.stop();
   } catch (e) {}
@@ -364,7 +368,7 @@ async function handleRecordClip(message, sendResponse) {
   try {
     const player = document.querySelector('#movie_player');
     if (player && typeof player.setPlaybackQualityRange === 'function') {
-      player.setPlaybackQualityRange('small');
+      player.setPlaybackQualityRange('small', 'small');
     }
   } catch (e) {}
   await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -399,6 +403,33 @@ async function handleRecordClip(message, sendResponse) {
       return;
     }
 
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 426;
+      canvas.height = 240;
+      const canvasCtx = canvas.getContext('2d');
+      if (canvasCtx) {
+        const drawFrame = () => {
+          if (rec.cancelled || rec.done) return;
+          try {
+            const vw = video.videoWidth;
+            const vh = video.videoHeight;
+            if (vw && vh) {
+              const scale = Math.max(426 / vw, 240 / vh);
+              const dw = vw * scale;
+              const dh = vh * scale;
+              canvasCtx.drawImage(video, (426 - dw) / 2, (240 - dh) / 2, dw, dh);
+            }
+          } catch (e) {}
+          rec.drawRaf = requestAnimationFrame(drawFrame);
+        };
+        drawFrame();
+        const canvasStream = canvas.captureStream(30);
+        rec.canvasStream = canvasStream;
+        stream = new MediaStream([...canvasStream.getVideoTracks(), ...stream.getAudioTracks()]);
+      }
+    } catch (e) {}
+
     const mimeTypes = [
       'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
       'video/webm;codecs=vp9,opus',
@@ -412,8 +443,8 @@ async function handleRecordClip(message, sendResponse) {
     try {
       recorder = new MediaRecorder(stream, {
         ...(mimeType ? { mimeType } : {}),
-        videoBitsPerSecond: 1000000,
-        audioBitsPerSecond: 128000,
+        videoBitsPerSecond: 700000,
+        audioBitsPerSecond: 96000,
       });
     } catch (e) {
       stopActiveRecording("This video can't be recorded. It may be protected.");
@@ -458,6 +489,10 @@ async function handleRecordClip(message, sendResponse) {
       clearInterval(rec.pollId);
       clearInterval(rec.progressId);
       try { video.pause(); } catch (e) {}
+      try { if (rec.drawRaf) cancelAnimationFrame(rec.drawRaf); } catch (e) {}
+      try {
+        if (rec.canvasStream) rec.canvasStream.getVideoTracks().forEach((track) => { try { track.stop(); } catch (e2) {} });
+      } catch (e) {}
       if (rec.cancelled) return;
       stopRequested = true;
       if (pendingChunks === 0) postDone();

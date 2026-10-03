@@ -1162,3 +1162,15 @@ this changelog. Production: one stuck uploading row repaired to failed.
 - Manifest bumped 2.3.5 to 2.3.6. Ships the integer-timestamp publish fix and
   awaited uploads with timeout plus stale-upload fallback.
 - Pushed to master.
+---
+
+## Recordings locked to 240p
+
+Files touched: content.js, this changelog.
+
+- The quality hint was only a suggestion and capture grabbed full-res frames, so
+  recordings came out sharper (and heavier) than 240p. Frames now go through a
+  426x240 canvas (cover-fit) whose stream is recorded, so 240p is guaranteed no
+  matter what YouTube plays. Bitrate retuned for the size (700k video, 96k
+  audio). Draw loop and canvas track are torn down on stop and on cancel.
+- Local commit only - NOT pushed.
