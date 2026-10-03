@@ -479,6 +479,7 @@ const HIGHLIGHT_WORD_LIMIT = 200; // keep in sync with WORD_LIMIT in src/compone
 let fallbackMarks = [];
 let clipMonitor = null;
 let clipMonitorOnPause = null;
+let clipEnd = 0;
 
 function stopClipPlaybackMonitor() {
   if (clipMonitor) { clearInterval(clipMonitor); clipMonitor = null; }
@@ -489,6 +490,7 @@ function stopClipPlaybackMonitor() {
     } catch (e) {}
     clipMonitorOnPause = null;
   }
+  clipEnd = 0;
 }
 
 function capRange(range, maxWords) {
@@ -743,18 +745,21 @@ if (!window.__annotatedContentLoaded) {
         || document.querySelector('video');
       if (video) {
         const end = Number(message.end) || 0;
+        const start = Number(message.start) || 0;
         const isReplay = message.action === 'replay';
         const shouldPlay = isReplay || video.paused;
         stopClipPlaybackMonitor();
         if (shouldPlay) {
-          if (isReplay) {
-            try { video.currentTime = Number(message.start) || 0; } catch (e) {}
+          const t = video.currentTime || 0;
+          if (isReplay || t < start || t >= end) {
+            try { video.currentTime = start; } catch (e) {}
           }
           video.play().catch(() => {});
+          clipEnd = end;
           if (end > 0) {
             clipMonitor = setInterval(() => {
               try {
-                if (!video.paused && video.currentTime >= end) {
+                if (!video.paused && video.currentTime >= clipEnd) {
                   video.pause();
                 }
               } catch (e) {}
@@ -776,6 +781,7 @@ if (!window.__annotatedContentLoaded) {
         || document.querySelector('#movie_player video')
         || document.querySelector('video');
       if (video) {
+        if (clipMonitor && Number(message.end) > 0) clipEnd = Number(message.end);
         sendResponse({ ok: true, time: video.currentTime || 0, paused: video.paused });
       } else {
         sendResponse({ ok: false });

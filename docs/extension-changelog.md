@@ -727,3 +727,26 @@ master''s OK per AGENTS.md).
   `undefined` and the tab check threw "Return to the selected YouTube video tab to
   load its captions." Now uses `data.videoId`.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Fixes: play/pause desync, instant-pause, word clipper fighting
+
+**Files touched:** `content.js`, `src/components/YouTubeClipper.jsx`, this changelog.
+
+1. **Play/pause no longer inverts**: the panel only polled the video while it thought
+   the video was playing, so the label desynced from reality (video already playing ->
+   "Play" paused it; video paused -> "Pause" started it). The panel now polls
+   `VIDEO_TIME` every 500 ms unconditionally and mirrors the real paused state, so the
+   button always does what it says.
+2. **No more instant pause**: `PLAY_FROM` toggle now seeks to the clip start when the
+   video is outside the clip range (before start / at or past the end), so the
+   auto-pause-at-end monitor can never fire the moment playback starts. Resuming from
+   inside the range still continues without seeking. The monitor''s end is a mutable
+   `clipEnd` that the 500 ms poll keeps current, so moving the End handle while
+   previewing moves the auto-pause point too.
+3. **Word clipper glides**: the drag rounded word times to whole seconds, which made the
+   time->word mapping snap back a word and fight the drag. Word drags now pass exact
+   fractional times, and the time<->word sync runs in a `useLayoutEffect` so the
+   selection never flickers or jumps. Time scrub and word bars stay in both-way sync.
+- **Local commit only — NOT pushed.**

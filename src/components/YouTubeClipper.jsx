@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { fetchYouTubeTranscript } from '../lib/youtubeTranscript';
 
 function formatTime(s) {
@@ -181,23 +181,18 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   };
 
   const [previewPlaying, setPreviewPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
-    if (!previewPlaying) return undefined;
     const id = setInterval(() => {
       chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
         if (!tab?.id) return;
-        chrome.tabs.sendMessage(tab.id, { type: 'VIDEO_TIME' }, (res) => {
-          if (res && res.ok) {
-            setCurrentTime(res.time);
-            if (res.paused) setPreviewPlaying(false);
-          }
+        chrome.tabs.sendMessage(tab.id, { type: 'VIDEO_TIME', end: endSec }, (res) => {
+          if (res && res.ok) setPreviewPlaying(!res.paused);
         }).catch(() => {});
       });
-    }, 250);
+    }, 500);
     return () => clearInterval(id);
-  }, [previewPlaying]);
+  }, [endSec]);
 
   const sendToTab = (message, onResponse) => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
@@ -299,7 +294,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     return out;
   }, [segments, startSec, endSec]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!words.length) return;
     let s = words.findIndex((w) => w.end > startSec);
     if (s === -1) s = words.length - 1;
@@ -341,11 +336,11 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     if (draggingWord === 'start') {
       const clamped = Math.min(idx, wordEnd);
       setWordStart(clamped);
-      updateStart(Math.round(words[clamped].start));
+      updateStart(words[clamped].start);
     } else {
       const clamped = Math.max(idx, wordStart);
       setWordEnd(clamped);
-      updateEnd(Math.round(words[clamped].end));
+      updateEnd(words[clamped].end);
     }
   };
 
