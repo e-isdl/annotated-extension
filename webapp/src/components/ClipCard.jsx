@@ -47,16 +47,6 @@ export default function ClipCard({ clip }) {
     event.stopPropagation();
     if (canExpand) setMediaExpanded((open) => !open);
   };
-  const collapseMedia = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setMediaExpanded(false);
-  };
-  const openSource = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (clip.source_url) window.open(clip.source_url, '_blank', 'noopener,noreferrer');
-  };
 
   useEffect(() => {
     if (String(clip.id).startsWith('demo-')) return;
@@ -159,10 +149,6 @@ export default function ClipCard({ clip }) {
         <div className="source-preview source-preview-expanded">
           <div className="source-preview-media" role="button" tabIndex={0} aria-label="Collapse preview" onClick={toggleMedia} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleMedia(event); }}>
             <img src={sourceImage} alt={clip.title || 'Source preview'} className={`source-preview-image-expanded${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />
-          </div>
-          <div className="source-preview-expanded-actions" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
-            {clip.source_url && <button type="button" className="post-action no-underline" onClick={openSource}>{isXPost ? 'Open on X ↗' : 'Open source ↗'}</button>}
-            <button type="button" className="post-action" onClick={collapseMedia}>Collapse</button>
           </div>
         </div>
         ) : (
