@@ -128,7 +128,8 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .post-annotation-preview::first-letter, .annotation-lead-copy::first-letter { text-transform: uppercase; }
 .post-commentary-more { color: var(--text-muted); }
 .post-annotation-preview-clamped { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 5; -webkit-box-orient: vertical; }
-.read-more-toggle { display: inline-block; margin: 2px 2px 0; padding: 0; border: 0; background: none; color: var(--text-muted); font: 500 13px/1.4 var(--ui-font); cursor: pointer; }
+.read-more-wrap { display: flex; justify-content: flex-end; }
+.read-more-toggle { display: inline-block; margin: 4px 0 0; padding: 0; border: 0; background: none; color: var(--text-muted); font: 500 13px/1.4 var(--ui-font); cursor: pointer; }
 .read-more-toggle:hover { color: var(--text-primary); }
 .post-audio { margin: 10px 0; }
 .post-source-title { margin: 10px 2px 9px; color: var(--text-primary); font-size: 14px; font-weight: 550; line-height: 1.4; }

@@ -111,7 +111,9 @@ export default function ClipCard({ clip }) {
           <>
             <h2 ref={commentaryRef} className={`post-annotation-preview${commentaryExpanded ? '' : ' post-annotation-preview-clamped'}`}>{commentary}</h2>
             {!commentaryExpanded && commentaryOverflowing && (
-              <button type="button" className="read-more-toggle" aria-expanded="false" onClick={expandCommentary}>Show more</button>
+              <div className="read-more-wrap">
+                <button type="button" className="read-more-toggle" aria-expanded="false" onClick={expandCommentary}>Show more</button>
+              </div>
             )}
             <span className="annotation-rule" aria-hidden="true" />
           </>
@@ -139,7 +141,9 @@ export default function ClipCard({ clip }) {
               <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
             )}
             {!quoteExpanded && quoteOverflowing && (
-              <button type="button" className="read-more-toggle" aria-expanded="false" onClick={expandQuote}>Show more</button>
+              <div className="read-more-wrap">
+                <button type="button" className="read-more-toggle" aria-expanded="false" onClick={expandQuote}>Show more</button>
+              </div>
             )}
             {sourceTitle && sourceTitle !== commentary && <p className="source-title">{sourceTitle}</p>}
           </div>
