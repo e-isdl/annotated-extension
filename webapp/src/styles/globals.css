@@ -127,6 +127,9 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .post-annotation-preview { margin: 11px 2px 9px; color: #edf0f2; font-family: var(--ui-font); font-size: 19px; font-weight: 700; line-height: 1.4; letter-spacing: -.01em; }
 .post-annotation-preview::first-letter, .annotation-lead-copy::first-letter { text-transform: uppercase; }
 .post-commentary-more { color: var(--text-muted); }
+.post-annotation-preview-clamped { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 5; -webkit-box-orient: vertical; }
+.read-more-toggle { display: inline-block; margin: 2px 2px 0; padding: 0; border: 0; background: none; color: var(--text-muted); font: 500 13px/1.4 var(--ui-font); cursor: pointer; }
+.read-more-toggle:hover { color: var(--text-primary); }
 .post-audio { margin: 10px 0; }
 .post-source-title { margin: 10px 2px 9px; color: var(--text-primary); font-size: 14px; font-weight: 550; line-height: 1.4; }
 .post-text-body { margin: 4px 2px 0; color: var(--text-secondary); font: 400 14px/1.6 var(--reading-font, inherit); white-space: pre-wrap; word-break: break-word; }
@@ -138,6 +141,8 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .source-domain-link { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .source-domain-link:hover { color: var(--accent-strong); text-decoration: underline; }
 .source-quote { display: -webkit-box; overflow: hidden; margin: 9px 0 0; color: var(--text-secondary); font: 14px/1.55 var(--reading-font); -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.source-quote-clampable { -webkit-line-clamp: 6; }
+.source-quote-expanded { display: block; overflow: visible; }
 .source-quote-muted { color: var(--text-muted); font-style: italic; }
 .source-quote-poster { margin: 0 0 -4px; color: var(--text-secondary); font-size: 12px; font-weight: 650; }
 .source-title { overflow: hidden; margin: 7px 0 0; color: var(--text-muted); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
@@ -439,7 +444,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
   .source-preview { gap: 9px; min-height: 104px; border-radius: 10px; }
   .source-preview-copy { padding: 8px 0 8px 9px; }
   .source-preview-image { width: 122px; height: 92px; flex-basis: 122px; margin: 6px; }
-  .source-quote { font-size: 12px; line-height: 1.45; -webkit-line-clamp: 3; }
+  .source-quote { font-size: 12px; line-height: 1.45; -webkit-line-clamp: 6; }
   .post-actions, .detail-actions { gap: 5px; }
   .post-action { padding: 5px 8px; font-size: 10px; }
   .comment-toolbar { justify-content: space-between; gap: 6px; }
