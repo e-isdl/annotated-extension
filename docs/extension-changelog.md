@@ -586,3 +586,22 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   clip start + plays (auto-pause at end) when paused; `action: 'replay'` always
   restarts. Video lookup falls back to any `video` element.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Play clip: resume (not restart), live time, button animation
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `content.js`, `src/styles/panel.css`, this changelog.
+
+- **Play resumes**: `PLAY_FROM` with `action: 'toggle'` no longer seeks when the video
+  is paused — it just calls `play()`, so pressing Play continues from where the video
+  was paused. Only **Replay** (`action: 'replay'`) seeks back to the clip start. The
+  auto-pause-at-clip-end monitor (and its pause-listener cleanup) is (re)armed on
+  every play/resume.
+- **Live time**: new `VIDEO_TIME` message returns `{ time, paused }`; while the video
+  plays, the panel polls it every 250 ms and the label right of Replay shows the
+  moving current time (`formatShort`). If the poll sees the video paused (manual
+  pause, monitor auto-pause, or end), the button flips back to Play and polling stops.
+- **Animation**: the play icon gently pulses while the video is playing
+  (`play-pulse` keyframes on `.play-clip-main.playing svg`).
+- **Local commit only — NOT pushed.**

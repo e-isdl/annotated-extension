@@ -735,10 +735,13 @@ if (!window.__annotatedContentLoaded) {
         || document.querySelector('video');
       if (video) {
         const end = Number(message.end) || 0;
-        const shouldPlay = message.action === 'replay' || video.paused;
+        const isReplay = message.action === 'replay';
+        const shouldPlay = isReplay || video.paused;
         stopClipPlaybackMonitor();
         if (shouldPlay) {
-          try { video.currentTime = Number(message.start) || 0; } catch (e) {}
+          if (isReplay) {
+            try { video.currentTime = Number(message.start) || 0; } catch (e) {}
+          }
           video.play().catch(() => {});
           if (end > 0) {
             clipMonitor = setInterval(() => {
@@ -754,7 +757,18 @@ if (!window.__annotatedContentLoaded) {
         } else {
           video.pause();
         }
-        sendResponse({ ok: true, playing: shouldPlay });
+        sendResponse({ ok: true, playing: shouldPlay, time: video.currentTime || 0 });
+      } else {
+        sendResponse({ ok: false });
+      }
+      return true;
+    }
+    if (message.type === 'VIDEO_TIME') {
+      const video = document.querySelector('video.html5-main-video')
+        || document.querySelector('#movie_player video')
+        || document.querySelector('video');
+      if (video) {
+        sendResponse({ ok: true, time: video.currentTime || 0, paused: video.paused });
       } else {
         sendResponse({ ok: false });
       }

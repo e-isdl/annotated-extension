@@ -258,6 +258,9 @@
 .play-clip-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .play-clip-btn svg { flex-shrink: 0; color: var(--red-btn); }
 .play-clip-main { flex: 1.6; }
+.play-clip-main svg { transition: transform 0.15s ease; }
+.play-clip-main.playing svg { animation: play-pulse 1.2s ease-in-out infinite; }
+@keyframes play-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
 .play-clip-range { font-size: 14px; font-weight: 400; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 
 /* Take screen (T13/T14) */

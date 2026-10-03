@@ -172,6 +172,23 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   };
 
   const [previewPlaying, setPreviewPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  useEffect(() => {
+    if (!previewPlaying) return undefined;
+    const id = setInterval(() => {
+      chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+        if (!tab?.id) return;
+        chrome.tabs.sendMessage(tab.id, { type: 'VIDEO_TIME' }, (res) => {
+          if (res && res.ok) {
+            setCurrentTime(res.time);
+            if (res.paused) setPreviewPlaying(false);
+          }
+        }).catch(() => {});
+      });
+    }, 250);
+    return () => clearInterval(id);
+  }, [previewPlaying]);
 
   const sendToTab = (message, onResponse) => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
@@ -184,7 +201,10 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const togglePlay = () => {
     sendToTab({ type: 'PLAY_FROM', start: startSec, end: endSec, action: 'toggle' }, (res) => {
-      if (res && typeof res.playing === 'boolean') setPreviewPlaying(res.playing);
+      if (res && typeof res.playing === 'boolean') {
+        setPreviewPlaying(res.playing);
+        if (res.ok && typeof res.time === 'number') setCurrentTime(res.time);
+      }
     });
   };
 
@@ -336,7 +356,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
         <div className="play-clip">
           <button
             type="button"
-            className="play-clip-btn play-clip-main"
+            className={`play-clip-btn play-clip-main${previewPlaying ? ' playing' : ''}`}
             onClick={togglePlay}
             disabled={locked}
             aria-label={previewPlaying ? 'Pause video' : 'Play clip'}
@@ -364,7 +384,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             </svg>
             <span>Replay</span>
           </button>
-          <span className="play-clip-range">{formatShort(startSec)} – {formatShort(endSec)}</span>
+          <span className="play-clip-range">{formatShort(currentTime)}</span>
         </div>
       )}
 
