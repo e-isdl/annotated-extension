@@ -278,3 +278,43 @@ leftover mistake â€” "leave the text as it is". No code changed.
   `captureStream` + MediaRecorder). Switching is always free in T7 (locking needs a
   recording, which is T9).
 - **Local commit only — NOT pushed** (master''s last push order still stands).
+
+---
+
+## T8 — Record the clip (browser recording, no downloader)
+
+**Files touched:** `content.js`, `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`,
+this changelog.
+
+- **Content script `record-clip` handler** (`handleRecordClip`):
+  - Finds `video.html5-main-video`, else `#movie_player video`.
+  - Pre-checks with exact messages: no video / ad showing / muted or volume 0 /
+    tab hidden / range invalid / no `captureStream` ("This video can''t be recorded.
+    It may be protected.").
+  - pause -> seek to start (wait `seeked`) -> `captureStream()` -> `play()` (wait
+    `playing`; rejection -> "Press play on the video once, then try again.") ->
+    audio-track check ("No sound was captured...").
+  - Format order: `video/mp4;codecs=avc1.42E01E,mp4a.40.2` -> vp9/opus -> vp8/opus;
+    `videoBitsPerSecond 1000000`, `audioBitsPerSecond 128000`.
+  - `recorder.start(1000)`; poll every 100 ms until `currentTime >= end`, then
+    `video.pause()` + `recorder.stop()`. Progress posted 4x/s.
+  - Cancel (button, panel close/port disconnect, navigation, track ends early):
+    stop recorder, discard data, pause video, report "Recording stopped."
+- **Streaming to the panel:** port `annotated-recorder` posts `progress` / `chunk`
+  (base64, encoded in 32 KB pieces from `arrayBuffer`) / `done {mime, seconds}` /
+  `error {code, message}`. Panel decodes chunks into `Uint8Array` parts and builds
+  `new Blob(parts, {type: mime})` on `done`; port closing before `done` discards
+  everything and shows "Recording stopped."
+- **Recording card** replaces the thumbnail: pulsing red dot (animation only under
+  `prefers-reduced-motion: no-preference`), "Recording", "0:12 of 1:24", red
+  progress bar, "Keep this tab open. Don''t pause, seek or mute.", [Cancel].
+  Slider, Start/End cards and option cards dim to 45% and lock (`pointer-events:none`).
+- **Failure banner** (red-soft): reason + [Try again] + [Use embed instead]
+  (switches to Embed and clears the error).
+- Button: recording in progress -> hidden; done -> **Continue** (carries
+  `recorded_clip: {blob, mime, seconds}` in the clip payload for T9/T10);
+  otherwise Embed -> Continue, Record -> Record clip.
+- **Known limits (per spec):** recording runs in real time (1 min clip = 1 min);
+  the YouTube tab must stay open and in front; ads and DRM videos can''t be
+  recorded; quality follows the player, capped by the bitrate above.
+- **Local commit only — NOT pushed.**

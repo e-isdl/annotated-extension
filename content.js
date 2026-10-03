@@ -265,6 +265,191 @@ function getDurationFromPage() {
   return 0;
 }
 
+const MAX_CLIP_SECONDS = 90;
+let activeRecording = null;
+
+function findRecordVideo() {
+  return document.querySelector('video.html5-main-video')
+    || document.querySelector('#movie_player video')
+    || null;
+}
+
+function encodeBlobBase64(blob) {
+  return blob.arrayBuffer().then((buf) => {
+    const bytes = new Uint8Array(buf);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 32768) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768));
+    }
+    return btoa(bin);
+  });
+}
+
+function waitForEvent(target, event, timeoutMs) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      target.removeEventListener(event, finish);
+      resolve();
+    };
+    target.addEventListener(event, finish);
+    setTimeout(finish, timeoutMs || 8000);
+  });
+}
+
+function stopActiveRecording(reason) {
+  const rec = activeRecording;
+  if (!rec) return;
+  rec.cancelled = true;
+  clearInterval(rec.pollId);
+  clearInterval(rec.progressId);
+  try { rec.video.pause(); } catch (e) {}
+  try {
+    if (rec.recorder && rec.recorder.state !== 'inactive') rec.recorder.stop();
+  } catch (e) {}
+  try {
+    rec.port.postMessage({ type: 'error', code: 'stopped', message: reason || 'Recording stopped.' });
+  } catch (e) {}
+  activeRecording = null;
+}
+
+async function handleRecordClip(message, sendResponse) {
+  if (activeRecording) {
+    sendResponse({ ok: false, code: 'busy', message: 'Recording stopped.' });
+    return;
+  }
+
+  const start = Number(message.start);
+  const end = Number(message.end);
+
+  const video = findRecordVideo();
+  if (!video) return sendResponse({ ok: false, code: 'no-video', message: 'Open a YouTube video to record a clip.' });
+  if (isAdPlaying()) return sendResponse({ ok: false, code: 'ad', message: 'Wait for the ad to finish, then try again.' });
+  if (video.muted || video.volume === 0) return sendResponse({ ok: false, code: 'muted', message: 'Unmute the video so the clip has sound.' });
+  if (document.visibilityState !== 'visible') return sendResponse({ ok: false, code: 'hidden', message: 'Keep this tab in front while recording.' });
+  if (!(end > start)) return sendResponse({ ok: false, code: 'range', message: 'End time must be after start time.' });
+  if (end - start > MAX_CLIP_SECONDS) return sendResponse({ ok: false, code: 'range', message: 'Clip must be 90 seconds or less.' });
+  if (typeof video.captureStream !== 'function' && typeof video.mozCaptureStream !== 'function') {
+    return sendResponse({ ok: false, code: 'protected', message: "This video can't be recorded. It may be protected." });
+  }
+
+  const port = chrome.runtime.connect({ name: 'annotated-recorder' });
+  port.onDisconnect.addListener(() => {
+    if (activeRecording && !activeRecording.done) stopActiveRecording('Recording stopped.');
+  });
+
+  const rec = { video, port, recorder: null, pollId: null, progressId: null, cancelled: false, done: false, start, end };
+  activeRecording = rec;
+  sendResponse({ ok: true });
+
+  try {
+    video.pause();
+    video.currentTime = start;
+    await waitForEvent(video, 'seeked', 5000);
+    if (rec.cancelled) return;
+
+    let stream;
+    try {
+      stream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+    } catch (e) {
+      stopActiveRecording("This video can't be recorded. It may be protected.");
+      return;
+    }
+
+    const playingWait = waitForEvent(video, 'playing', 10000);
+    try {
+      await video.play();
+    } catch (e) {
+      stopActiveRecording('Press play on the video once, then try again.');
+      return;
+    }
+    await playingWait;
+    if (rec.cancelled) return;
+
+    if (!stream.getAudioTracks().length) {
+      video.pause();
+      stopActiveRecording("No sound was captured. Check that the video isn't muted.");
+      return;
+    }
+
+    const mimeTypes = [
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+    ];
+    const mimeType = mimeTypes.find((t) => {
+      try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; }
+    });
+
+    let recorder;
+    try {
+      recorder = new MediaRecorder(stream, {
+        ...(mimeType ? { mimeType } : {}),
+        videoBitsPerSecond: 1000000,
+        audioBitsPerSecond: 128000,
+      });
+    } catch (e) {
+      stopActiveRecording("This video can't be recorded. It may be protected.");
+      return;
+    }
+    rec.recorder = recorder;
+
+    let chunkIndex = 0;
+    recorder.ondataavailable = (e) => {
+      if (!e.data || e.data.size === 0 || rec.cancelled) return;
+      const i = chunkIndex;
+      chunkIndex += 1;
+      encodeBlobBase64(e.data).then((b64) => {
+        if (rec.cancelled) return;
+        try { port.postMessage({ type: 'chunk', i, data: b64 }); } catch (err) {}
+      }).catch(() => {});
+    };
+
+    recorder.onstop = () => {
+      clearInterval(rec.pollId);
+      clearInterval(rec.progressId);
+      try { video.pause(); } catch (e) {}
+      if (rec.cancelled) return;
+      rec.done = true;
+      try {
+        port.postMessage({
+          type: 'done',
+          mime: recorder.mimeType || mimeType || 'video/webm',
+          seconds: Math.max(0, Math.min(end, video.currentTime) - start),
+        });
+      } catch (e) {}
+      activeRecording = null;
+    };
+
+    rec.progressId = setInterval(() => {
+      if (rec.cancelled) return;
+      const t = Math.max(0, Math.min(end, video.currentTime) - start);
+      try { port.postMessage({ type: 'progress', t }); } catch (e) {}
+    }, 250);
+
+    rec.pollId = setInterval(() => {
+      if (rec.cancelled) return;
+      if (video.currentTime >= end) {
+        clearInterval(rec.pollId);
+        try { video.pause(); } catch (e) {}
+        try { if (recorder.state !== 'inactive') recorder.stop(); } catch (e) {}
+      }
+    }, 100);
+
+    stream.getVideoTracks().forEach((track) => {
+      track.addEventListener('ended', () => {
+        if (!rec.cancelled && !rec.done) stopActiveRecording('Recording stopped.');
+      });
+    });
+
+    recorder.start(1000);
+  } catch (e) {
+    stopActiveRecording('Recording stopped.');
+  }
+}
+
 if (!window.__annotatedContentLoaded) {
   window.__annotatedContentLoaded = true;
 
@@ -380,6 +565,15 @@ if (!window.__annotatedContentLoaded) {
           sendResponse({ ok: false });
         }
       })();
+      return true;
+    }
+    if (message.type === 'record-clip') {
+      handleRecordClip(message, sendResponse);
+      return true;
+    }
+    if (message.type === 'cancel-recording') {
+      stopActiveRecording('Recording stopped.');
+      sendResponse({ ok: true });
       return true;
     }
     if (message.type === 'PAUSE_MEDIA') {

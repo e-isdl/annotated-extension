@@ -180,3 +180,27 @@
 .play-card.is-selected .play-radio { border-color: var(--red); }
 .play-radio::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: transparent; }
 .play-card.is-selected .play-radio::after { background: var(--red); }
+
+/* T8: recording card, locked controls, failure banner. */
+.rec-card { border: 1px solid var(--border); background: var(--surface); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.rec-head { display: flex; align-items: center; gap: 8px; }
+.rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); flex: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .rec-dot { animation: rec-pulse 1s ease-in-out infinite; }
+}
+@keyframes rec-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.rec-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.rec-time { margin-left: auto; font-size: 14px; font-family: 'JetBrains Mono', monospace; color: var(--text-2); }
+.rec-bar { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; }
+.rec-bar-fill { height: 100%; background: var(--red); border-radius: 999px; transition: width 0.2s linear; }
+.rec-note { margin: 0; font-size: 14px; color: var(--text-2); }
+.rec-cancel { align-self: flex-start; height: 44px; padding: 0 18px; background: transparent; border: 1px solid var(--border-strong); border-radius: 12px; color: var(--text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.rec-cancel:hover { background: var(--surface-2); }
+.rec-cancel:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.rec-lock { opacity: 0.45; pointer-events: none; }
+.rec-banner { border: 1px solid color-mix(in srgb, var(--red) 45%, transparent); background: var(--red-soft); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.rec-banner-text { margin: 0; font-size: 14px; color: var(--text); }
+.rec-banner-actions { display: flex; gap: 8px; }
+.rec-banner-btn { flex: 1; height: 44px; background: transparent; border: 1px solid var(--border-strong); border-radius: 12px; color: var(--text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.rec-banner-btn:hover { background: var(--surface); }
+.rec-banner-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }

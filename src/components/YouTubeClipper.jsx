@@ -43,7 +43,9 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const [endInput, setEndInput] = useState('0:00:30');
   const [dragging, setDragging] = useState(null);
   const [playMode, setPlayMode] = useState('embed');
+  const [rec, setRec] = useState({ state: 'idle', t: 0, error: null, blob: null, mime: null });
   const trackRef = useRef(null);
+  const portRef = useRef(null);
 
   useEffect(() => {
     if (data.duration && data.duration > 0) {
@@ -76,6 +78,82 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
       })
       .catch(() => {});
   }, [data.videoId, data.duration]);
+
+  useEffect(() => {
+    const handleConnect = (port) => {
+      if (port.name !== 'annotated-recorder') return;
+      portRef.current = port;
+      const parts = [];
+      let finished = false;
+      port.onMessage.addListener((msg) => {
+        if (msg.type === 'progress') {
+          setRec((prev) => (prev.state === 'recording' ? { ...prev, t: msg.t } : prev));
+        } else if (msg.type === 'chunk') {
+          try {
+            const bin = atob(msg.data);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+            parts.push(bytes);
+          } catch (e) {}
+        } else if (msg.type === 'done') {
+          finished = true;
+          const mime = msg.mime || 'video/webm';
+          const blob = new Blob(parts, { type: mime });
+          setRec({ state: 'done', t: msg.seconds || 0, error: null, blob, mime });
+        } else if (msg.type === 'error') {
+          finished = true;
+          parts.length = 0;
+          setRec((prev) => (prev.state === 'recording'
+            ? { state: 'error', t: 0, error: msg.message || 'Recording stopped.', blob: null, mime: null }
+            : prev));
+        }
+      });
+      port.onDisconnect.addListener(() => {
+        if (portRef.current === port) portRef.current = null;
+        if (!finished) {
+          parts.length = 0;
+          setRec((prev) => (prev.state === 'recording'
+            ? { state: 'error', t: 0, error: 'Recording stopped.', blob: null, mime: null }
+            : prev));
+        }
+      });
+    };
+    chrome.runtime.onConnect.addListener(handleConnect);
+    return () => {
+      chrome.runtime.onConnect.removeListener(handleConnect);
+      try { portRef.current?.disconnect(); } catch (e) {}
+      portRef.current = null;
+    };
+  }, []);
+
+  const startRecording = async () => {
+    setRec({ state: 'recording', t: 0, error: null, blob: null, mime: null });
+    let res = null;
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) {
+        res = await chrome.tabs.sendMessage(tab.id, { type: 'record-clip', start: startSec, end: endSec });
+      }
+    } catch (e) {
+      res = null;
+    }
+    if (!res?.ok) {
+      setRec({
+        state: 'error',
+        t: 0,
+        error: (res && res.message) || 'Open a YouTube video to record a clip.',
+        blob: null,
+        mime: null,
+      });
+    }
+  };
+
+  const cancelRecording = async () => {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) await chrome.tabs.sendMessage(tab.id, { type: 'cancel-recording' });
+    } catch (e) {}
+  };
 
   const clipLen = endSec - startSec;
 
@@ -114,8 +192,13 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
       end_sec: endSec,
       duration: duration || null,
       thumbnail: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`,
+      ...(playMode === 'record' && rec.blob
+        ? { recorded_clip: { blob: rec.blob, mime: rec.mime, seconds: rec.t } }
+        : {}),
     });
   };
+
+  const canContinue = rec.state === 'done' || playMode === 'embed';
 
   const startPct = (startSec / duration) * 100;
   const endPct = (endSec / duration) * 100;
@@ -167,16 +250,34 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
 
   return (
     <div className="clip-body">
-      <div className="thumb">
-        <img
-          src={`https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`}
-          alt={data.title}
-        />
-        <span className="chip thumb-duration">{formatShort(duration)}</span>
-      </div>
+      {rec.state === 'recording' ? (
+        <div className="rec-card" role="status" aria-live="polite">
+          <div className="rec-head">
+            <span className="rec-dot" />
+            <span className="rec-title">Recording</span>
+            <span className="rec-time">{formatShort(rec.t)} of {formatShort(clipLen)}</span>
+          </div>
+          <div className="rec-bar">
+            <div
+              className="rec-bar-fill"
+              style={{ width: `${Math.min(100, clipLen > 0 ? (rec.t / clipLen) * 100 : 0)}%` }}
+            />
+          </div>
+          <p className="rec-note">Keep this tab open. Don't pause, seek or mute.</p>
+          <button type="button" className="rec-cancel" onClick={cancelRecording}>Cancel</button>
+        </div>
+      ) : (
+        <div className="thumb">
+          <img
+            src={`https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`}
+            alt={data.title}
+          />
+          <span className="chip thumb-duration">{formatShort(duration)}</span>
+        </div>
+      )}
 
       <div
-        className="scrub"
+        className={`scrub${rec.state === 'recording' ? ' rec-lock' : ''}`}
         ref={trackRef}
         onPointerDown={onTrackPointerDown}
         onPointerMove={onTrackPointerMove}
@@ -217,7 +318,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         </div>
       </div>
 
-      <div className="time-cards">
+      <div className={`time-cards${rec.state === 'recording' ? ' rec-lock' : ''}`}>
         <div className="time-card">
           <span className="time-card-label">Start</span>
           <input
@@ -257,7 +358,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         <span className="max">Max 1:30</span>
       </div>
 
-      <div className="play-section">
+      <div className={`play-section${rec.state === 'recording' ? ' rec-lock' : ''}`}>
         <p className="play-title">How should it play?</p>
         <div className="play-options" role="radiogroup" aria-label="How should it play?">
           <button
@@ -301,13 +402,34 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         </div>
       </div>
 
-      <button
-        onClick={playMode === 'record' ? undefined : handleContinue}
-        disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
-        className="btn-primary w-full"
-      >
-        {playMode === 'record' ? 'Record clip' : 'Continue'}
-      </button>
+      {rec.state === 'error' && rec.error && (
+        <div className="rec-banner" role="alert">
+          <p className="rec-banner-text">{rec.error}</p>
+          <div className="rec-banner-actions">
+            <button type="button" className="rec-banner-btn" onClick={startRecording}>Try again</button>
+            <button
+              type="button"
+              className="rec-banner-btn"
+              onClick={() => {
+                setPlayMode('embed');
+                setRec({ state: 'idle', t: 0, error: null, blob: null, mime: null });
+              }}
+            >
+              Use embed instead
+            </button>
+          </div>
+        </div>
+      )}
+
+      {rec.state !== 'recording' && (
+        <button
+          onClick={canContinue ? handleContinue : startRecording}
+          disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
+          className="btn-primary w-full"
+        >
+          {canContinue ? 'Continue' : 'Record clip'}
+        </button>
+      )}
     </div>
   );
 }
