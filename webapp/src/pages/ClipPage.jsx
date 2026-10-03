@@ -51,7 +51,13 @@ export default function ClipPage() {
   const [showTranscript, setShowTranscript] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
+  const [showEmbed, setShowEmbed] = useState(false);
   const { push } = useToast();
+
+  useEffect(() => {
+    setShowEmbed(false);
+    setVideoFailed(false);
+  }, [id]);
 
   const clipIdForPoll = clip && clip.id;
   const clipStatusForPoll = clip && clip.video_status;
@@ -364,12 +370,12 @@ export default function ClipPage() {
             </div>
           </div>
         )}
-        {clip.video_url && clip.video_status !== 'uploading' && !videoFailed && (
+        {clip.video_url && clip.video_status !== 'uploading' && !videoFailed && !showEmbed && (
           <div className="source-media">
             <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} />
           </div>
         )}
-        {(!clip.video_url || videoFailed) && clip.video_status !== 'uploading' && clip.source_type === 'youtube' && (
+        {(!clip.video_url || videoFailed || showEmbed) && clip.video_status !== 'uploading' && clip.source_type === 'youtube' && (
           <div className="source-media">
             <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
             {range && (
@@ -392,6 +398,11 @@ export default function ClipPage() {
               </div>
             )}
           </div>
+        )}
+        {clip.video_url && clip.video_status !== 'uploading' && !videoFailed && clip.source_type === 'youtube' && (
+          <button type="button" className="view-embed-toggle" onClick={() => setShowEmbed((value) => !value)}>
+            {showEmbed ? 'View recording' : 'View embed'}
+          </button>
         )}
         {clip.source_type === 'podcast' && (
           <div className="source-media"><AudioPlayer src={clip.audio_url} /></div>

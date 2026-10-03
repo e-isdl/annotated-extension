@@ -949,3 +949,23 @@ webapp/src/pages/ClipPage.jsx, this changelog.
   fill, mute, fullscreen) that fades in only on hover, over a gradient scrim.
   A spinner covers buffering. Broken video URLs still fall back to the embed.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Scroll to selection, autoplay, view embed, takes redesign
+
+Files touched: src/components/YouTubeClipper.jsx,
+webapp/src/components/ClipPlayer.jsx, webapp/src/pages/ClipPage.jsx,
+webapp/src/components/RightRail.jsx, webapp/src/styles/globals.css, this changelog.
+
+- Word clipper auto-scroll rewritten: scroll arms only on the open transition and
+  the effect tracks the derived wordStart, so even if the first attempt targets a
+  stale index the correction scroll lands on the selection. Any wheel, touch, drag
+  or double-click disarms it, so it never yanks mid-read.
+- Recorded clips autoplay (with sound; muted fallback where the browser blocks
+  sound). Switching back to a recording replays it.
+- Post page has a View embed / View recording toggle under the player when both
+  exist. Broken video URLs still fall back to the embed.
+- Get the extension now renders in the feed rail only, not inside posts.
+- Other takes redesigned: count pill in the header, rank badges, vote pills with a
+  caret, row hover states, no more divider lines.
+- Local commit only - NOT pushed. Webapp NOT deployed.

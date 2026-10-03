@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 function formatClock(s) {
   const total = Math.max(0, Math.floor(Number(s) || 0));
@@ -18,6 +18,35 @@ export default function ClipPlayer({ src, onError }) {
   const [muted, setMuted] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [scrubbing, setScrubbing] = useState(false);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return undefined;
+    v.muted = false;
+    setMuted(false);
+    setPlaying(false);
+    const attempt = () => {
+      try {
+        const p = v.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(() => {
+            try {
+              v.muted = true;
+              setMuted(true);
+              const p2 = v.play();
+              if (p2 && typeof p2.catch === 'function') p2.catch(() => {});
+            } catch {}
+          });
+        }
+      } catch {}
+    };
+    if (v.readyState >= 2) attempt();
+    else {
+      v.addEventListener('canplay', attempt, { once: true });
+      return () => v.removeEventListener('canplay', attempt);
+    }
+    return undefined;
+  }, [src]);
 
   const toggle = useCallback(() => {
     const v = videoRef.current;

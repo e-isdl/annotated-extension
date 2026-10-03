@@ -343,22 +343,33 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const wordRafRef = useRef(0);
   const wordPendingRef = useRef({ x: 0, y: 0 });
   const wordDragCleanupRef = useRef(null);
-  const wordScrolledRef = useRef(false);
   const handleStartRef = useRef(null);
   const handleEndRef = useRef(null);
 
   useEffect(() => () => { if (wordDragCleanupRef.current) wordDragCleanupRef.current(); }, []);
 
+  const wordScrollArmedRef = useRef(false);
+  const wordWasOpenRef = useRef(false);
   useEffect(() => {
-    if (!wordClipperOpen) { wordScrolledRef.current = false; return; }
-    if (wordScrolledRef.current || !words.length) return;
-    wordScrolledRef.current = true;
-    const idx = wordStateRef.current.wordStart;
-    requestAnimationFrame(() => {
+    if (!wordClipperOpen) {
+      wordWasOpenRef.current = false;
+      wordScrollArmedRef.current = false;
+      return;
+    }
+    if (!wordWasOpenRef.current) {
+      wordWasOpenRef.current = true;
+      wordScrollArmedRef.current = true;
+    }
+    if (!wordScrollArmedRef.current || !words.length) return undefined;
+    const idx = wordStart;
+    const id = requestAnimationFrame(() => {
       const el = wordAreaRef.current?.querySelector(`[data-word-index="${idx}"]`);
       if (el) el.scrollIntoView({ block: 'center' });
     });
-  }, [wordClipperOpen, words.length]);
+    return () => cancelAnimationFrame(id);
+  }, [wordClipperOpen, words.length, wordStart]);
+
+  const disarmWordScroll = () => { wordScrollArmedRef.current = false; };
 
   useLayoutEffect(() => {
     const area = wordAreaRef.current;
@@ -380,6 +391,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   });
 
   const onWordDoubleClick = useCallback((index) => {
+    wordScrollArmedRef.current = false;
     const s = wordStateRef.current;
     if (!s.words.length) return;
     const w = s.words[index];
@@ -409,6 +421,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     e.preventDefault();
     e.stopPropagation();
     if (wordDragCleanupRef.current) return;
+    wordScrollArmedRef.current = false;
     setDraggingWord(which);
     const move = (ev) => {
       ev.preventDefault();
@@ -577,7 +590,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             <p className="word-clipper-msg">No transcript available for this video.</p>
           ) : (
             <>
-              <div className={`word-area${draggingWord ? ' is-dragging' : ''}`} data-drag={draggingWord || ''} ref={wordAreaRef}>
+              <div className={`word-area${draggingWord ? ' is-dragging' : ''}`} data-drag={draggingWord || ''} ref={wordAreaRef} onWheel={disarmWordScroll} onTouchMove={disarmWordScroll}>
                 {words.map((w, i) => (
                   <Word
                     key={i}

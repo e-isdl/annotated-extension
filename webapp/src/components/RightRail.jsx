@@ -163,12 +163,18 @@ export default function RightRail() {
 
       {takes.length > 0 && (
         <section className="rail-card takes-card">
-          <h2 className="rail-heading">Other takes on this source</h2>
+          <div className="takes-head">
+            <h2 className="rail-heading">Other takes on this source</h2>
+            <span className="takes-count">{takes.length}</span>
+          </div>
           <div className="takes-list">
-            {takes.map((take) => (
+            {takes.map((take, i) => (
               <Link key={take.id} to={postHref(take)} className="take-item no-underline">
-                <span className="take-title">{take.title || 'Untitled take'}</span>
-                <span className="take-meta"><span>@{take.profiles?.handle}</span><span>{take.score || 0} votes</span></span>
+                <span className="take-rank">{i + 1}</span>
+                <span className="take-body">
+                  <span className="take-title">{take.title || 'Untitled take'}</span>
+                  <span className="take-meta"><span>@{take.profiles?.handle}</span><span className="take-votes">{take.score || 0} votes</span></span>
+                </span>
               </Link>
             ))}
           </div>
@@ -176,7 +182,7 @@ export default function RightRail() {
       )}
 
       <footer className="rail-footer">
-        <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
+        {!postRef && <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>}
         <a href="https://github.com/e-isdl/annotated-extension" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </footer>
     </aside>
