@@ -914,3 +914,17 @@ Files touched: src/components/YouTubeClipper.jsx, this changelog.
 - Applied clip_video_view to production (create or replace view, two columns
   appended, grants preserved) and re-verified both columns present.
 - No code change. Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Article clip copy trim
+
+Files touched: src/components/ArticleClipper.jsx, src/components/AnnotationForm.jsx,
+this changelog.
+
+- Empty article card now reads Quote up to 200 words, you can edit it before posting
+  (em dash and trailing period removed).
+- Grab selection ghost button removed, plus its now-unused grabSelection handler.
+  Selecting text on the page still auto-fills via the page-info flow.
+- Removed the Everyone can see this. It links to the original. note from under
+  Post annotation.
+- Local commit only - NOT pushed.

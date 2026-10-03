@@ -18,16 +18,6 @@ export default function ArticleClipper({ pageInfo, onReady }) {
   const hasText = selectedText.trim().length > 0;
   const warnAt = Math.ceil(WORD_LIMIT * 0.9);
 
-  const grabSelection = () => {
-    chrome.runtime.sendMessage({ type: 'GET_PAGE_INFO' }, (res) => {
-      const text = res?.data?.selectedText;
-      if (text) {
-        setSelectedText(text);
-        setEditing(false);
-      }
-    });
-  };
-
   const handleContinue = () => {
     if (!hasText || isOverLimit) return;
     onReady({
@@ -57,10 +47,7 @@ export default function ArticleClipper({ pageInfo, onReady }) {
             <path d="M4 21h16" stroke="var(--text)" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
           <p className="article-line1"><span className="hl-full">Select text</span> on the page to quote it.</p>
-          <p className="article-line2">Quote up to {WORD_LIMIT} words — you can edit it before posting.</p>
-          <button type="button" className="btn-ghost article-grab" onClick={grabSelection}>
-            Grab selection
-          </button>
+          <p className="article-line2">Quote up to {WORD_LIMIT} words, you can edit it before posting</p>
         </div>
       ) : (
         <div className="article-card has-quote">

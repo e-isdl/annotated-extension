@@ -493,7 +493,6 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
           'Post annotation'
         )}
       </button>
-      <p className="take-note">Everyone can see this. It links to the original.</p>
     </div>
   );
 }
