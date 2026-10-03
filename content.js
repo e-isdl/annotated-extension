@@ -315,6 +315,22 @@ function stopActiveRecording(reason) {
   activeRecording = null;
 }
 
+function disableYouTubeCaptions() {
+  try {
+    const btn = document.querySelector('.ytp-subtitles-button');
+    if (!btn) return;
+    let on = null;
+    const pressed = btn.getAttribute('aria-pressed');
+    if (pressed === 'true') on = true;
+    else if (pressed === 'false') on = false;
+    if (on === null) {
+      const win = document.querySelector('.ytp-caption-window-container');
+      on = !!(win && win.childElementCount > 0);
+    }
+    if (on) btn.click();
+  } catch (e) {}
+}
+
 async function handleRecordClip(message, sendResponse) {
   if (activeRecording) {
     sendResponse({ ok: false, code: 'busy', message: 'Recording stopped.' });
@@ -343,6 +359,7 @@ async function handleRecordClip(message, sendResponse) {
   const rec = { video, port, recorder: null, pollId: null, progressId: null, cancelled: false, done: false, start, end };
   activeRecording = rec;
   sendResponse({ ok: true });
+  disableYouTubeCaptions();
 
   try {
     video.pause();

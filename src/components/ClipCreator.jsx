@@ -145,7 +145,7 @@ export default function ClipCreator({ pageInfo, session }) {
   const renderClipper = () => {
     if (!pageInfo) return <div className="p-4 text-text-muted text-sm">Navigate to a page to start clipping.</div>;
     switch (pageInfo.type) {
-      case 'youtube': return <YouTubeClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
+      case 'youtube': return <YouTubeClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} published={step === 'success'} />;
       case 'article': return <ArticleClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
       case 'x': return <TweetClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
       case 'podcast': return <PodcastClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;

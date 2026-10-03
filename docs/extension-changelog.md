@@ -349,3 +349,31 @@ this changelog.
 - Kept the modest trims: heading **18px** (was 20), thumbnail capped at
   **140px** (uncapped 16:9 is ~180), clip-body gap 12 (was 14), paddings slightly lean.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Thumbnail resize + captions auto-off + T9 — Show the recorded clip
+
+**Files touched:** `src/styles/panel.css`, `content.js`, `src/components/YouTubeClipper.jsx`,
+`src/components/ClipCreator.jsx`, this changelog.
+
+- Thumbnail cap 140 -> **120px** (master''s nudge).
+- **Recorder disables YouTube captions automatically:** right after the record-clip
+  checks pass, `disableYouTubeCaptions()` reads the `.ytp-subtitles-button`
+  aria-pressed state (falls back to caption-window visibility) and clicks it only
+  when captions are ON, so burned-in-style overlays never end up in the file.
+
+### T9 — recorded clip preview
+- On `done`, the thumbnail area becomes `<video controls>` playing the recorded
+  Blob via `URL.createObjectURL` (16:9, radius 16, object-fit contain on black).
+- Under it: "**1 min 24 s, 9.8 MB**" line (14px, --text-2; `formatLength` + `formatBytes`).
+- Buttons under that: **Re-record** (secondary — discards, revokes the object URL,
+  unlocks everything, playMode stays Record) and **Use embed instead** (ghost —
+  discards and switches to Embed). Primary button reads **Continue**.
+- While a recording exists (done), slider, Start/End cards and option cards are
+  **locked** (45% dim, pointer-events off) so the range can''t drift from the file.
+- Object URLs are revoked on change/unmount; after the post is made
+  (`published` prop from ClipCreator''s success step) the recording is discarded,
+  so a fresh Take always starts clean. Back-from-Take keeps the recording
+  (component stays mounted).
+- **Local commit only — NOT pushed.**
