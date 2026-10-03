@@ -140,28 +140,24 @@ export default function RightRail() {
       ) : null}
 
       {communities.length > 0 && <section className="rail-card">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2.5">
           <h2 className="rail-heading">Communities to explore</h2>
-          <Link to="/explore" className="text-[11px] text-accent-text hover:text-accent">See all</Link>
+          <Link to="/explore" className="text-[10px] text-accent-text hover:text-accent">See all</Link>
         </div>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {communities.slice(0, 3).map((item) => (
-            <Link key={item.slug} to={`/c/${item.slug}`} className="flex items-center gap-3 no-underline group">
-              <CommunityAvatar slug={item.slug} name={item.name} className="community-dot community-dot-lg" />
+            <Link key={item.slug} to={`/c/${item.slug}`} className="flex items-center gap-2.5 no-underline group">
+              <CommunityAvatar slug={item.slug} name={item.name} className="community-dot" />
               <span className="min-w-0 flex-1">
-          <span className="block text-sm text-text-primary group-hover:text-accent-text truncate">c/{item.name}</span>
-          {item.members > 1 && <span className="block text-[11px] text-text-muted mt-0.5">{item.members} members</span>}
+          <span className="block text-xs text-text-primary group-hover:text-accent-text truncate">c/{item.name}</span>
+          {item.members > 1 && <span className="block text-[10px] text-text-muted mt-0.5">{item.members} members</span>}
               </span>
             </Link>
           ))}
         </div>
       </section>}
 
-      <section className="rail-card rail-extension-card">
-        <h2 className="rail-heading">Get the extension</h2>
-        <p className="rail-extension-copy">Annotate any video or article in two clicks.</p>
-        <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer" className="btn-primary rail-extension-button">Add to Chrome</a>
-      </section>
+      <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer" className="rail-extension-link">Get the extension</a>
 
       <footer className="rail-footer">
         <a href="https://github.com/e-isdl/annotated-extension" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
