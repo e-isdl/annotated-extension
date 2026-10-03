@@ -14,6 +14,7 @@ const COMMUNITY_PFPS = {
   startups: '/pfps/startups.svg',
   'internet-culture': '/pfps/internet-culture.svg',
   'tv-and-film': '/pfps/tv-and-film.svg',
+  politics: '/pfps/politics.svg',
 };
 
 export function communityPfpUrl(slug = '') {

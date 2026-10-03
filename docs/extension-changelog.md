@@ -1117,3 +1117,14 @@ this changelog. Production: one row inserted into communities.
   searchable community picker, the permanent word-clipper Continue bar, true
   caption word timings, live-position clip start, and the scroll-chain fix.
 - Pushed to master (webapp redeploys from it).
+---
+
+## Politics community
+
+Files touched: webapp/public/pfps/politics.svg (new),
+webapp/src/lib/community.js, this changelog. Production: one row inserted
+into communities.
+
+- New community Politics (slug politics) live in the database, with a red/blue
+  split ballot-box SVG pfp wired into the pfp map.
+- Local commit only - NOT pushed. Webapp NOT deployed.
