@@ -244,7 +244,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .annotation-lead-kicker { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 .annotation-lead-author { display: flex; align-items: center; gap: 8px; min-height: 28px; margin-top: 6px; }
 .annotation-lead-handle { color: var(--text-secondary); font-size: 12px; font-weight: 650; }
-.annotation-lead-copy { display: block; margin: 7px 0 0; color: #E8E8E8; font: 500 18px/1.5 var(--ui-font); letter-spacing: -.01em; }
+.annotation-lead-copy { display: block; margin: 7px 0 0; color: var(--text); font: 500 18px/1.5 var(--ui-font); letter-spacing: -.01em; }
 .annotation-edit-trigger { color: var(--text-secondary); }
 .annotation-edit-trigger:hover { color: var(--accent-strong); }
 .annotation-edit-form { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; }
@@ -293,8 +293,8 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .detail-actions .post-action-icon { flex: 0 0 auto; }
 .detail-overflow-end { margin-left: auto; }
 .detail-overflow-end .overflow-menu { top: calc(100% + 6px); bottom: auto; }
-.source-link { color: #8A8A8A; font-size: 13px; text-decoration: none; }
-.source-link:hover { color: #E8E8E8; text-decoration: underline; }
+.source-link { color: var(--text-3); font-size: 13px; text-decoration: none; }
+.source-link:hover { color: var(--text); text-decoration: underline; }
 .real-source-link { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; margin-top: 5px; font-size: 13px; }
 .source-timestamp-range { display: inline-flex; align-items: center; gap: 7px; }
 .detail-overflow { position: relative; }
@@ -511,7 +511,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .yt-range__clip { position: absolute; top: 0; bottom: 0; min-width: 2px; border-radius: 3px; background: var(--warn); }
 .yt-range__tick { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--text); }
 .yt-range__labels { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; font-size: 12px; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.yt-range__bound { color: #8A8A8A; opacity: 1; }
+.yt-range__bound { color: var(--text-3); opacity: 1; }
 .yt-range__range { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--warn); font-weight: 600; }
 
 
