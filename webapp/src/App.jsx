@@ -23,6 +23,7 @@ import { ToastProvider } from './components/ToastProvider';
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <ToastProvider>
         <div className="min-h-screen bg-bg-base text-text-primary font-ui">
           <Navbar />
@@ -32,6 +33,12 @@ export default function App() {
       </ToastProvider>
     </BrowserRouter>
   );
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
 }
 
 function AppShell() {
