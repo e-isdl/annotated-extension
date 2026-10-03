@@ -171,6 +171,13 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     }
   };
 
+  const playFromStart = () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+      if (!tab?.id) return;
+      chrome.tabs.sendMessage(tab.id, { type: 'PLAY_FROM', start: startSec }).catch(() => {});
+    });
+  };
+
   const cancelRecording = async () => {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -312,13 +319,18 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
           </div>
         </div>
       ) : (
-        <div className="thumb">
-          <img
-            src={`https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`}
-            alt={data.title}
-          />
-          <span className="chip thumb-duration">{formatShort(duration)}</span>
-        </div>
+        <button
+          type="button"
+          className="play-clip"
+          onClick={playFromStart}
+          disabled={locked}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5.5v13l11-6.5-11-6.5z" fill="currentColor" />
+          </svg>
+          <span className="play-clip-label">Play clip</span>
+          <span className="play-clip-range">{formatShort(startSec)} – {formatShort(endSec)}</span>
+        </button>
       )}
 
       <div

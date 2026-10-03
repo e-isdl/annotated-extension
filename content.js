@@ -716,6 +716,18 @@ if (!window.__annotatedContentLoaded) {
       sendResponse({ ok: true });
       return true;
     }
+    if (message.type === 'PLAY_FROM') {
+      const video = document.querySelector('video.html5-main-video')
+        || document.querySelector('#movie_player video');
+      if (video) {
+        try { video.currentTime = Number(message.start) || 0; } catch (e) {}
+        video.play().catch(() => {});
+        sendResponse({ ok: true });
+      } else {
+        sendResponse({ ok: false });
+      }
+      return true;
+    }
     if (message.type === 'CLEAR_HIGHLIGHT') {
       clearArticleHighlight();
       sendResponse({ ok: true });

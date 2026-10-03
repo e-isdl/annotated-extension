@@ -475,3 +475,16 @@ this changelog.
 - `.annotation-mark` CSS rule kept (still used by TweetClipper).
 
 Checks: `npm run build` passes. **Local commit only — NOT pushed.**
+
+---
+
+## Clip screen: thumbnail -> Play clip button
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `content.js`, `src/styles/panel.css`, this changelog.
+
+- The YouTube clip screen no longer shows the video thumbnail. In its place a full-width
+  **Play clip** button (surface card, play icon, range label `1:23 - 2:45`).
+- Clicking it sends `PLAY_FROM { start }` to the tab; `content.js` seeks
+  `video.html5-main-video` to the clip start and plays, so the person previews the exact
+  range they are about to clip. Disabled while recording/recorded (locked).
+- **Local commit only — NOT pushed.**
