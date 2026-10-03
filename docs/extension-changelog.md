@@ -83,6 +83,30 @@ this changelog (new).
 
 ---
 
+## T2 — Make text bigger and brighter — SKIPPED (master's order)
+
+The plan predates the current state: tokens.css already holds the palette, the dark
+theme already uses the brighter text values, light mode is the default, and the 14px
+minimum font override already exists in `panel.css`. Master reviewed and called T2 a
+leftover mistake — "leave the text as it is". No code changed.
+
+---
+
+## T3 — Avatar menu
+
+**Files touched:** `src/components/ClipCreator.jsx`, this changelog.
+
+- Header is now 56px (`h-14`), 20px side padding.
+- Left: red rounded "A" mark (28px) + "Annotated" wordmark at 18px/700.
+- Right: theme toggle (kept from the light-mode task) + 36px round avatar button
+  (Google avatar image from `user_metadata.avatar_url`/`picture`, letter fallback).
+- Avatar opens a dropdown (`role="menu"`) with a single "Sign out" item; closes on
+  outside click and Escape; `aria-haspopup`/`aria-expanded` set; focus rings 2px/2px
+  offset using `--focus`.
+- Old dim "Sign out" text link removed.
+
+---
+
 ## Pre-list task (master's request) — Extension light mode (webapp palette), default
 
 - `src/styles/tokens.css` — light block = webapp warm-pastel values, now the CSS

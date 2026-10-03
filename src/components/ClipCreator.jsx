@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import YouTubeClipper from './YouTubeClipper';
 import ArticleClipper from './ArticleClipper';
 import TweetClipper from './TweetClipper';
@@ -32,6 +32,27 @@ export default function ClipCreator({ pageInfo, session }) {
     document.documentElement.dataset.theme = next;
     localStorage.setItem('annotated-theme', next);
   };
+
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef(null);
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const onPointerDown = (event) => {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target)) setAvatarMenuOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setAvatarMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [avatarMenuOpen]);
+  const avatarUrl = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture || null;
+  const avatarName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
+  const avatarInitial = avatarName.trim().charAt(0).toUpperCase() || '?';
   const [transcriptCache, setTranscriptCache] = useState(null);
   const [currentTranscript, setCurrentTranscript] = useState(null);
   const [communities, setCommunities] = useState([]);
@@ -123,15 +144,18 @@ export default function ClipCreator({ pageInfo, session }) {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border-subtle shrink-0">
-        <span className="font-bold text-sm tracking-tight text-text-primary">Annotated</span>
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between h-14 px-5 border-b border-border-subtle shrink-0">
+        <div className="flex items-center gap-2.5">
+          <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-accent text-white font-bold text-sm select-none">A</span>
+          <span className="font-bold text-[18px] tracking-tight text-text-primary">Annotated</span>
+        </div>
+        <div className="flex items-center gap-2 relative" ref={avatarMenuRef}>
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
             title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
-            className="flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-[var(--bg)]"
           >
             {theme === 'dark' ? (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41"/></svg>
@@ -140,9 +164,31 @@ export default function ClipCreator({ pageInfo, session }) {
             )}
           </button>
           <button
-            onClick={() => supabase.auth.signOut()}
-            className="text-xs text-text-muted hover:text-text-secondary transition-colors"
-          >Sign out</button>
+            type="button"
+            onClick={() => setAvatarMenuOpen((open) => !open)}
+            aria-haspopup="menu"
+            aria-expanded={avatarMenuOpen}
+            aria-label="Account menu"
+            className="w-9 h-9 rounded-full overflow-hidden border border-border bg-bg-raised flex items-center justify-center hover:border-border-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-[var(--bg)]"
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm font-bold text-text-secondary">{avatarInitial}</span>
+            )}
+          </button>
+          {avatarMenuOpen && (
+            <div role="menu" className="absolute right-0 top-full mt-1.5 min-w-[150px] rounded-xl border border-border bg-bg-surface shadow-lg py-1 z-50">
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => supabase.auth.signOut()}
+                className="w-full text-left px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-bg-raised transition-colors focus-visible:outline-none focus-visible:bg-bg-raised"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
