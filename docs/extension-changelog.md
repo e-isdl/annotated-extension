@@ -1174,3 +1174,10 @@ Files touched: content.js, this changelog.
   matter what YouTube plays. Bitrate retuned for the size (700k video, 96k
   audio). Draw loop and canvas track are torn down on stop and on cancel.
 - Local commit only - NOT pushed.
+---
+
+## Release v2.3.7
+
+- Manifest bumped 2.3.6 to 2.3.7. Ships true 240p recording lock via canvas
+  downscale with retuned bitrate.
+- Pushed to master.
