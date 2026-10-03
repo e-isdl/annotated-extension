@@ -120,3 +120,62 @@
 
 /* A1 design tokens: enforce a 14px minimum font size across the panel. */
 .text-xs, .text-[9px], .text-[10px], .text-\[10px\], .text-\[11px\], .text-\[12px\], .text-\[13px\] { font-size: 14px; }
+
+/* T5: compact flow header (rail, source strip, heading). */
+.flow-pad { padding: 0 16px; }
+.flow-rail { display: flex; align-items: center; gap: 10px; padding-top: 12px; }
+.flow-stop { display: inline-flex; align-items: center; gap: 7px; padding: 3px 2px; background: none; border: 0; font-family: inherit; flex: none; }
+button.flow-stop { cursor: pointer; border-radius: 6px; }
+button.flow-stop:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.flow-dot { width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--border-strong); background: transparent; flex: none; }
+.flow-dot.is-filled { background: var(--red); border-color: var(--red); }
+.flow-label { font-size: 14px; font-weight: 600; color: var(--text-3); }
+.flow-label.is-current { color: var(--text); }
+.flow-line { flex: 1; height: 2px; background: var(--border); border-radius: 1px; }
+.flow-line.is-done { background: var(--red); }
+
+.source-strip { border-left: 3px solid var(--border-strong); padding-left: 12px; margin-top: 12px; }
+.source-strip-row { display: flex; align-items: center; gap: 8px; }
+.source-strip-icon { display: inline-flex; color: var(--text-2); flex: none; }
+.source-strip-platform { font-size: 14px; font-weight: 600; color: var(--text-2); }
+.source-strip-open { margin-left: auto; background: none; border: 0; padding: 4px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--red); cursor: pointer; border-radius: 6px; }
+.source-strip-open:hover { text-decoration: underline; }
+.source-strip-open:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.source-strip-title { margin: 4px 0 0; font-size: 15px; font-weight: 600; line-height: 1.35; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.flow-heading { margin: 12px 0 0; font-size: 18px; font-weight: 700; line-height: 1.3; color: var(--text); }
+
+/* T5: clip screen. */
+.clip-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+.thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; background: #000; border: 1px solid var(--border); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.chip { position: absolute; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 600; line-height: 1; color: #fff; }
+.thumb-preview { left: 8px; bottom: 8px; background: color-mix(in srgb, var(--bg) 80%, transparent); border: 0; cursor: pointer; font-family: inherit; }
+.thumb-preview:hover { background: color-mix(in srgb, var(--bg) 95%, transparent); }
+.thumb-preview:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.thumb-duration { right: 8px; bottom: 8px; background: color-mix(in srgb, var(--bg) 80%, transparent); font-family: 'JetBrains Mono', monospace; }
+
+.scrub { padding: 6px 24px; touch-action: none; }
+.scrub-track { position: relative; height: 8px; background: var(--border); border-radius: 999px; }
+.scrub-fill { position: absolute; top: 0; bottom: 0; background: var(--red); border-radius: 999px; pointer-events: none; }
+.scrub-handle { position: absolute; top: 50%; width: 28px; height: 28px; box-sizing: border-box; border-radius: 50%; background: #fff; border: 3px solid var(--red); cursor: grab; z-index: 2; }
+.scrub-handle::after { content: ''; position: absolute; inset: -8px; }
+.scrub-handle.is-start { transform: translate(-100%, -50%); }
+.scrub-handle.is-end { transform: translate(0, -50%); }
+.scrub-handle:active { cursor: grabbing; }
+.scrub-handle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.time-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.time-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.time-card-label { font-size: 14px; font-weight: 600; color: var(--text-2); }
+.time-input { width: 100%; box-sizing: border-box; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; padding: 6px 8px; outline: none; min-width: 0; }
+.time-input:focus { border-color: var(--red); }
+.nudge-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nudge { height: 44px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: border-color 0.15s; }
+.nudge:hover { border-color: var(--border-strong); }
+.nudge:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.length-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; color: var(--text-2); }
+.length-row .over { color: var(--red); font-weight: 600; }
+.length-row .max { color: var(--text-3); }
+.clip-error { font-size: 14px; color: var(--red); margin: 0; }

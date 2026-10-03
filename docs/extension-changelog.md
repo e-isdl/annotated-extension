@@ -122,3 +122,53 @@ leftover mistake â€” "leave the text as it is". No code changed.
   light mode (webapp palette) as the *default* after this plan was written. Light
   stays default; dark theme is fully themed per the plan's design rules.
   Commit `c95282e`.
+
+---
+
+## T4 — Progress rail + source strip — REJECTED, REVERTED (master's order)
+
+**Files touched:** commit `45f9eef`, reverted by `2e59a56`.
+
+- Master's complaints: repetition (title shown twice), text too big, forced scrolling
+  to type, visual mistakes. The whole T4 commit was reverted: FlowHeader deleted,
+  old numbered step indicator restored, button spec restored (`disabled:opacity-40`).
+- T5 reintroduces rail + strip + heading in a compact form (14–18px text, no repeated
+  titles) per the master's feedback.
+
+---
+
+## Future work (master's order) — Recorded YouTube clips at 240p, hosted on server
+
+- The clips recorded from YouTube (T7/T8 flow) must be **downgraded to 240p — or
+  recorded at 240p — and then hosted on the server**. Small files, cheap storage.
+- Not implemented yet; applies when T8 (record) / T10 (post the clip) are built.
+
+---
+
+## T5 — Redesign the clip screen (compact header, thumbnail, scrub, time cards)
+
+**Files touched:** `src/components/YouTubeClipper.jsx` (rewrite), `src/components/FlowHeader.jsx`
+(recreated, compact), `src/components/ClipCreator.jsx`, `src/styles/panel.css`,
+`src/components/ArticleClipper.jsx`, `src/components/PodcastClipper.jsx`,
+`src/components/TweetClipper.jsx`, this changelog.
+
+- **Compact flow header** (fixes T4's complaints): rail labels 14px/600, dots 12px,
+  strip title 15px clamp-2 with 14px platform row, heading **18px** (was 26px),
+  tight margins (12px), 16px side padding — no more oversized text or scroll push.
+- **No repeated titles:** badge/title rows removed from ArticleClipper,
+  PodcastClipper, TweetClipper (strip owns platform + title now).
+- **Thumbnail:** clean 16:9, bottom-left Preview/Stop chip (white on `--bg` 80%),
+  bottom-right duration chip; no overlay text, no centered play button.
+  Preview plays the range in-panel (YouTube iframe, start/end/autoplay); Stop
+  unmounts it. Interpretation logged: doc said "runs the existing preview action"
+  but also forbade the big centered play block.
+- **Scrub slider:** 8px `--border` track, `--red` fill, 28px white handles with red
+  ring placed **fully outside** the selected range (start `translateX(-100%)`,
+  end `translateX(0)`) ? never overlap, even for a 5s clip; 44px hit area
+  (`::after inset:-8px`); pointer drag (nearest-handle capture) + keyboard
+  arrows (Shift = 5s); `role="slider"` + aria values.
+- **Start/End cards:** side-by-side `1fr 1fr` grid, 16px radius, label 14/600,
+  time field 24px/700 mono tabular (`h:mm:ss`, parse supports 1/2/3 parts),
+  -5s/+5s nudge buttons 44px. Set start/end buttons come in T6.
+- **Length row:** "Clip length 1 min 24 s" (red when >90s) / "Max 1:30" 14px.
+- Continue button unchanged (T7 renames it).

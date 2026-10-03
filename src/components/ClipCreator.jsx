@@ -5,6 +5,7 @@ import TweetClipper from './TweetClipper';
 import PodcastClipper from './PodcastClipper';
 import AnnotationForm from './AnnotationForm';
 import SuccessScreen from './SuccessScreen';
+import FlowHeader from './FlowHeader';
 import { supabase } from '../lib/supabase';
 import { createExtensionPost } from '../lib/postPublishing';
 import { pageIdentity } from '../lib/pageInfo';
@@ -152,18 +153,6 @@ export default function ClipCreator({ pageInfo, session }) {
     }
   };
 
-  const getStepLabel = (stepName) => {
-    if (stepName === 'annotate') return 'Annotate';
-    if (!pageInfo) return 'Select clip';
-    switch (pageInfo.type) {
-      case 'youtube': return 'Select range';
-      case 'article': return 'Select text';
-      case 'x': return 'Post';
-      case 'podcast': return 'Select range';
-      default: return 'Select clip';
-    }
-  };
-
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <header className="flex items-center justify-between h-14 px-5 border-b border-border-subtle shrink-0">
@@ -221,19 +210,7 @@ export default function ClipCreator({ pageInfo, session }) {
       </header>
 
       {step !== 'success' && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-border-subtle bg-bg-surface shrink-0">
-          {['clip', 'annotate'].map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              {i > 0 && <div className="w-6 h-px bg-border" />}
-              <div className={`flex items-center gap-1.5 text-xs font-medium ${step === s ? 'text-accent' : step === 'annotate' && s === 'clip' ? 'text-text-muted' : 'text-text-muted'}`}>
-                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${step === s ? 'bg-accent text-bg-base' : 'bg-bg-raised text-text-muted'}`}>
-                  {i + 1}
-                </div>
-                {getStepLabel(s)}
-              </div>
-            </div>
-          ))}
-        </div>
+        <FlowHeader step={step} pageInfo={pageInfo} onBackToFirst={() => setStep('clip')} />
       )}
 
       <div className="flex-1 overflow-y-auto">

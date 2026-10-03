@@ -77,11 +77,6 @@ export default function PodcastClipper({ pageInfo, onReady }) {
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <span className="badge badge-podcast">Podcast</span>
-        <span className="text-xs text-text-secondary truncate">{pageInfo.data.title}</span>
-      </div>
-
       <div className="bg-bg-surface border border-border rounded-lg p-5 flex flex-col items-center gap-4">
         <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all ${recording ? 'bg-claim/20 animate-pulse' : 'bg-bg-raised'}`}>
           🎙️

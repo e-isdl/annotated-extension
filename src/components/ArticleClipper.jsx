@@ -29,11 +29,6 @@ export default function ArticleClipper({ pageInfo, onReady }) {
 
   return (
     <div className="p-6 flex flex-col gap-5">
-      <div className="flex items-center gap-3">
-        <span className="badge badge-article">Article</span>
-        <span className="text-sm text-text-secondary truncate">{data.title}</span>
-      </div>
-
       <div className="bg-bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-text-muted font-medium uppercase tracking-wide">Selected text</p>

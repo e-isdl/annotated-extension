@@ -1,13 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 function formatTime(s) {
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
+  s = Math.max(0, Math.floor(s));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+function formatShort(s) {
+  s = Math.max(0, Math.floor(s));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
   return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+function formatLength(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  if (m && sec) return `${m} min ${sec} s`;
+  if (m) return `${m} min`;
+  return `${sec} s`;
 }
 
 function parseTime(str) {
   const parts = str.split(':').map(Number);
+  if (parts.some((n) => isNaN(n))) return NaN;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
   if (parts.length === 2) return parts[0] * 60 + parts[1];
   if (parts.length === 1) return parts[0];
   return 0;
@@ -19,15 +40,17 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const [startSec, setStartSec] = useState(0);
   const [endSec, setEndSec] = useState(Math.min(30, data.duration || 300));
   const [error, setError] = useState('');
-  const [startInput, setStartInput] = useState('0:00');
-  const [endInput, setEndInput] = useState('0:30');
+  const [startInput, setStartInput] = useState('0:00:00');
+  const [endInput, setEndInput] = useState('0:00:30');
   const [previewMode, setPreviewMode] = useState(false);
+  const [dragging, setDragging] = useState(null);
+  const trackRef = useRef(null);
 
   useEffect(() => {
     if (data.duration && data.duration > 0) {
       setDuration(data.duration);
       setEndSec(Math.min(30, data.duration));
-      setStartInput('0:00');
+      setStartInput(formatTime(0));
       setEndInput(formatTime(Math.min(30, data.duration)));
       return;
     }
@@ -101,168 +124,170 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const startPct = (startSec / duration) * 100;
   const endPct = (endSec / duration) * 100;
 
-  return (
-    <div className="p-6 flex flex-col gap-5">
-      <div className="flex items-center gap-3">
-        <span className="badge badge-youtube">YouTube</span>
-        <span className="text-sm text-text-secondary truncate">{data.title}</span>
-      </div>
+  const secFromClientX = (clientX) => {
+    const el = trackRef.current;
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    const pct = rect.width > 0 ? (clientX - rect.left) / rect.width : 0;
+    return Math.min(duration, Math.max(0, pct * duration));
+  };
 
-      {previewMode ? (
-        <div className="rounded-xl overflow-hidden border border-border aspect-video bg-black">
-          <a
-            href={`https://www.youtube.com/watch?v=${data.videoId}&t=${Math.floor(startSec)}s`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center gap-4 text-center p-6"
-          >
-            <div className="w-18 h-18 rounded-full bg-accent/20 flex items-center justify-center">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="text-accent">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-lg font-medium text-text-primary">Watch clip on YouTube</p>
-              <p className="text-base text-text-secondary mt-1">{formatTime(startSec)} → {formatTime(endSec)}</p>
-            </div>
-          </a>
-        </div>
-      ) : (
-        <div className="rounded-xl overflow-hidden border border-border aspect-video bg-bg-raised relative">
+  const applyDrag = (which, sec) => {
+    if (which === 'start') updateStart(Math.round(Math.min(sec, endSec - 1)));
+    else updateEnd(Math.round(Math.max(sec, startSec + 1)));
+  };
+
+  const onTrackPointerDown = (e) => {
+    const sec = secFromClientX(e.clientX);
+    const which = Math.abs(sec - startSec) <= Math.abs(sec - endSec) ? 'start' : 'end';
+    setDragging(which);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    applyDrag(which, sec);
+  };
+
+  const onHandlePointerDown = (which) => (e) => {
+    e.stopPropagation();
+    setDragging(which);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onTrackPointerMove = (e) => {
+    if (!dragging) return;
+    applyDrag(dragging, secFromClientX(e.clientX));
+  };
+
+  const onTrackPointerUp = () => setDragging(null);
+
+  const onHandleKeyDown = (which) => (e) => {
+    const step = e.shiftKey ? 5 : 1;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (which === 'start') updateStart(startSec - step); else updateEnd(endSec - step);
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (which === 'start') updateStart(startSec + step); else updateEnd(endSec + step);
+    }
+  };
+
+  return (
+    <div className="clip-body">
+      <div className="thumb">
+        {previewMode ? (
+          <iframe
+            src={`https://www.youtube.com/embed/${data.videoId}?start=${Math.floor(startSec)}&end=${Math.ceil(endSec)}&autoplay=1&rel=0`}
+            title="Clip preview"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
           <img
             src={`https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`}
             alt={data.title}
-            className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-base text-white/80 mb-2">Clip from</p>
-              <p className="text-3xl font-bold text-[var(--on-red)] font-mono">{formatTime(startSec)} → {formatTime(endSec)}</p>
-              <p className="text-sm text-white/60 mt-1">{clipLen}s selected</p>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+        <button
+          type="button"
+          className="chip thumb-preview"
+          onClick={() => setPreviewMode(!previewMode)}
+        >
+          {previewMode ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+          )}
+          {previewMode ? 'Stop' : 'Preview'}
+        </button>
+        <span className="chip thumb-duration">{formatShort(duration)}</span>
+      </div>
 
-      <button
-        onClick={() => setPreviewMode(!previewMode)}
-        className="text-sm font-medium text-accent-text hover:text-accent transition-colors"
+      <div
+        className="scrub"
+        ref={trackRef}
+        onPointerDown={onTrackPointerDown}
+        onPointerMove={onTrackPointerMove}
+        onPointerUp={onTrackPointerUp}
+        onPointerCancel={onTrackPointerUp}
       >
-        {previewMode ? 'Hide preview' : 'Preview clip'}
-      </button>
-
-      {/* SLIDERS */}
-      <div className="bg-bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-mono text-text-secondary">{formatTime(startSec)}</span>
-          <span className={`text-sm font-semibold ${clipLen > 90 ? 'text-[var(--red)]' : 'text-accent-text'}`}>{clipLen}s</span>
-          <span className="text-sm font-mono text-text-secondary">{formatTime(endSec)}</span>
-        </div>
-
-        <div className="relative h-12 flex items-center">
-          <div className="absolute w-full h-2 bg-bg-raised rounded-full">
-            <div
-              className="absolute h-full bg-accent rounded-full"
-              style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
-            />
-          </div>
-          <input
-            type="range"
-            min="0"
-            max={duration}
-            value={startSec}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              if (v < endSec - 1) {
-                setStartSec(v);
-                setStartInput(formatTime(v));
-              }
-            }}
-            className="absolute w-full h-8 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:cursor-grab z-10"
+        <div className="scrub-track">
+          <div
+            className="scrub-fill"
+            style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
           />
-          <input
-            type="range"
-            min="0"
-            max={duration}
-            value={endSec}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              if (v > startSec + 1) {
-                setEndSec(v);
-                setEndInput(formatTime(v));
-              }
-            }}
-            className="absolute w-full h-8 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:cursor-grab z-20"
+          <div
+            className="scrub-handle is-start"
+            role="slider"
+            tabIndex={0}
+            aria-label="Start time"
+            aria-valuemin={0}
+            aria-valuemax={duration}
+            aria-valuenow={startSec}
+            aria-valuetext={formatTime(startSec)}
+            style={{ left: `${startPct}%` }}
+            onPointerDown={onHandlePointerDown('start')}
+            onKeyDown={onHandleKeyDown('start')}
           />
-        </div>
-
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-mono text-text-secondary">0:00</span>
-          <span className="text-sm font-mono text-text-secondary">{formatTime(duration)}</span>
+          <div
+            className="scrub-handle is-end"
+            role="slider"
+            tabIndex={0}
+            aria-label="End time"
+            aria-valuemin={0}
+            aria-valuemax={duration}
+            aria-valuenow={endSec}
+            aria-valuetext={formatTime(endSec)}
+            style={{ left: `${endPct}%` }}
+            onPointerDown={onHandlePointerDown('end')}
+            onKeyDown={onHandleKeyDown('end')}
+          />
         </div>
       </div>
 
-      {/* TIME INPUTS + ADJUST BUTTONS */}
-      <div className="bg-bg-surface border border-border rounded-xl p-4 flex items-center gap-3">
-        <div className="flex-1">
-          <label className="text-sm font-medium text-text-secondary block mb-1.5">Start</label>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => updateStart(startSec - 5)}
-              className="px-3 py-2 text-sm rounded-lg bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
-            >
-              -5
-            </button>
-            <input
-              type="text"
-              value={startInput}
-              onChange={(e) => handleStartInput(e.target.value)}
-              onBlur={() => setStartInput(formatTime(startSec))}
-              className="input text-base font-mono flex-1 text-center"
-              placeholder="0:00"
-            />
-            <button
-              onClick={() => updateStart(startSec + 5)}
-              className="px-3 py-2 text-sm rounded-lg bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
-            >
-              +5
-            </button>
+      <div className="time-cards">
+        <div className="time-card">
+          <span className="time-card-label">Start</span>
+          <input
+            type="text"
+            className="time-input"
+            value={startInput}
+            onChange={(e) => handleStartInput(e.target.value)}
+            onBlur={() => setStartInput(formatTime(startSec))}
+            placeholder="0:00:00"
+            aria-label="Start time"
+          />
+          <div className="nudge-row">
+            <button type="button" className="nudge" onClick={() => updateStart(startSec - 5)}>-5s</button>
+            <button type="button" className="nudge" onClick={() => updateStart(startSec + 5)}>+5s</button>
           </div>
         </div>
-        <span className="text-text-muted mt-4 text-sm">→</span>
-        <div className="flex-1">
-          <label className="text-sm font-medium text-text-secondary block mb-1.5">End</label>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => updateEnd(endSec - 5)}
-              className="px-3 py-2 text-sm rounded-lg bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
-            >
-              -5
-            </button>
-            <input
-              type="text"
-              value={endInput}
-              onChange={(e) => handleEndInput(e.target.value)}
-              onBlur={() => setEndInput(formatTime(endSec))}
-              className="input text-base font-mono flex-1 text-center"
-              placeholder="0:30"
-            />
-            <button
-              onClick={() => updateEnd(endSec + 5)}
-              className="px-3 py-2 text-sm rounded-lg bg-bg-raised text-text-secondary hover:text-text-primary border border-border transition-colors"
-            >
-              +5
-            </button>
+        <div className="time-card">
+          <span className="time-card-label">End</span>
+          <input
+            type="text"
+            className="time-input"
+            value={endInput}
+            onChange={(e) => handleEndInput(e.target.value)}
+            onBlur={() => setEndInput(formatTime(endSec))}
+            placeholder="0:00:30"
+            aria-label="End time"
+          />
+          <div className="nudge-row">
+            <button type="button" className="nudge" onClick={() => updateEnd(endSec - 5)}>-5s</button>
+            <button type="button" className="nudge" onClick={() => updateEnd(endSec + 5)}>+5s</button>
           </div>
         </div>
       </div>
 
-      {error && <p className="text-sm text-[var(--red)]">{error}</p>}
+      <div className="length-row">
+        <span className={clipLen > 90 ? 'over' : ''}>Clip length {formatLength(clipLen)}</span>
+        <span className="max">Max 1:30</span>
+      </div>
+
+      {error && <p className="clip-error">{error}</p>}
 
       <button
         onClick={handleContinue}
         disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
-        className="btn-primary w-full disabled:opacity-40"
+        className="btn-primary w-full"
       >
         {clipLen > 90 ? `${clipLen}s (max 90s to annotate)` : 'Continue to Annotate'}
       </button>
