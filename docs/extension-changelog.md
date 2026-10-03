@@ -969,3 +969,16 @@ webapp/src/components/RightRail.jsx, webapp/src/styles/globals.css, this changel
 - Other takes redesigned: count pill in the header, rank badges, vote pills with a
   caret, row hover states, no more divider lines.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Word clipper floating actions + two-word double-click
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this changelog.
+
+- New floating actions button in the word clipper: once scrolled more than 120px
+  down the transcript, a circular button appears bottom-right holding Back to time
+  clipper, Continue (or Record clip), Embed clip and Record clip with the current
+  choice ticked. Same handlers as the top bar, extracted into shared helpers.
+- Double-click redefined: start becomes the tapped word, end becomes the very next
+  word beside it. No more window preserving.
+- Local commit only - NOT pushed.

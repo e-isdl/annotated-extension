@@ -70,6 +70,8 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const [wordStart, setWordStart] = useState(0);
   const [wordEnd, setWordEnd] = useState(0);
   const [draggingWord, setDraggingWord] = useState(null);
+  const [fabOpen, setFabOpen] = useState(false);
+  const [fabVisible, setFabVisible] = useState(false);
   const wordAreaRef = useRef(null);
 
   useEffect(() => {
@@ -396,18 +398,10 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     if (!s.words.length) return;
     const w = s.words[index];
     if (!w || w.start >= s.duration) return;
-    const len = Math.max(1, s.endSec - s.startSec);
-    let t = Math.max(0, w.start);
-    let e = s.endSec;
-    if (t >= e) {
-      e = t + len;
-      if (e > s.duration) { e = s.duration; t = Math.max(0, e - len); }
-      if (e <= t) return;
-    }
-    let ei = index;
-    for (let i = index; i < s.words.length; i++) {
-      if (s.words[i].start < e) ei = i; else break;
-    }
+    const ei = Math.min(index + 1, s.words.length - 1);
+    const t = Math.max(0, w.start);
+    let e = Math.min(s.words[ei].end, s.duration);
+    if (e <= t) return;
     s.setWordStart(index);
     s.setWordEnd(ei);
     s.setStartSec(t);
@@ -467,11 +461,38 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   }, []);
 
   const toggleWordClipper = async () => {
-    if (wordClipperOpen) {
+  const closeWordClipper = () => {
+    setWordClipperOpen(false);
+    setFabOpen(false);
+    setFabVisible(false);
+  };
+
+  const wordContinue = () => {
+    if (canContinue) handleContinue();
+    else setWordClipperOpen(false);
+    setFabOpen(false);
+  };
+
+  const pickEmbedPlay = () => {
+    setPlayMode('embed');
+    setFabOpen(false);
+  };
+
+  const pickRecordPlay = () => {
+    setPlayMode('record');
+    if (rec.state !== 'done') setWordClipperOpen(false);
+    setFabOpen(false);
+  };
+
+  if (wordClipperOpen) {
       setWordClipperOpen(false);
+      setFabOpen(false);
+      setFabVisible(false);
       return;
     }
     setWordClipperOpen(true);
+    setFabOpen(false);
+    setFabVisible(false);
     if (segments || wordError) return;
     setWordLoading(true);
     setWordError('');
@@ -541,7 +562,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
       <div className="clip-body word-clipper-full">
         <div className="word-clipper">
           <div className="word-clipper-top">
-            <button type="button" className="btn-ghost word-back" onClick={() => setWordClipperOpen(false)}>
+            <button type="button" className="btn-ghost word-back" onClick={closeWordClipper}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -550,7 +571,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             <button
               type="button"
               className="btn-primary word-continue"
-              onClick={canContinue ? handleContinue : () => setWordClipperOpen(false)}
+              onClick={wordContinue}
               disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
             >
               {canContinue ? 'Continue' : 'Record clip'}
@@ -562,7 +583,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
               role="radio"
               aria-checked={playMode === 'embed'}
               className={`word-play-opt${playMode === 'embed' ? ' is-selected' : ''}`}
-              onClick={() => setPlayMode('embed')}
+              onClick={pickEmbedPlay}
             >
               Embed clip
             </button>
@@ -571,7 +592,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
               role="radio"
               aria-checked={playMode === 'record'}
               className={`word-play-opt${playMode === 'record' ? ' is-selected' : ''}`}
-              onClick={() => { setPlayMode('record'); if (rec.state !== 'done') setWordClipperOpen(false); }}
+              onClick={pickRecordPlay}
             >
               Record clip
             </button>
@@ -590,7 +611,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             <p className="word-clipper-msg">No transcript available for this video.</p>
           ) : (
             <>
-              <div className={`word-area${draggingWord ? ' is-dragging' : ''}`} data-drag={draggingWord || ''} ref={wordAreaRef} onWheel={disarmWordScroll} onTouchMove={disarmWordScroll}>
+              <div className={`word-area${draggingWord ? ' is-dragging' : ''}`} data-drag={draggingWord || ''} ref={wordAreaRef} onWheel={disarmWordScroll} onTouchMove={disarmWordScroll} onScroll={(e) => { const st = e.currentTarget.scrollTop > 120; setFabVisible((prev) => (prev === st ? prev : st)); }}>
                 {words.map((w, i) => (
                   <Word
                     key={i}
@@ -605,8 +626,21 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
               </div>
               <div className="word-clipper-foot">
                 <span>{formatShort(words[wordStart]?.start ?? startSec)} – {formatShort(words[wordEnd]?.end ?? endSec)}</span>
-                <span className="word-clipper-hint">Double-click a word to set start · Drag the bars</span>
+                <span className="word-clipper-hint">Double-click a word to select it · Drag the bars to adjust</span>
               </div>
+              {fabVisible && (
+                <div className="word-fab-wrap">
+                  {fabOpen && (
+                    <div className="word-fab-menu" role="menu">
+                      <button type="button" className="word-fab-item" onClick={closeWordClipper} role="menuitem">Back to time clipper</button>
+                      <button type="button" className="word-fab-item is-primary" onClick={wordContinue} role="menuitem">{canContinue ? 'Continue' : 'Record clip'}</button>
+                      <button type="button" className={`word-fab-item${playMode === 'embed' ? ' is-selected' : ''}`} onClick={pickEmbedPlay} role="menuitemradio" aria-checked={playMode === 'embed'}>Embed clip{playMode === 'embed' ? ' ✓' : ''}</button>
+                      <button type="button" className={`word-fab-item${playMode === 'record' ? ' is-selected' : ''}`} onClick={pickRecordPlay} role="menuitemradio" aria-checked={playMode === 'record'}>Record clip{playMode === 'record' ? ' ✓' : ''}</button>
+                    </div>
+                  )}
+                  <button type="button" className="word-fab" onClick={() => setFabOpen((v) => !v)} aria-label="Clip actions" aria-expanded={fabOpen}>⋯</button>
+                </div>
+              )}
             </>
           )}
         </div>
