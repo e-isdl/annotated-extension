@@ -520,10 +520,30 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             <button
               type="button"
               className="btn-primary word-continue"
-              onClick={canContinue ? handleContinue : startRecording}
+              onClick={canContinue ? handleContinue : () => setWordClipperOpen(false)}
               disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
             >
               {canContinue ? 'Continue' : 'Record clip'}
+            </button>
+          </div>
+          <div className="word-play-toggle" role="radiogroup" aria-label="How should it play?">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={playMode === 'embed'}
+              className={`word-play-opt${playMode === 'embed' ? ' is-selected' : ''}`}
+              onClick={() => setPlayMode('embed')}
+            >
+              Embed clip
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={playMode === 'record'}
+              className={`word-play-opt${playMode === 'record' ? ' is-selected' : ''}`}
+              onClick={() => { setPlayMode('record'); if (rec.state !== 'done') setWordClipperOpen(false); }}
+            >
+              Record clip
             </button>
           </div>
           <div className="word-clipper-head">

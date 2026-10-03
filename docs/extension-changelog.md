@@ -871,3 +871,18 @@ supabase/migrations/20261003000200_clip_video_view.sql, this changelog.
   Retry upload button if it fails; failures are console.error-logged. Empty
   recordings are rejected before upload.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Embed/Record choice from the word clipper
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this changelog.
+
+- The Embed/Record choice lives on the time clipper under How should it play, but it
+  was unreachable once the word clipper took over the screen. Added a compact
+  Embed clip / Record clip toggle to the word clipper, under the top bar.
+- Picking Record returns to the time screen so the recording UI (progress, cancel)
+  stays visible; picking Embed stays on the word screen. If a recording already
+  exists, picking Record stays too and Continue posts it.
+- The top-bar button now reads Continue when ready, otherwise Record clip which goes
+  back to the time screen - it never starts a blind recording from the word screen.
+- Local commit only - NOT pushed.
