@@ -616,3 +616,14 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   ellipsis) instead of the clip range / moving time. The `VIDEO_TIME` poll stays —
   it only keeps the Play/Pause icon in sync with the real video state now.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Clip heading: video title instead of "Which part matters?"
+
+**Files touched:** `src/components/FlowHeader.jsx`, `src/styles/panel.css`, this changelog.
+
+- The YouTube clip screen heading was the static "Which part matters?" (FlowHeader).
+  It now shows the current video''s title (from `pageInfo.data.title`, ellipsis on
+  overflow), falling back to the old wording only if the title is missing.
+- **Local commit only — NOT pushed.**

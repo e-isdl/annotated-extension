@@ -11,7 +11,11 @@ export default function FlowHeader({ step, pageInfo }) {
   const isTake = step === 'annotate';
   const firstLabel = pageInfo.type === 'article' || pageInfo.type === 'x' ? 'Quote' : 'Clip';
   const platform = PLATFORMS[pageInfo.type] || 'Source';
-  const heading = isTake ? 'Say what you think.' : firstLabel === 'Quote' ? 'Pick your quote.' : 'Which part matters?';
+  const heading = isTake
+    ? 'Say what you think.'
+    : firstLabel === 'Quote'
+      ? 'Pick your quote.'
+      : pageInfo.data?.title || 'Which part matters?';
 
   return (
     <div className="flow-pad">

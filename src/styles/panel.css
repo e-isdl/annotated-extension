@@ -293,3 +293,5 @@
 
 .take-post { height: 52px; border-radius: var(--r-btn); font-size: 16px; }
 .take-note { font-size: 14px; color: var(--text-2); text-align: center; margin: 0; }
+
+.flow-heading { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
