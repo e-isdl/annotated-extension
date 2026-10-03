@@ -627,3 +627,14 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   It now shows the current video''s title (from `pageInfo.data.title`, ellipsis on
   overflow), falling back to the old wording only if the title is missing.
 - **Local commit only — NOT pushed.**
+
+---
+
+## PRODUCTION DB: video_url migration APPLIED
+
+- `supabase/migrations/20261003000000_recorded_clip_video_url.sql` was applied to the
+  production Supabase project (2026-10-03, after the owner hit the PostgREST
+  "could not find the function ... p_video_url" error). Verified: the live
+  `create_extension_post` now has the 20-arg signature ending in
+  `p_video_url text default null`, and `clips.video_url` exists.
+- Record-clip posting (upload -> video_url -> post) is now unblocked.
