@@ -1181,3 +1181,14 @@ Files touched: content.js, this changelog.
 - Manifest bumped 2.3.6 to 2.3.7. Ships true 240p recording lock via canvas
   downscale with retuned bitrate.
 - Pushed to master.
+---
+
+## Sticky word-clipper header
+
+Files touched: src/styles/panel.css, this changelog.
+
+- The top header (title, count, red Continue) is now sticky with an opaque card
+  background and full-bleed positioning, so it stays pinned at the top of the
+  panel at any scroll position. Together with the permanent bottom Continue bar,
+  the action is reachable from everywhere.
+- Local commit only - NOT pushed.
