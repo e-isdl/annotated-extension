@@ -172,3 +172,29 @@ leftover mistake â€” "leave the text as it is". No code changed.
   -5s/+5s nudge buttons 44px. Set start/end buttons come in T6.
 - **Length row:** "Clip length 1 min 24 s" (red when >90s) / "Max 1:30" 14px.
 - Continue button unchanged (T7 renames it).
+
+---
+
+## T5 fix (master's order) — Clip handles are bars, not dots
+
+- `.scrub-handle`: 12x32px vertical bars (`| |`), white with red ring, radius 5,
+  hit area 44x48 via `::after`. Round 28px dots removed.
+
+---
+
+## T6 — Set start here / Set end here
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`, this changelog.
+
+- Each Start/End card gets a full-width secondary button (48px, `.btn-set`):
+  "Set start here" / "Set end here".
+- Pressing one reads the page video's `currentTime` and puts it in that card's
+  field; slider fill updates. Reuses the existing `chrome.scripting.executeScript`
+  video-probing pattern already in this file (duration lookup) — no duplicate code
+  path, no content-script message added (the doc's fallback: extend the existing
+  page-video access).
+- Set buttons allow an invalid range (start > end) instead of clamping silently —
+  then the line "End needs to come after the start." shows under the cards
+  (14px red, `.clip-error`) and Continue stays disabled. Slider fill clamps to 0 width.
+- No video on the page -> "No video found on this page." error.
+- Continue label/logic unchanged (T7's job).

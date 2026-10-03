@@ -104,6 +104,41 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
     if (!isNaN(sec) && sec > startSec && sec <= duration) setEndSec(sec);
   };
 
+  const getPageVideoTime = async () => {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return null;
+      const [res] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          const v = document.querySelector('video');
+          return v ? v.currentTime : null;
+        },
+      });
+      return res?.result ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  const setStartHere = async () => {
+    const t = await getPageVideoTime();
+    if (t == null) { setError('No video found on this page.'); return; }
+    setError('');
+    const sec = Math.min(duration, Math.max(0, Math.round(t)));
+    setStartSec(sec);
+    setStartInput(formatTime(sec));
+  };
+
+  const setEndHere = async () => {
+    const t = await getPageVideoTime();
+    if (t == null) { setError('No video found on this page.'); return; }
+    setError('');
+    const sec = Math.min(duration, Math.max(0, Math.round(t)));
+    setEndSec(sec);
+    setEndInput(formatTime(sec));
+  };
+
   const handleContinue = () => {
     if (endSec <= startSec) { setError('End time must be after start time.'); return; }
     if (clipLen > 90) { setError('Clip must be 90 seconds or less.'); return; }
@@ -211,7 +246,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         <div className="scrub-track">
           <div
             className="scrub-fill"
-            style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
+            style={{ left: `${startPct}%`, width: `${Math.max(0, endPct - startPct)}%` }}
           />
           <div
             className="scrub-handle is-start"
@@ -254,6 +289,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             placeholder="0:00:00"
             aria-label="Start time"
           />
+          <button type="button" className="btn-set" onClick={setStartHere}>Set start here</button>
           <div className="nudge-row">
             <button type="button" className="nudge" onClick={() => updateStart(startSec - 5)}>-5s</button>
             <button type="button" className="nudge" onClick={() => updateStart(startSec + 5)}>+5s</button>
@@ -270,12 +306,15 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
             placeholder="0:00:30"
             aria-label="End time"
           />
+          <button type="button" className="btn-set" onClick={setEndHere}>Set end here</button>
           <div className="nudge-row">
             <button type="button" className="nudge" onClick={() => updateEnd(endSec - 5)}>-5s</button>
             <button type="button" className="nudge" onClick={() => updateEnd(endSec + 5)}>+5s</button>
           </div>
         </div>
       </div>
+
+      {endSec <= startSec && <p className="clip-error">End needs to come after the start.</p>}
 
       <div className="length-row">
         <span className={clipLen > 90 ? 'over' : ''}>Clip length {formatLength(clipLen)}</span>
