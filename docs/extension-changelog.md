@@ -103,6 +103,9 @@ leftover mistake — "leave the text as it is". No code changed.
 - Avatar opens a dropdown (`role="menu"`) with a single "Sign out" item; closes on
   outside click and Escape; `aria-haspopup`/`aria-expanded` set; focus rings 2px/2px
   offset using `--focus`.
+- Avatar image loads from the database first: `profiles.avatar_url` (fetched for the
+  signed-in user, same field the web app shows), falling back to OAuth
+  `user_metadata`, then a letter; `onError` hides a broken image and shows the letter.
 - Old dim "Sign out" text link removed.
 
 ---

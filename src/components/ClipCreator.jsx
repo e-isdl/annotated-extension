@@ -50,8 +50,30 @@ export default function ClipCreator({ pageInfo, session }) {
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [avatarMenuOpen]);
-  const avatarUrl = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture || null;
-  const avatarName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
+  const [profile, setProfile] = useState(null);
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setProfile(null);
+      return;
+    }
+    let cancelled = false;
+    supabase.from('profiles')
+      .select('avatar_url, display_name')
+      .eq('id', session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setProfile(data || null);
+      })
+      .catch(() => {
+        if (!cancelled) setProfile(null);
+      });
+    return () => { cancelled = true; };
+  }, [session?.user?.id]);
+  const avatarUrl = profile?.avatar_url
+    || session?.user?.user_metadata?.avatar_url
+    || session?.user?.user_metadata?.picture
+    || null;
+  const avatarName = profile?.display_name || session?.user?.user_metadata?.full_name || session?.user?.email || '';
   const avatarInitial = avatarName.trim().charAt(0).toUpperCase() || '?';
   const [transcriptCache, setTranscriptCache] = useState(null);
   const [currentTranscript, setCurrentTranscript] = useState(null);
@@ -171,11 +193,17 @@ export default function ClipCreator({ pageInfo, session }) {
             aria-label="Account menu"
             className="w-9 h-9 rounded-full overflow-hidden border border-border bg-bg-raised flex items-center justify-center hover:border-border-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-[var(--bg)]"
           >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-            ) : (
+            <span className="relative w-full h-full flex items-center justify-center">
               <span className="text-sm font-bold text-text-secondary">{avatarInitial}</span>
-            )}
+              {avatarUrl && (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
+            </span>
           </button>
           {avatarMenuOpen && (
             <div role="menu" className="absolute right-0 top-full mt-1.5 min-w-[150px] rounded-xl border border-border bg-bg-surface shadow-lg py-1 z-50">
