@@ -61,8 +61,10 @@ export default function ClipPage() {
 
   const clipIdForPoll = clip && clip.id;
   const clipStatusForPoll = clip && clip.video_status;
+  const clipCreatedAtForPoll = clip && clip.created_at;
   useEffect(() => {
     if (clipStatusForPoll !== 'uploading' || !clipIdForPoll) return undefined;
+    if (clipCreatedAtForPoll && (Date.now() - new Date(clipCreatedAtForPoll).getTime() > 20 * 60 * 1000)) return undefined;
     const timer = window.setInterval(async () => {
       try {
         const { data } = await supabase.from('clips').select('video_url, video_status').eq('id', clipIdForPoll).single();
@@ -72,7 +74,7 @@ export default function ClipPage() {
       } catch {}
     }, 4000);
     return () => window.clearInterval(timer);
-  }, [clipIdForPoll, clipStatusForPoll]);
+  }, [clipIdForPoll, clipStatusForPoll, clipCreatedAtForPoll]);
 
   useEffect(() => () => setActivePost(null), []);
 
@@ -232,6 +234,8 @@ export default function ClipPage() {
   const isX = isXPostUrl(clip.source_url);
   const posterHandle = isX ? (matchStatusUrl(clip.source_url)?.handle || String(clip.author || '').replace(/^@/, '')) : '';
   const hasSourceImage = !isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && Boolean(clip.source_image_url || clip.thumbnail);
+  const uploadStale = Boolean(clip.video_status === 'uploading' && clip.created_at && (Date.now() - new Date(clip.created_at).getTime() > 20 * 60 * 1000));
+  const stillUploading = clip.video_status === 'uploading' && !uploadStale;
 
   const range = hasMoment(clip.start_sec, clip.end_sec) && clip.duration > clip.end_sec
     ? (() => {
@@ -362,7 +366,7 @@ export default function ClipPage() {
     </a>
   </div>
         ))}
-        {clip.video_status === 'uploading' && (
+        {stillUploading && (
           <div className="source-media">
             <div className="post-uploading">
               <span className="post-uploading-spinner" />
@@ -370,12 +374,12 @@ export default function ClipPage() {
             </div>
           </div>
         )}
-        {clip.video_url && clip.video_status !== 'uploading' && !videoFailed && !showEmbed && (
+        {clip.video_url && !stillUploading && !videoFailed && !showEmbed && (
           <div className="source-media">
             <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} />
           </div>
         )}
-        {(!clip.video_url || videoFailed || showEmbed) && clip.video_status !== 'uploading' && clip.source_type === 'youtube' && (
+        {(!clip.video_url || videoFailed || showEmbed) && !stillUploading && clip.source_type === 'youtube' && (
           <div className="source-media">
             <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
             {range && (
@@ -399,7 +403,7 @@ export default function ClipPage() {
             )}
           </div>
         )}
-        {clip.video_url && clip.video_status !== 'uploading' && !videoFailed && clip.source_type === 'youtube' && (
+        {clip.video_url && !stillUploading && !videoFailed && clip.source_type === 'youtube' && (
           <button type="button" className="view-embed-toggle" onClick={() => setShowEmbed((value) => !value)}>
             {showEmbed ? 'View recording' : 'View embed'}
           </button>

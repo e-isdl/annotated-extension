@@ -1139,3 +1139,19 @@ Files touched: src/components/YouTubeClipper.jsx, this changelog.
   are integers. handleContinue now floors start and ceils end, which also keeps
   end after start for every valid clip. Webapp embed already floored its inputs.
 - Local commit only - NOT pushed.
+---
+
+## Uploads cannot hang forever
+
+Files touched: src/components/ClipCreator.jsx, webapp/src/pages/ClipPage.jsx,
+this changelog. Production: one stuck uploading row repaired to failed.
+
+- Found a clip stuck on uploading with no storage file at all: the fire-and-
+  forget upload promise never settled (stall or closed panel), so no status
+  update ever ran. Repaired the row to failed so it shows the embed.
+- Extension: publish now awaits the upload (3-minute timeout, late success still
+  flips to ready) instead of firing and forgetting. The publish button already
+  showed an Uploading stage, so the panel naturally stays open.
+- Webapp: uploads older than 20 minutes stop spinning and fall back to the
+  embed. No more eternal Uploading state.
+- Local commit only - NOT pushed. Webapp NOT deployed.

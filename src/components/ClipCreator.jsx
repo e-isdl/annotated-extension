@@ -11,24 +11,39 @@ import { createExtensionPost, updateClipVideoUrl } from '../lib/postPublishing';
 import { pageIdentity } from '../lib/pageInfo';
 
 const MAX_CLIP_BYTES = 15 * 1024 * 1024;
+const UPLOAD_TIMEOUT_MS = 180000;
 
 async function uploadRecordedClip(supabase, recorded, clipId) {
+  const doUpload = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('not signed in');
+      if (!recorded?.blob || recorded.blob.size === 0) throw new Error('empty recording');
+      const ext = (recorded.mime || '').includes('mp4') ? 'mp4' : 'webm';
+      const contentType = recorded.mime || (ext === 'mp4' ? 'video/mp4' : 'video/webm');
+      const filename = `clips/recordings/${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('clips').upload(filename, recorded.blob, { contentType });
+      if (uploadError) throw uploadError;
+      const publicUrl = supabase.storage.from('clips').getPublicUrl(filename).data.publicUrl;
+      await updateClipVideoUrl(supabase, clipId, publicUrl, 'ready');
+      return true;
+    } catch (e) {
+      console.error('[annotated] recorded clip upload failed:', e);
+      try { await updateClipVideoUrl(supabase, clipId, null, 'failed'); } catch (e2) {}
+      return false;
+    }
+  };
+  let timer;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(async () => {
+      try { await updateClipVideoUrl(supabase, clipId, null, 'failed'); } catch {}
+      resolve(false);
+    }, UPLOAD_TIMEOUT_MS);
+  });
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('not signed in');
-    if (!recorded?.blob || recorded.blob.size === 0) throw new Error('empty recording');
-    const ext = (recorded.mime || '').includes('mp4') ? 'mp4' : 'webm';
-    const contentType = recorded.mime || (ext === 'mp4' ? 'video/mp4' : 'video/webm');
-    const filename = `clips/recordings/${user.id}/${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from('clips').upload(filename, recorded.blob, { contentType });
-    if (uploadError) throw uploadError;
-    const publicUrl = supabase.storage.from('clips').getPublicUrl(filename).data.publicUrl;
-    await updateClipVideoUrl(supabase, clipId, publicUrl, 'ready');
-    return true;
-  } catch (e) {
-    console.error('[annotated] recorded clip upload failed:', e);
-    try { await updateClipVideoUrl(supabase, clipId, null, 'failed'); } catch (e2) {}
-    return false;
+    return await Promise.race([doUpload(), timeout]);
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -180,11 +195,11 @@ export default function ClipCreator({ pageInfo, session }) {
     if (recorded?.blob) {
       recordedRef.current = recorded;
       setUploadState({ status: 'uploading', error: null });
-      uploadRecordedClip(supabase, recorded, clip.id).then((ok) => {
-        setUploadState(ok
-          ? { status: 'ready', error: null }
-          : { status: 'failed', error: 'Upload failed. Check your connection and retry.' });
-      });
+      stage('uploading');
+      const ok = await uploadRecordedClip(supabase, recorded, clip.id);
+      setUploadState(ok
+        ? { status: 'ready', error: null }
+        : { status: 'failed', error: 'Upload failed. Check your connection and retry.' });
     } else {
       recordedRef.current = null;
       setUploadState({ status: 'idle', error: null });
