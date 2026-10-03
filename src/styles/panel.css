@@ -162,3 +162,21 @@
 /* Ghost the primary button while disabled (e.g. clip over 90s). */
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-primary:disabled:hover { opacity: 0.4; }
+
+/* T7: "How should it play?" radio cards. */
+.play-section { display: flex; flex-direction: column; gap: 10px; }
+.play-title { margin: 0; font-size: 16px; font-weight: 600; color: var(--text); }
+.play-options { display: flex; flex-direction: column; gap: 10px; }
+.play-card { display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 12px 14px; background: transparent; border: 1px solid var(--border); border-radius: 16px; cursor: pointer; text-align: left; font-family: inherit; transition: border-color 0.15s, background 0.15s; }
+.play-card:hover { background: var(--surface); }
+.play-card.is-selected { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); background: var(--red-soft); }
+.play-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.play-icon { width: 24px; height: 24px; flex: none; display: inline-flex; align-items: center; justify-content: center; color: var(--text-2); }
+.play-card.is-selected .play-icon { color: var(--red); }
+.play-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.play-card-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.play-help { font-size: 14px; color: var(--text-2); }
+.play-radio { margin-left: auto; flex: none; position: relative; width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--border-strong); }
+.play-card.is-selected .play-radio { border-color: var(--red); }
+.play-radio::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: transparent; }
+.play-card.is-selected .play-radio::after { background: var(--red); }

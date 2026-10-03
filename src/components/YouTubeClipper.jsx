@@ -42,6 +42,7 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
   const [startInput, setStartInput] = useState('0:00:00');
   const [endInput, setEndInput] = useState('0:00:30');
   const [dragging, setDragging] = useState(null);
+  const [playMode, setPlayMode] = useState('embed');
   const trackRef = useRef(null);
 
   useEffect(() => {
@@ -256,12 +257,56 @@ export default function YouTubeClipper({ pageInfo, onReady }) {
         <span className="max">Max 1:30</span>
       </div>
 
+      <div className="play-section">
+        <p className="play-title">How should it play?</p>
+        <div className="play-options" role="radiogroup" aria-label="How should it play?">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={playMode === 'embed'}
+            className={`play-card${playMode === 'embed' ? ' is-selected' : ''}`}
+            onClick={() => setPlayMode('embed')}
+          >
+            <span className="play-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                <path d="M10 8.5v7l5.5-3.5L10 8.5Z" fill="currentColor" />
+              </svg>
+            </span>
+            <span className="play-text">
+              <span className="play-card-title">Embed clip</span>
+              <span className="play-help">Plays from YouTube. Posts right away.</span>
+            </span>
+            <span className="play-radio" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={playMode === 'record'}
+            className={`play-card${playMode === 'record' ? ' is-selected' : ''}`}
+            onClick={() => setPlayMode('record')}
+          >
+            <span className="play-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                <circle cx="12" cy="12" r="4" fill="currentColor" />
+              </svg>
+            </span>
+            <span className="play-text">
+              <span className="play-card-title">Record clip</span>
+              <span className="play-help">Saves a video with sound. Takes {formatLength(clipLen)}.</span>
+            </span>
+            <span className="play-radio" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+
       <button
-        onClick={handleContinue}
+        onClick={playMode === 'record' ? undefined : handleContinue}
         disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
         className="btn-primary w-full"
       >
-        {clipLen > 90 ? `${clipLen}s (max 90s to annotate)` : 'Continue to Annotate'}
+        {playMode === 'record' ? 'Record clip' : 'Continue'}
       </button>
     </div>
   );

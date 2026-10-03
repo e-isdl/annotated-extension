@@ -256,3 +256,25 @@ leftover mistake â€” "leave the text as it is". No code changed.
   (label already reads "Xs (max 90s to annotate)").
 - Dead CSS removed: rail/strip rules, `.thumb iframe`.
 - **Local commit only — NOT pushed.**
+
+---
+
+## T7 — Two ways to play: Embed or Record (choice UI)
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`, this changelog.
+
+- "How should it play?" section (16px/600) under the length row: `role="radiogroup"`
+  with two row cards (min-height 72, radius 16, 1px --border): 24px icon,
+  title 16/600, help line 14/--text-2, radio dot at the right.
+- Selected card: --red border (inset 1px shadow = 2px without layout shift),
+  --red-soft fill, filled radio dot; **Embed clip selected by default**.
+- Embed help: "Plays from YouTube. Posts right away."
+- Record help: "Saves a video with sound. Takes {length}." — live-updates with the
+  range (`formatLength`).
+- Primary button: Embed -> **"Continue"** (goes to Take, nothing recorded — T10
+  posts with start/end and no file); Record -> **"Record clip"**.
+  Range validity/disabled/ghost rules unchanged.
+- **Note:** the Record button is not wired yet — recording lands in T8 (content-script
+  `captureStream` + MediaRecorder). Switching is always free in T7 (locking needs a
+  recording, which is T9).
+- **Local commit only — NOT pushed** (master''s last push order still stands).
