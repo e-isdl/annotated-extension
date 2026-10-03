@@ -220,7 +220,7 @@ export default function Profile() {
       if (isOwner) {
         const { data: userClips } = await supabase.from('clips').select('id').eq('user_id', profile.id);
         if (userClips?.length) {
-          const { data: claimRows } = await supabase.from('claims').select('*, clips(id, slug, title, communities(slug))').in('clip_id', userClips.map((clip) => clip.id)).order('created_at', { ascending: false });
+          const { data: claimRows } = await supabase.from('claims').select('*, clips(id, slug, title, communities(slug), profiles!clips_user_id_fkey(handle))').in('clip_id', userClips.map((clip) => clip.id)).order('created_at', { ascending: false });
           if (claimRows) setClaims(claimRows);
         } else setClaims([]);
       }

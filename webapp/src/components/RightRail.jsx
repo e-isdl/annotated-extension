@@ -5,11 +5,15 @@ import { getCurrentUser } from '../lib/authUser';
 import CommunityAvatar from './CommunityAvatar';
 import { getDemoClip } from '../lib/demoData';
 import { useToast } from './ToastProvider';
+import { postHref } from '../lib/links';
+import { subscribeActivePost } from '../lib/activePost';
 
 export default function RightRail() {
   const location = useLocation();
   const { push } = useToast();
-  const postRef = location.pathname.match(/^\/(?:post|clip)\/([^/]+)/)?.[1] || null;
+  const [takes, setTakes] = useState([]);
+  useEffect(() => subscribeActivePost((active) => setTakes(active?.takes || [])), []);
+  const postRef = location.pathname.match(/^\/(?:post|clip)\/([^/]+)/)?.[1] || location.pathname.match(/^\/@[^/]+\/post\/([^/?#]+)/)?.[1] || null;
   const [community, setCommunity] = useState(null);
   const [communities, setCommunities] = useState([]);
   const [joined, setJoined] = useState(false);
@@ -156,6 +160,20 @@ export default function RightRail() {
           ))}
         </div>
       </section>}
+
+      {takes.length > 0 && (
+        <section className="rail-card takes-card">
+          <h2 className="rail-heading">Other takes on this source</h2>
+          <div className="takes-list">
+            {takes.map((take) => (
+              <Link key={take.id} to={postHref(take)} className="take-item no-underline">
+                <span className="take-title">{take.title || 'Untitled take'}</span>
+                <span className="take-meta"><span>@{take.profiles?.handle}</span><span>{take.score || 0} votes</span></span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <footer className="rail-footer">
         <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>

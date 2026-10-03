@@ -44,7 +44,7 @@ function ScrollToTop() {
 function AppShell() {
   const location = useLocation();
   const isFeedSurface = location.pathname === '/' || location.pathname === '/popular' || location.pathname === '/latest' || location.pathname.startsWith('/c/');
-  const hasRightRail = isFeedSurface || location.pathname.startsWith('/post/') || location.pathname.startsWith('/clip/');
+  const hasRightRail = isFeedSurface || location.pathname.startsWith('/post/') || location.pathname.startsWith('/clip/') || location.pathname.startsWith('/@');
 
   return (
     <div className={`app-shell ${hasRightRail ? '' : 'app-shell-focused'}`}>
@@ -55,6 +55,8 @@ function AppShell() {
           <Route path="/popular" element={<Feed sortOverride="top" />} />
           <Route path="/latest" element={<Feed sortOverride="new" />} />
           <Route path="/clip/:id" element={<ClipPage />} />
+          <Route path="/@:username/post/:slug/comment/:commentId" element={<ClipPage />} />
+          <Route path="/@:username/post/:slug" element={<ClipPage />} />
           <Route path="/post/:id/comment/:commentId" element={<ClipPage />} />
           <Route path="/post/:id" element={<ClipPage />} />
           <Route path="/c/:community/:post" element={<ClipPage />} />

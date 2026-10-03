@@ -81,7 +81,13 @@ export default function ClipCreator({ pageInfo, session }) {
       annotation_audio_url: annotationData.audio_url,
     });
 
-    setPublishedClip(clip);
+    let published = clip;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: prof } = await supabase.from('profiles').select('handle').eq('id', user.id).maybeSingle();
+      if (prof?.handle) published = { ...clip, handle: prof.handle };
+    } catch {}
+    setPublishedClip(published);
     setStep('success');
   };
 

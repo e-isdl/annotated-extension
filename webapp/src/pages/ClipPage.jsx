@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { deleteClip } from '../lib/api';
 import Avatar from '../components/Avatar';
@@ -19,18 +19,20 @@ import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
 import { isXPostUrl, matchStatusUrl } from '../lib/social';
 import { cleanTranscript } from '../lib/text';
+import { setActivePost } from '../lib/activePost';
 
 const MEDIA_FRAME = /youtube\.com\/embed|youtube-nocookie\.com\/embed|platform\.twitter\.com|twimg\.com/;
 
 export default function ClipPage() {
   const routeParams = useParams();
-  const id = routeParams.id || routeParams.post;
+  const id = routeParams.id || routeParams.post || routeParams.slug;
   const commentId = routeParams.commentId;
   const navigate = useNavigate();
   const [clip, setClip] = useState(null);
   const [annotation, setAnnotation] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [canonicalPath, setCanonicalPath] = useState(null);
   const [thread, setThread] = useState([]);
   const [transcript, setTranscript] = useState(null);
   const [score, setScore] = useState(0);
@@ -48,6 +50,8 @@ export default function ClipPage() {
   const [showTranscript, setShowTranscript] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const { push } = useToast();
+
+  useEffect(() => () => setActivePost(null), []);
 
   useLayoutEffect(() => {
     const el = tweetTextRef.current;
@@ -113,6 +117,23 @@ export default function ClipPage() {
         if (clipData.source_type === 'youtube' && clipData.youtube_id) {
           setTranscript(clipData.transcript || null);
         }
+        const handleName = clipData.profiles?.handle;
+        if (clipData.slug && handleName) {
+          const base = `/@${String(handleName).toLowerCase()}/post/${clipData.slug}`;
+          const target = commentId ? `${base}/comment/${commentId}` : base;
+          if (window.location.pathname !== target) setCanonicalPath(target);
+        }
+
+        if (clipData.source_url) {
+          const { data: others } = await supabase
+            .from('clips_with_scores')
+            .select('id, slug, title, score, profiles(handle)')
+            .eq('source_url', clipData.source_url)
+            .neq('id', clipData.id)
+            .order('score', { ascending: false })
+            .limit(5);
+          setActivePost({ id: clipData.id, takes: others || [] });
+        }
       }
       setLoading(false);
     }
@@ -170,6 +191,8 @@ export default function ClipPage() {
       : await supabase.from('post_saves').delete().eq('clip_id', clip.id).eq('user_id', currentUser.id);
     if (result.error && result.error.code !== '42P01') setSaved(!next);
   }
+
+  if (canonicalPath) return <Navigate to={canonicalPath} replace />;
 
   if (loading) return <LoadingState />;
   if (!clip) return <NotFound />;
@@ -430,7 +453,7 @@ export default function ClipPage() {
         </div>
       )}
 
-      <CommentSection clipId={clip.id} postOwnerId={clip.user_id} communityId={clip.community_id} focusCommentId={commentId} />
+      <CommentSection clipId={clip.id} postBase={postHref(clip)} postOwnerId={clip.user_id} communityId={clip.community_id} focusCommentId={commentId} />
     </article>
   );
 }

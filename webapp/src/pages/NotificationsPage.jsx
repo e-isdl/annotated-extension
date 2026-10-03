@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
+import { postHref } from '../lib/links';
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notifClips, setNotifClips] = useState({});
 
   useEffect(() => {
     let active = true;
@@ -20,6 +22,11 @@ export default function NotificationsPage() {
         .limit(100);
       if (active) {
         setNotifications(data || []);
+        const ids = [...new Set((data || []).map((n) => n.clip_id).filter(Boolean))];
+        if (ids.length) {
+          const { data: clips } = await supabase.from('clips').select('id, slug, profiles(handle)').in('id', ids);
+          setNotifClips(Object.fromEntries((clips || []).map((c) => [c.id, c])));
+        }
         setLoading(false);
         await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
       }
@@ -38,7 +45,7 @@ export default function NotificationsPage() {
       {!notifications.length ? <p className="empty-state text-sm text-text-muted">Nothing new here yet.</p> : (
         <div className="notification-list">
           {notifications.map((notification) => (
-            <Link key={notification.id} to={notification.clip_id ? `/post/${notification.clip_id}` : '/'} className="notification-row no-underline">
+            <Link key={notification.id} to={notification.clip_id ? (notifClips[notification.clip_id] ? postHref(notifClips[notification.clip_id]) : `/post/${notification.clip_id}`) : '/'} className="notification-row no-underline">
               <span className="notification-type">{notification.type}</span>
               <span className="notification-message">{notification.message}</span>
               <span className="notification-time">{timeAgo(notification.created_at)}</span>

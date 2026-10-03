@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import { useToast } from './ToastProvider';
+import { postHref } from '../lib/links';
 import Avatar from './Avatar';
 
 const NOTIF_ICONS = {
@@ -39,6 +40,7 @@ export default function Navbar() {
   const [notifCount, setNotifCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [notifClips, setNotifClips] = useState({});
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
@@ -145,6 +147,11 @@ export default function Navbar() {
     if (data) {
       setNotifications(data);
       setNotifCount(data.filter(n => !n.read).length);
+      const ids = [...new Set(data.map((n) => n.clip_id).filter(Boolean))];
+      if (ids.length) {
+        const { data: clips } = await supabase.from('clips').select('id, slug, profiles(handle)').in('id', ids);
+        setNotifClips(Object.fromEntries((clips || []).map((c) => [c.id, c])));
+      }
     }
   }
 
@@ -166,7 +173,7 @@ export default function Navbar() {
       const match = n.message.match(/^@(\S+)/);
       return match ? `/u/${match[1]}` : '/';
     }
-    if (n.clip_id) return `/post/${n.clip_id}`;
+    if (n.clip_id) return notifClips[n.clip_id] ? postHref(notifClips[n.clip_id]) : `/post/${n.clip_id}`;
     return '#';
   }
 

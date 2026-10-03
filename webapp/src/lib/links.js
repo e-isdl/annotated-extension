@@ -1,9 +1,14 @@
-export function postHref(clip) {
-  const key = clip && (clip.slug || clip.id);
+export function postHref(clip, suffix = '') {
+  if (!clip) return '/';
+  const key = clip.slug || clip.id;
   if (!key) return '/';
 
-  const embedded = Array.isArray(clip.communities) ? clip.communities[0] : clip.communities;
-  const community = clip.community_slug || (embedded && embedded.slug);
+  const handle = clip.profiles?.handle || clip.handle;
+  if (!handle) return `/post/${key}`;
 
-  return community ? `/c/${community}/${key}` : `/post/${key}`;
+  return `/@${String(handle).toLowerCase()}/post/${key}${suffix}`;
+}
+
+export function commentHref(clip, commentId) {
+  return postHref(clip, `/comment/${commentId}`);
 }

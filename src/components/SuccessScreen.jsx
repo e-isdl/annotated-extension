@@ -1,5 +1,7 @@
 export default function SuccessScreen({ clip, onReset }) {
-  const postUrl = `https://annotated4.pages.dev/post/${clip?.slug || clip?.id}`;
+  const postKey = clip?.slug || clip?.id;
+  const postPath = clip?.handle ? `/@${String(clip.handle).toLowerCase()}/post/${postKey}` : `/post/${postKey}`;
+  const postUrl = `https://annotated4.pages.dev${postPath}`;
 
   return (
     <div className="flex flex-col items-center justify-center h-full px-6 gap-4 text-center">

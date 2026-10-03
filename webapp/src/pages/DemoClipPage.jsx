@@ -6,13 +6,16 @@ import AudioPlayer from '../components/AudioPlayer';
 import AnnotationLead from '../components/AnnotationLead';
 import CommunityAvatar from '../components/CommunityAvatar';
 import { useToast } from '../components/ToastProvider';
+import { cleanTranscript } from '../lib/text';
 
 export default function DemoClipPage({ clip }) {
   const [score, setScore] = useState(clip.score || 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
   const { push } = useToast();
-  const transcript = clip.transcript || clip.article_text || clip.source_preview_text;
+
+  const rawTranscript = clip.transcript || clip.article_text || clip.source_preview_text;
+
 
   async function share() {
     try { await navigator.clipboard.writeText(window.location.href); push('Post link copied.', 'info'); }
@@ -49,7 +52,7 @@ export default function DemoClipPage({ clip }) {
 
       {transcript && <section className="source-transcript" aria-label={clip.transcript ? 'Transcript' : 'Source context'}>
         <span className="source-transcript-label">{clip.transcript ? 'Transcript' : 'Context'}</span>
-        <p className="source-transcript-text">{transcript}</p>
+        <p className="source-transcript-text">{cleanTranscript(rawTranscript)}</p>
       </section>}
 
       <div className="detail-actions">

@@ -9,7 +9,7 @@ import Avatar from './Avatar';
 import VoteArrow from './VoteArrow';
 import { useToast } from './ToastProvider';
 
-export default function CommentSection({ clipId, postOwnerId = null, communityId = null, focusCommentId = null }) {
+export default function CommentSection({ clipId, postBase = null, postOwnerId = null, communityId = null, focusCommentId = null }) {
   const location = useLocation();
   const [comments, setComments] = useState([]);
   const [body, setBody] = useState('');
@@ -245,6 +245,7 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
               deletingId={deletingId}
               commentVotes={commentVotes}
               voteComment={voteComment}
+              postBase={postBase}
             />
           ))}
           {comments.length === 0 && <p className="comment-empty-state">Be the first person to comment.</p>}
@@ -255,7 +256,7 @@ export default function CommentSection({ clipId, postOwnerId = null, communityId
   );
 }
 
-function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, setReplyBody, submitComment, handleDelete, deletingId, commentVotes, voteComment, postOwnerId, moderatorIds }) {
+function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, setReplyBody, submitComment, handleDelete, deletingId, commentVotes, voteComment, postOwnerId, moderatorIds, postBase = null }) {
   const { push } = useToast();
   const [collapsed, setCollapsed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -270,7 +271,7 @@ function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, 
   const edited = comment.updated_at && new Date(comment.updated_at) - new Date(comment.created_at) > 60000;
   const isBot = comment.profiles?.is_bot || String(comment.profiles?.handle || '').toLowerCase() === 'automoderator';
   const isFocused = Boolean(comment.focusContext?.length || window.location.pathname.endsWith(`/comment/${comment.id}`));
-  const commentUrl = `/post/${comment.clip_id}/comment/${comment.id}`;
+  const commentUrl = postBase ? `${postBase}/comment/${comment.id}` : `/post/${comment.clip_id}/comment/${comment.id}`;
   const replyIsOpen = replyTo === comment.id;
 
   const toggleCollapse = () => {
@@ -351,8 +352,8 @@ function CommentNode({ comment, depth, session, replyTo, setReplyTo, replyBody, 
           </div>
         </div>
       </div>
-      {!collapsed && depth >= 5 && children.length > 0 && <Link className="comment-continue" to={`/post/${comment.clip_id}/comment/${children[0].id}`}>+ Continue this thread</Link>}
-      {!collapsed && depth < 5 && children.map((child) => <CommentNode key={child.id} {...{ comment: child, depth: depth + 1, session, replyTo, setReplyTo, replyBody, setReplyBody, submitComment, handleDelete, deletingId, commentVotes, voteComment, postOwnerId, moderatorIds }} />)}
+      {!collapsed && depth >= 5 && children.length > 0 && <Link className="comment-continue" to={postBase ? `${postBase}/comment/${children[0].id}` : `/post/${comment.clip_id}/comment/${children[0].id}`}>+ Continue this thread</Link>}
+      {!collapsed && depth < 5 && children.map((child) => <CommentNode key={child.id} {...{ comment: child, depth: depth + 1, session, replyTo, setReplyTo, replyBody, setReplyBody, submitComment, handleDelete, deletingId, commentVotes, voteComment, postOwnerId, moderatorIds, postBase }} />)}
     </div>
   );
 }
