@@ -36,25 +36,9 @@ function formatBytes(n) {
 
 const IDLE_REC = { state: 'idle', t: 0, error: null, blob: null, mime: null, url: null };
 
-const WordSpan = memo(function WordSpan({ w, index, selected, showStartHandle, showEndHandle, onHandleEvent, onWordDoubleClick }) {
+const Word = memo(function Word({ w, index, selected, onWordDoubleClick }) {
   return (
-    <span>
-      {showStartHandle && (
-        <span
-          className="word-handle"
-          data-handle="start"
-          onPointerDown={(e) => onHandleEvent('start', 'down', e)}
-        />
-      )}
-      <span data-word-index={index} className={selected ? 'word is-selected' : 'word'} onDoubleClick={() => onWordDoubleClick(index)}>{w.text} </span>
-      {showEndHandle && (
-        <span
-          className="word-handle"
-          data-handle="end"
-          onPointerDown={(e) => onHandleEvent('end', 'down', e)}
-        />
-      )}
-    </span>
+    <span data-word-index={index} className={selected ? 'word is-selected' : 'word'} onDoubleClick={() => onWordDoubleClick(index)}>{w.text} </span>
   );
 });
 
@@ -341,18 +325,65 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const wordRafRef = useRef(0);
   const wordPendingRef = useRef({ x: 0, y: 0 });
   const wordDragCleanupRef = useRef(null);
+  const wordScrolledRef = useRef(false);
+  const handleStartRef = useRef(null);
+  const handleEndRef = useRef(null);
 
   useEffect(() => () => { if (wordDragCleanupRef.current) wordDragCleanupRef.current(); }, []);
+
+  useEffect(() => {
+    if (!wordClipperOpen) { wordScrolledRef.current = false; return; }
+    if (wordScrolledRef.current || !words.length) return;
+    wordScrolledRef.current = true;
+    const idx = wordStateRef.current.wordStart;
+    requestAnimationFrame(() => {
+      const el = wordAreaRef.current?.querySelector(`[data-word-index="${idx}"]`);
+      if (el) el.scrollIntoView({ block: 'center' });
+    });
+  }, [wordClipperOpen, words.length]);
+
+  useLayoutEffect(() => {
+    const area = wordAreaRef.current;
+    if (!area || !words.length) return;
+    const areaRect = area.getBoundingClientRect();
+    const place = (index, ref, atLeft) => {
+      const node = ref.current;
+      if (!node) return;
+      const el = area.querySelector(`[data-word-index="${index}"]`);
+      if (!el) { node.style.display = 'none'; return; }
+      const r = el.getBoundingClientRect();
+      node.style.display = 'block';
+      node.style.left = `${r.left - areaRect.left + area.scrollLeft + (atLeft ? 0 : r.width)}px`;
+      node.style.top = `${r.top - areaRect.top + area.scrollTop}px`;
+      node.style.height = `${r.height}px`;
+    };
+    place(wordStart, handleStartRef, true);
+    place(wordEnd, handleEndRef, false);
+  });
 
   const onWordDoubleClick = useCallback((index) => {
     const s = wordStateRef.current;
     if (!s.words.length) return;
     const w = s.words[index];
-    if (!w || w.start >= s.endSec) return;
-    const t = Math.max(0, Math.min(w.start, s.endSec - 0.05));
-    s.setWordStart(Math.min(index, s.wordEnd));
+    if (!w || w.start >= s.duration) return;
+    const len = Math.max(1, s.endSec - s.startSec);
+    let t = Math.max(0, w.start);
+    let e = s.endSec;
+    if (t >= e) {
+      e = t + len;
+      if (e > s.duration) { e = s.duration; t = Math.max(0, e - len); }
+      if (e <= t) return;
+    }
+    let ei = index;
+    for (let i = index; i < s.words.length; i++) {
+      if (s.words[i].start < e) ei = i; else break;
+    }
+    s.setWordStart(index);
+    s.setWordEnd(ei);
     s.setStartSec(t);
     s.setStartInput(formatTime(t));
+    s.setEndSec(e);
+    s.setEndInput(formatTime(e));
   }, []);
 
   const onWordHandleEvent = useCallback((which, phase, e) => {
@@ -511,17 +542,16 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             <>
               <div className={`word-area${draggingWord ? ' is-dragging' : ''}`} data-drag={draggingWord || ''} ref={wordAreaRef}>
                 {words.map((w, i) => (
-                  <WordSpan
+                  <Word
                     key={i}
                     w={w}
                     index={i}
                     selected={i >= wordStart && i <= wordEnd}
-                    showStartHandle={i === wordStart}
-                    showEndHandle={i === wordEnd}
-                    onHandleEvent={onWordHandleEvent}
                     onWordDoubleClick={onWordDoubleClick}
                   />
                 ))}
+                <div ref={handleStartRef} className="word-handle-float" data-handle="start" onPointerDown={(e) => onWordHandleEvent('start', 'down', e)} />
+                <div ref={handleEndRef} className="word-handle-float" data-handle="end" onPointerDown={(e) => onWordHandleEvent('end', 'down', e)} />
               </div>
               <div className="word-clipper-foot">
                 <span>{formatShort(words[wordStart]?.start ?? startSec)} – {formatShort(words[wordEnd]?.end ?? endSec)}</span>

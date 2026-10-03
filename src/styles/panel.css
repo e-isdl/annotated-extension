@@ -328,3 +328,10 @@
 /* Bigger grab target that does not shift layout */
 .word-handle { position: relative; }
 .word-handle::before { content: ""; position: absolute; inset: -6px -5px; }
+
+/* Floating word handles: overlay positioned, text never reflows during drag */
+.word-area { position: relative; }
+.word-handle-float { position: absolute; width: 10px; margin-left: -5px; background: var(--red-btn); border-radius: 3px; cursor: grab; touch-action: none; box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 1; }
+.word-handle-float::before { content: ""; position: absolute; inset: -6px -6px; }
+.word-area[data-drag="start"] .word-handle-float[data-handle="start"], .word-area[data-drag="end"] .word-handle-float[data-handle="end"] { cursor: grabbing; background: var(--red); }
+.word-area.is-dragging .word-handle-float { pointer-events: none; }

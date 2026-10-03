@@ -49,7 +49,23 @@ export default function ClipPage() {
   const [tweetExpandable, setTweetExpandable] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
   const { push } = useToast();
+
+  const clipIdForPoll = clip && clip.id;
+  const clipStatusForPoll = clip && clip.video_status;
+  useEffect(() => {
+    if (clipStatusForPoll !== 'uploading' || !clipIdForPoll) return undefined;
+    const timer = window.setInterval(async () => {
+      try {
+        const { data } = await supabase.from('clips').select('video_url, video_status').eq('id', clipIdForPoll).single();
+        if (data && data.video_status !== 'uploading') {
+          setClip((current) => (current ? { ...current, video_url: data.video_url ?? null, video_status: data.video_status } : current));
+        }
+      } catch {}
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, [clipIdForPoll, clipStatusForPoll]);
 
   useEffect(() => () => setActivePost(null), []);
 
@@ -89,6 +105,15 @@ export default function ClipPage() {
           community_slug: clipData.community_slug || clipData.communities?.slug,
         };
         setClip(clipData);
+        if (clipData.video_url === undefined || clipData.video_status === undefined) {
+          try {
+            const { data: vrow } = await supabase.from('clips').select('video_url, video_status').eq('id', clipData.id).single();
+            if (vrow) {
+              clipData = { ...clipData, video_url: vrow.video_url ?? null, video_status: vrow.video_status ?? 'ready' };
+              setClip(clipData);
+            }
+          } catch {}
+        }
         setProfile(clipData.profiles);
 
         setScore(clipData.score || 0);
@@ -338,12 +363,12 @@ export default function ClipPage() {
             </div>
           </div>
         )}
-        {clip.video_url && clip.video_status !== 'uploading' && (
+        {clip.video_url && clip.video_status !== 'uploading' && !videoFailed && (
           <div className="source-media">
-            <video className="post-video" src={clip.video_url} controls playsInline preload="metadata" />
+            <video className="post-video" src={clip.video_url} controls playsInline preload="metadata" onError={() => setVideoFailed(true)} />
           </div>
         )}
-        {!clip.video_url && clip.video_status !== 'uploading' && clip.source_type === 'youtube' && (
+        {(!clip.video_url || videoFailed) && clip.video_status !== 'uploading' && clip.source_type === 'youtube' && (
           <div className="source-media">
             <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
             {range && (

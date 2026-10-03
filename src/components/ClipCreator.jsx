@@ -16,6 +16,7 @@ async function uploadRecordedClip(supabase, recorded, clipId) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('not signed in');
+    if (!recorded?.blob || recorded.blob.size === 0) throw new Error('empty recording');
     const ext = (recorded.mime || '').includes('mp4') ? 'mp4' : 'webm';
     const contentType = recorded.mime || (ext === 'mp4' ? 'video/mp4' : 'video/webm');
     const filename = `clips/recordings/${user.id}/${Date.now()}.${ext}`;
@@ -23,8 +24,11 @@ async function uploadRecordedClip(supabase, recorded, clipId) {
     if (uploadError) throw uploadError;
     const publicUrl = supabase.storage.from('clips').getPublicUrl(filename).data.publicUrl;
     await updateClipVideoUrl(supabase, clipId, publicUrl, 'ready');
+    return true;
   } catch (e) {
+    console.error('[annotated] recorded clip upload failed:', e);
     try { await updateClipVideoUrl(supabase, clipId, null, 'failed'); } catch (e2) {}
+    return false;
   }
 }
 
@@ -97,6 +101,8 @@ export default function ClipCreator({ pageInfo, session }) {
   const avatarInitial = avatarName.trim().charAt(0).toUpperCase() || '?';
   const [transcriptCache, setTranscriptCache] = useState(null);
   const [currentTranscript, setCurrentTranscript] = useState(null);
+  const [uploadState, setUploadState] = useState({ status: 'idle', error: null });
+  const recordedRef = useRef(null);
   const [communities, setCommunities] = useState([]);
   const [communityId, setCommunityId] = useState('');
 
@@ -117,6 +123,8 @@ export default function ClipCreator({ pageInfo, session }) {
     setClipData(null);
     setPublishedClip(null);
     setCurrentTranscript(null);
+    setUploadState({ status: 'idle', error: null });
+    recordedRef.current = null;
   }, [pageKey]);
 
   const handleClipReady = useCallback((data) => {
@@ -170,7 +178,16 @@ export default function ClipCreator({ pageInfo, session }) {
     });
 
     if (recorded?.blob) {
-      uploadRecordedClip(supabase, recorded, clip.id);
+      recordedRef.current = recorded;
+      setUploadState({ status: 'uploading', error: null });
+      uploadRecordedClip(supabase, recorded, clip.id).then((ok) => {
+        setUploadState(ok
+          ? { status: 'ready', error: null }
+          : { status: 'failed', error: 'Upload failed. Check your connection and retry.' });
+      });
+    } else {
+      recordedRef.current = null;
+      setUploadState({ status: 'idle', error: null });
     }
 
     let published = clip;
@@ -187,6 +204,18 @@ export default function ClipCreator({ pageInfo, session }) {
   const useEmbedInstead = () => {
     setEmbedRequest((v) => v + 1);
     setStep('clip');
+  };
+
+  const retryUpload = () => {
+    const recorded = recordedRef.current;
+    const clipId = publishedClip?.id;
+    if (!recorded?.blob || !clipId) return;
+    setUploadState({ status: 'uploading', error: null });
+    uploadRecordedClip(supabase, recorded, clipId).then((ok) => {
+      setUploadState(ok
+        ? { status: 'ready', error: null }
+        : { status: 'failed', error: 'Upload failed. Check your connection and retry.' });
+    });
   };
 
   const renderClipper = () => {
@@ -267,7 +296,7 @@ export default function ClipCreator({ pageInfo, session }) {
         <div style={{ display: step === 'annotate' ? 'block' : 'none' }}>
           {clipData && <AnnotationForm clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} onUseEmbed={useEmbedInstead} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} communities={communities} communityId={communityId} onCommunityChange={setCommunityId} />}
         </div>
-        {step === 'success' && <SuccessScreen clip={publishedClip} onReset={() => { setStep('clip'); setClipData(null); }} />}
+        {step === 'success' && <SuccessScreen clip={publishedClip} uploadState={uploadState} onRetryUpload={retryUpload} onReset={() => { setStep('clip'); setClipData(null); }} />}
       </div>
     </div>
   );
