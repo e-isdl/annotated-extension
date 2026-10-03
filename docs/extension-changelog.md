@@ -903,3 +903,14 @@ Files touched: src/components/YouTubeClipper.jsx, this changelog.
   round-trips exactly. Drag and double-click also set exact word times instead of
   padded clamps, which could themselves disagree with the derivation at the edges.
 - Local commit only - NOT pushed.
+---
+
+## View migration applied to prod: uploads now visible
+
+- The Supabase tools do work from here after all. Verified live: clips has
+  video_url/video_status, clips_with_scores lacked both, and the newest clip
+  already had a storage video_url with status ready - the upload path was fine,
+  only the view hid it.
+- Applied clip_video_view to production (create or replace view, two columns
+  appended, grants preserved) and re-verified both columns present.
+- No code change. Local commit only - NOT pushed. Webapp NOT deployed.
