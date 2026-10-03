@@ -763,3 +763,32 @@ master''s OK per AGENTS.md).
 - NOTE: the push also published the local-only extension commits (T10, C1, C2, play-clip
   and word-clipper work) — the standing "local commits only" rule was overridden by the
   explicit deploy order.
+
+---
+
+## White screen fix + word clipper takeover + clean captions
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/lib/text.js`, `src/styles/panel.css`, this changelog.
+
+### White screen (critical)
+- The play/pause fix removed the `currentTime` state declaration but left two
+  references (`formatShort(currentTime)` in the label, `setCurrentTime` in the toggle
+  response) -> `ReferenceError` on render -> blank panel. State restored.
+
+### Word clipper full-screen takeover
+- Clicking "Open word clipper" now returns an early full-screen view: the word clipper
+  takes over the entire side panel (word area grows to fill it, no 240px cap). The close
+  button in the card header returns to the normal clip screen. The toggle button on the
+  normal screen just reads "Open word clipper".
+
+### Captions properly cleaned
+- `cleanTranscript` (lib/text.js) now also strips `>>` speaker markers and ALL
+  bracketed tags (`[music]`, `[laughter]`, `[applause]`, `[clears throat]`,
+  `[inaudible]`, etc.), more fillers (um/uh/erm/ah/eh/hmm/mhm), stutter repeats, and
+  capitalizes sentence starts so text reads as proper sentences.
+- The word clipper expands its segment range to full sentence boundaries (no mid-sentence
+  cuts at the clip edges) and cleans each segment''s text before splitting into words, so
+  the displayed transcript is clean sentences. Word->time mapping is unchanged
+  (interpolated per segment), so two-way sync with the time clipper still holds.
+
+Checks: `npm run build` passes. **Local commit only — NOT pushed.**

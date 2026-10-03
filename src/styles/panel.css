@@ -312,3 +312,8 @@
 .word-handle.dragging { cursor: grabbing; background: var(--red); }
 .word-clipper-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .word-clipper-hint { color: var(--text-3); }
+
+/* Word clipper full-screen takeover */
+.word-clipper-full { flex: 1; min-height: 0; }
+.word-clipper-full .word-clipper { flex: 1; min-height: 0; }
+.word-clipper-full .word-area { flex: 1; max-height: none; }
