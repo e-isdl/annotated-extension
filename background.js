@@ -67,6 +67,7 @@ async function getPageInfoFromTab(tabId) {
         target: { tabId },
         files: ['content.js']
       });
+      chrome.scripting.insertCSS({ tabId, files: ['highlight.css'] }).catch(() => {});
       response = await requestPageInfo();
     } catch (e) {}
   }

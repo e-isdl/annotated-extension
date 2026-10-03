@@ -48,6 +48,21 @@ export default function App() {
     });
   };
 
+  useEffect(() => {
+    const clearPageHighlight = () => {
+      try {
+        chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+          if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'CLEAR_HIGHLIGHT' }).catch(() => {});
+        });
+      } catch (e) {}
+    };
+    window.addEventListener('beforeunload', clearPageHighlight);
+    return () => {
+      window.removeEventListener('beforeunload', clearPageHighlight);
+      clearPageHighlight();
+    };
+  }, []);
+
   // Keep polling for as long as the panel is open: the followed tab can change
   // video, start an ad, or swap duration at any moment.
   useEffect(() => {

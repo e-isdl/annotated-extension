@@ -20,6 +20,7 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
+      "css": ["highlight.css"],
       "run_at": "document_idle"
     }
   ],

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 export default function ArticleClipper({ pageInfo, onReady }) {
   const { data, url } = pageInfo;
   const [selectedText, setSelectedText] = useState(data.selectedText || '');
+  const [editing, setEditing] = useState(false);
 
   const WORD_LIMIT = 200;
 
@@ -14,9 +15,21 @@ export default function ArticleClipper({ pageInfo, onReady }) {
 
   const wordCount = selectedText.trim().split(/\s+/).filter(Boolean).length;
   const isOverLimit = wordCount > WORD_LIMIT;
+  const hasText = selectedText.trim().length > 0;
+  const warnAt = Math.ceil(WORD_LIMIT * 0.9);
+
+  const grabSelection = () => {
+    chrome.runtime.sendMessage({ type: 'GET_PAGE_INFO' }, (res) => {
+      const text = res?.data?.selectedText;
+      if (text) {
+        setSelectedText(text);
+        setEditing(false);
+      }
+    });
+  };
 
   const handleContinue = () => {
-    if (!selectedText.trim() || isOverLimit) return;
+    if (!hasText || isOverLimit) return;
     onReady({
       source_url: url,
       source_type: 'article',
@@ -27,48 +40,64 @@ export default function ArticleClipper({ pageInfo, onReady }) {
     });
   };
 
+  let host = '';
+  try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) {}
+
   return (
-    <div className="p-6 flex flex-col gap-5">
-      <div className="bg-bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-text-muted font-medium uppercase tracking-wide">Selected text</p>
-          <span className={`font-mono text-sm font-medium ${isOverLimit ? 'text-claim' : 'text-text-muted'}`}>
-            {wordCount} / {WORD_LIMIT} words
-          </span>
+    <div className="clip-body">
+      <div className="article-source">
+        <span className="article-source-title">{data.title}</span>
+        {host && <span className="article-source-host">{host}</span>}
+      </div>
+
+      {!hasText ? (
+        <div className="article-card is-empty">
+          <svg className="article-marker-icon" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 19l1.2-4.2L16.5 4.5a2 2 0 012.8 0l.2.2a2 2 0 010 2.8L9.2 17.8 5 19z" fill="var(--yellow)" stroke="var(--text)" strokeWidth="1.4" strokeLinejoin="round" />
+            <path d="M4 21h16" stroke="var(--text)" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+          <p className="article-line1"><span className="hl-full">Select text</span> on the page to quote it.</p>
+          <p className="article-line2">Quote up to {WORD_LIMIT} words — you can edit it before posting.</p>
+          <button type="button" className="btn-ghost article-grab" onClick={grabSelection}>
+            Grab selection
+          </button>
         </div>
-
-        <textarea
-          value={selectedText}
-          onChange={(e) => setSelectedText(e.target.value)}
-          placeholder="Highlight text on the page, or paste it here..."
-          rows={8}
-          className={`input resize-none text-base leading-relaxed ${isOverLimit ? 'border-claim' : ''}`}
-        />
-
-        <div className="w-full h-2 bg-bg-raised rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-200 ${isOverLimit ? 'bg-claim' : 'bg-accent'}`}
-            style={{ width: `${Math.min((wordCount / WORD_LIMIT) * 100, 100)}%` }}
-          />
-        </div>
-
-        {isOverLimit && (
-          <div className="bg-claim/10 border border-claim/20 rounded-lg p-4">
-            <p className="text-sm font-medium text-claim">Over 200 words</p>
-            <p className="text-sm text-text-secondary mt-1">
-              Trim to {WORD_LIMIT} words, or split into multiple clips and thread them together.
-            </p>
+      ) : (
+        <div className="article-card has-quote">
+          <div className="article-top">
+            <span className={`article-count ${isOverLimit ? 'over' : wordCount >= warnAt ? 'warn' : ''}`}>
+              {wordCount} / {WORD_LIMIT} words
+            </span>
+            <button type="button" className="btn-ghost article-edit" onClick={() => setEditing((v) => !v)}>
+              {editing ? 'Done' : 'Edit text'}
+            </button>
           </div>
-        )}
-      </div>
+          {editing ? (
+            <textarea
+              value={selectedText}
+              onChange={(e) => setSelectedText(e.target.value)}
+              className="article-editor"
+              rows={8}
+              autoFocus
+            />
+          ) : (
+            <p className="article-quote"><span className="hl-full">{selectedText}</span></p>
+          )}
+          <div className="article-progress">
+            <div
+              className={`article-progress-fill ${isOverLimit ? 'over' : ''}`}
+              style={{ width: `${Math.min((wordCount / WORD_LIMIT) * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
 
-      <div className="annotation-mark bg-bg-surface rounded-r-xl p-4">
-        <p className="text-sm text-text-secondary">Tip: Highlight text on the page first, then open the panel.</p>
-      </div>
+      {!hasText && <p className="article-helper">Select some text to continue.</p>}
+      {isOverLimit && <p className="article-helper over">Over {WORD_LIMIT} words — trim to continue.</p>}
 
       <button
         onClick={handleContinue}
-        disabled={!selectedText.trim() || isOverLimit}
+        disabled={!hasText || isOverLimit}
         className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
       >
         Continue to Annotate

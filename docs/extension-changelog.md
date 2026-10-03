@@ -433,3 +433,45 @@ this changelog.
 - Checks: `npm ci && npm run build` (root) and `npm ci && npm run build`
   (webapp) both pass.
 - **Local commit only — NOT pushed.**
+
+---
+
+## C1 — Article screen + page highlighter (T11 + T12 combined)
+
+**Files touched:** `highlight.css` (new), `manifest.json`, `vite.config.js`, `background.js`,
+`content.js`, `src/App.jsx`, `src/components/ClipCreator.jsx`,
+`src/components/ArticleClipper.jsx`, `src/styles/panel.css`, this changelog.
+
+### T11 — yellow page highlighter
+- `highlight.css` (root): `::highlight(annotated-selection)` + `.annotated-mark` fallback,
+  fixed `#FFE14D` / `#111114` (page can be light or dark). Injected via manifest
+  `content_scripts.css` (no new permission) and copied to `dist/` by the vite
+  copy-files plugin; `background.js` re-inject path also calls
+  `chrome.scripting.insertCSS` so tabs that outlive an extension reload get it.
+- `content.js`: `setArticleHighlight` / `clearArticleHighlight` / `capRange` /
+  `tryFallbackMark` (top-level, outside the guard). `mouseup` keeps its exact
+  SELECTION_CHANGED contract and now also (re)sets the highlight on non-empty
+  selections; a debounced `selectionchange` listener covers keyboard selections.
+  Empty selections never clear the highlight (it survives focus moving to the panel).
+  Over-cap selections are highlighted only up to `HIGHLIGHT_WORD_LIMIT = 200`
+  (kept in sync with ArticleClipper WORD_LIMIT). Fallback wraps text in
+  `<mark class="annotated-mark">` (extractContents, else per-text-node split) with
+  safe unwrap + normalize cleanup.
+- Removal: new selection replaces; panel close (`App.jsx` beforeunload + unmount
+  cleanup sends `CLEAR_HIGHLIGHT`); post success (`ClipCreator.handlePublish` after
+  `setStep('success')` sends `CLEAR_HIGHLIGHT`).
+
+### T12 — article screen redesign
+- Slim source strip (title + host, 14px) above the card.
+- Empty state: dashed `--border-strong` card, 32px yellow marker SVG, 18px line with
+  "Select text" on `.hl-full`, 16px helper with the real 200-word cap, "Grab
+  selection" ghost button (48px) reading `GET_PAGE_INFO` (the panel's read-on-open
+  path); read-on-open effect kept; red Tip box removed.
+- Selected state: solid card, count pill (`25 / 200 words`, `--warn` from 180, red
+  over), "Edit text"/"Done" toggle swapping quote for a 16px `--surface-2` textarea,
+  quote 18px/1.7 with every line on `.hl-full`, existing progress bar restyled slim.
+- Footer: "Select some text to continue." / over-limit red helper, Continue keeps
+  label, classes and disabled logic; `onReady` payload unchanged.
+- `.annotation-mark` CSS rule kept (still used by TweetClipper).
+
+Checks: `npm run build` passes. **Local commit only — NOT pushed.**

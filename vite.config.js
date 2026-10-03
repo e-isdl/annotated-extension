@@ -14,6 +14,7 @@ export default defineConfig({
         copyFileSync(resolve(__dirname, 'manifest.json'), resolve(distDir, 'manifest.json'));
         copyFileSync(resolve(__dirname, 'permission.html'), resolve(distDir, 'permission.html'));
         copyFileSync(resolve(__dirname, 'permission.js'), resolve(distDir, 'permission.js'));
+        copyFileSync(resolve(__dirname, 'highlight.css'), resolve(distDir, 'highlight.css'));
       }
     }
   ],

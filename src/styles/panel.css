@@ -212,3 +212,40 @@
 .rec-actions { display: flex; gap: 8px; }
 .rec-actions .rec-cancel { flex: 1; }
 .rec-actions .btn-ghost { flex: 1; height: 44px; border-radius: 12px; font-weight: 600; color: var(--text-3); }
+
+/* Article screen (T12) */
+.article-source { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 14px; color: var(--text-2); }
+.article-source-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.article-source-host { color: var(--text-3); flex-shrink: 0; }
+
+.article-card { border-radius: var(--r-card); padding: 20px; display: flex; flex-direction: column; gap: 12px; background: var(--surface); }
+.article-card.is-empty { border: 1.5px dashed var(--border-strong); }
+.article-card.has-quote { border: 1px solid var(--border); }
+
+.article-marker-icon { width: 32px; height: 32px; flex-shrink: 0; }
+
+.article-line1 { font-size: 18px; line-height: 1.5; color: var(--text); margin: 0; }
+.article-line2 { font-size: 16px; line-height: 1.5; color: var(--text-2); margin: 0; }
+
+.hl-full { background: var(--yellow); color: var(--on-yellow); box-decoration-break: clone; -webkit-box-decoration-break: clone; padding: 1px 4px; border-radius: 3px; }
+
+.article-grab { height: 48px; border-radius: var(--r-btn); font-size: 16px; }
+
+.article-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.article-count { font-size: 14px; font-weight: 600; color: var(--text-2); background: var(--surface-2); border-radius: 8px; padding: 4px 10px; font-variant-numeric: tabular-nums; }
+.article-count.warn { color: var(--warn); }
+.article-count.over { color: var(--red); }
+
+.article-quote { font-size: 18px; line-height: 1.7; color: var(--text); margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.article-editor { width: 100%; min-height: 160px; resize: vertical; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-btn); padding: 12px; font-size: 16px; line-height: 1.6; color: var(--text); font-family: inherit; }
+.article-editor:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+.article-edit { height: 36px; padding: 0 14px; border-radius: var(--r-btn); font-size: 14px; }
+
+.article-progress { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.article-progress-fill { height: 100%; border-radius: 999px; background: var(--red-btn); transition: width 0.2s; }
+.article-progress-fill.over { background: var(--red); }
+
+.article-helper { font-size: 14px; color: var(--text-2); text-align: center; margin: 0; }
+.article-helper.over { color: var(--red); }

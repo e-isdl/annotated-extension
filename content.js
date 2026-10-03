@@ -467,8 +467,124 @@ async function handleRecordClip(message, sendResponse) {
   }
 }
 
+const HIGHLIGHT_WORD_LIMIT = 200; // keep in sync with WORD_LIMIT in src/components/ArticleClipper.jsx
+let fallbackMarks = [];
+
+function capRange(range, maxWords) {
+  try {
+    const words = range.toString().split(/\s+/).filter(Boolean);
+    if (words.length <= maxWords) return range.cloneRange();
+    const budget = words.slice(0, maxWords).join(' ').length;
+    const out = range.cloneRange();
+    const root = range.commonAncestorContainer;
+    const walker = document.createTreeWalker(
+      root.nodeType === Node.TEXT_NODE ? root.parentNode : root,
+      NodeFilter.SHOW_TEXT
+    );
+    let remaining = budget;
+    let started = false;
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!started) {
+        if (node === range.startContainer) {
+          started = true;
+        } else if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+          const child = range.startContainer.childNodes[range.startOffset];
+          if (child && ((child.nodeType === Node.TEXT_NODE && child === node) || (child.contains && child.contains(node)))) {
+            started = true;
+          }
+        } else {
+          continue;
+        }
+      }
+      if (!started || !range.intersectsNode(node)) continue;
+      const from = node === range.startContainer ? range.startOffset : 0;
+      const avail = node.length - from;
+      if (avail >= remaining) {
+        out.setEnd(node, from + remaining);
+        return out;
+      }
+      remaining -= avail;
+    }
+    return out;
+  } catch (e) {
+    try { return range.cloneRange(); } catch (e2) { return null; }
+  }
+}
+
+function unwrapFallbackMarks() {
+  fallbackMarks.forEach((mark) => {
+    try {
+      const parent = mark.parentNode;
+      if (!parent) return;
+      while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+      parent.removeChild(mark);
+      if (parent.normalize) parent.normalize();
+    } catch (e) {}
+  });
+  fallbackMarks = [];
+}
+
+function clearArticleHighlight() {
+  try {
+    if (typeof CSS !== 'undefined' && CSS.highlights) CSS.highlights.delete('annotated-selection');
+  } catch (e) {}
+  unwrapFallbackMarks();
+}
+
+function tryFallbackMark(range) {
+  try {
+    const mark = document.createElement('mark');
+    mark.className = 'annotated-mark';
+    mark.appendChild(range.extractContents());
+    range.insertNode(mark);
+    fallbackMarks.push(mark);
+    return;
+  } catch (e) {}
+  try {
+    const root = range.commonAncestorContainer;
+    const walker = document.createTreeWalker(
+      root.nodeType === Node.TEXT_NODE ? root.parentNode : root,
+      NodeFilter.SHOW_TEXT
+    );
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!range.intersectsNode(node)) continue;
+      const start = node === range.startContainer ? range.startOffset : 0;
+      const end = node === range.endContainer ? range.endOffset : node.length;
+      if (start >= end) continue;
+      const before = start > 0 ? node.splitText(start) : node;
+      const mid = end < before.length ? before.splitText(end - start) : before;
+      const mark = document.createElement('mark');
+      mark.className = 'annotated-mark';
+      before.parentNode.insertBefore(mark, before);
+      mark.appendChild(before);
+      fallbackMarks.push(mark);
+    }
+  } catch (e) {}
+}
+
+function setArticleHighlight(range) {
+  if (!range) return;
+  clearArticleHighlight();
+  const capped = capRange(range, HIGHLIGHT_WORD_LIMIT) || range;
+  try {
+    if (typeof CSS !== 'undefined' && CSS.highlights && typeof Highlight !== 'undefined') {
+      CSS.highlights.set('annotated-selection', new Highlight(capped));
+      return;
+    }
+  } catch (e) {}
+  tryFallbackMark(capped);
+}
+
 if (!window.__annotatedContentLoaded) {
   window.__annotatedContentLoaded = true;
+
+  const updateSelectionHighlight = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    setArticleHighlight(sel.getRangeAt(0));
+  };
 
   document.addEventListener('mouseup', () => {
     const selected = window.getSelection()?.toString().trim();
@@ -477,7 +593,14 @@ if (!window.__annotatedContentLoaded) {
         type: 'SELECTION_CHANGED',
         data: { selectedText: selected }
       }).catch(() => {});
+      updateSelectionHighlight();
     }
+  });
+
+  let selectionTimer = null;
+  document.addEventListener('selectionchange', () => {
+    clearTimeout(selectionTimer);
+    selectionTimer = setTimeout(updateSelectionHighlight, 200);
   });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -590,6 +713,11 @@ if (!window.__annotatedContentLoaded) {
     }
     if (message.type === 'cancel-recording') {
       stopActiveRecording('Recording stopped.');
+      sendResponse({ ok: true });
+      return true;
+    }
+    if (message.type === 'CLEAR_HIGHLIGHT') {
+      clearArticleHighlight();
       sendResponse({ ok: true });
       return true;
     }

@@ -109,6 +109,14 @@ export default function ClipCreator({ pageInfo, session }) {
     setStep('annotate');
   }, []);
 
+  const clearPageHighlight = () => {
+    try {
+      chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+        if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'CLEAR_HIGHLIGHT' }).catch(() => {});
+      });
+    } catch (e) {}
+  };
+
   const handlePublish = async (annotationData) => {
     const stage = annotationData.onStage || (() => {});
     let video_url = null;
@@ -170,6 +178,7 @@ export default function ClipCreator({ pageInfo, session }) {
     } catch {}
     setPublishedClip(published);
     setStep('success');
+    clearPageHighlight();
   };
 
   const useEmbedInstead = () => {
