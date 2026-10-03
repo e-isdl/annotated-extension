@@ -317,3 +317,14 @@
 .word-clipper-full { flex: 1; min-height: 0; }
 .word-clipper-full .word-clipper { flex: 1; min-height: 0; }
 .word-clipper-full .word-area { flex: 1; max-height: none; }
+
+/* Word clipper top bar */
+.word-clipper-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.word-back { height: 40px; padding: 0 12px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+.word-continue { height: 40px; padding: 0 16px; font-size: 14px; }
+/* Dragging: handles ignore pointer so elementFromPoint hits words */
+.word-area.is-dragging .word-handle { pointer-events: none; }
+.word-area[data-drag="start"] .word-handle[data-handle="start"], .word-area[data-drag="end"] .word-handle[data-handle="end"] { cursor: grabbing; background: var(--red); }
+/* Bigger grab target that does not shift layout */
+.word-handle { position: relative; }
+.word-handle::before { content: ""; position: absolute; inset: -6px -5px; }

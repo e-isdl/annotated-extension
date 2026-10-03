@@ -812,3 +812,27 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 - Pointerdown no longer moves the selection — it only caches rects and arms the drag,
   so a plain click does not jump.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Word clipper rebuilt as separate full-transcript screen
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`, this changelog.
+
+- The word clipper is now its own screen: it renders the FULL cleaned transcript
+  (top to bottom, scrollable) instead of a slice tied to the clip range. The word list
+  is built once per transcript so indices never shift mid-drag (that index shifting was
+  the source of the jumps and lag).
+- Yellow highlight follows the time clipper: words between start/end are marked, and
+  the highlight re-derives whenever the times change outside a drag.
+- Top bar: "Back to time clipper" on the left, "Continue" (or "Record clip", same rule
+  as the main screen) on the right. The title/count row stays below it.
+- Double-click any word to drop the start bar there; the count pill and time readout
+  update. Drag the red bars to fine-tune either end.
+- Drag mechanics fixed: the drag runs on window-level pointer listeners with one
+  `requestAnimationFrame` update per frame and resolves the target word with a single
+  `elementFromPoint` hit per frame (no per-word rect reads, no layout thrash). The
+  sync effect is paused during drags so nothing fights the pointer, and it re-derives
+  once on release. Times are set with sub-second precision instead of full-second
+  clamps, so the start bar no longer snaps back.
+- **Local commit only — NOT pushed.**
