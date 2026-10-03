@@ -11,6 +11,7 @@ export default function ClipPlayer({ src, onError }) {
   const wrapRef = useRef(null);
   const videoRef = useRef(null);
   const seekRef = useRef(null);
+  const autoMutedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -23,6 +24,7 @@ export default function ClipPlayer({ src, onError }) {
     const v = videoRef.current;
     if (!v) return undefined;
     v.muted = false;
+    autoMutedRef.current = false;
     setMuted(false);
     setPlaying(false);
     const attempt = () => {
@@ -32,6 +34,7 @@ export default function ClipPlayer({ src, onError }) {
           p.catch(() => {
             try {
               v.muted = true;
+              autoMutedRef.current = true;
               setMuted(true);
               const p2 = v.play();
               if (p2 && typeof p2.catch === 'function') p2.catch(() => {});
@@ -86,8 +89,30 @@ export default function ClipPlayer({ src, onError }) {
     const v = videoRef.current;
     if (!v) return;
     v.muted = !v.muted;
+    autoMutedRef.current = false;
     setMuted(v.muted);
   };
+
+  const unmuteNow = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    try { v.muted = false; } catch {}
+    autoMutedRef.current = false;
+    setMuted(false);
+  }, []);
+
+  useEffect(() => {
+    const unmute = () => {
+      const v = videoRef.current;
+      if (v && autoMutedRef.current && v.muted) unmuteNow();
+    };
+    window.addEventListener('pointerdown', unmute);
+    window.addEventListener('keydown', unmute);
+    return () => {
+      window.removeEventListener('pointerdown', unmute);
+      window.removeEventListener('keydown', unmute);
+    };
+  }, [src, unmuteNow]);
 
   const toggleFull = () => {
     try {
@@ -130,6 +155,11 @@ export default function ClipPlayer({ src, onError }) {
           <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M8 5v14l11-7z" fill="currentColor" />
           </svg>
+        </button>
+      )}
+      {muted && (
+        <button type="button" className="clip-player-unmute" onClick={unmuteNow}>
+          Tap for sound
         </button>
       )}
       <div className="clip-player-bar">

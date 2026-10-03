@@ -284,6 +284,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .clip-player-played { position: absolute; left: 0; height: 3px; border-radius: 2px; background: #fff; }
 .clip-player-knob { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: #fff; transform: translateX(-50%) scale(0); transition: transform 0.15s ease; box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
 .clip-player:hover .clip-player-knob { transform: translateX(-50%) scale(1); }
+.clip-player-unmute { position: absolute; left: 12px; bottom: 12px; z-index: 2; border: none; border-radius: 999px; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: #fff; font-size: 12px; font-weight: 600; padding: 7px 12px; cursor: pointer; }
 .yt-frame { border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
 .source-post-image { display: block; width: 100%; max-height: 460px; border-radius: 10px; object-fit: cover; }
 .source-post-image-x { max-height: 52vh; max-width: 680px; margin: 0 auto; object-fit: contain; }

@@ -1007,3 +1007,15 @@ Files touched: src/components/YouTubeClipper.jsx, this changelog.
 - Any manual touch (scrub, inputs, nudges, word drag, double-click) marks the times
   touched and disables further auto-sync, so your adjustments are never overwritten.
 - Local commit only - NOT pushed.
+---
+
+## Player unmutes itself
+
+Files touched: webapp/src/components/ClipPlayer.jsx, webapp/src/styles/globals.css,
+this changelog.
+
+- Browsers force-muted autoplay, so the player now tries sound first, falls back to
+  muted only if blocked, then unmutes on the first tap or keypress anywhere. Manual
+  mute stays respected and never auto-reverses.
+- A Tap for sound pill sits bottom-left whenever muted.
+- Local commit only - NOT pushed. Webapp NOT deployed.
