@@ -1109,3 +1109,11 @@ this changelog. Production: one row inserted into communities.
   Supabase list (name + slug), No community always present, Escape/backdrop
   close, empty state included.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Release v2.3.5
+
+- Manifest bumped 2.3.4 to 2.3.5. Ships the TV and Film community plus the
+  searchable community picker, the permanent word-clipper Continue bar, true
+  caption word timings, live-position clip start, and the scroll-chain fix.
+- Pushed to master (webapp redeploys from it).
