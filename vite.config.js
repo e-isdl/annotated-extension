@@ -13,6 +13,7 @@ export default defineConfig({
         if (!existsSync(distDir)) mkdirSync(distDir, { recursive: true });
         copyFileSync(resolve(__dirname, 'manifest.json'), resolve(distDir, 'manifest.json'));
         copyFileSync(resolve(__dirname, 'permission.html'), resolve(distDir, 'permission.html'));
+        copyFileSync(resolve(__dirname, 'permission.js'), resolve(distDir, 'permission.js'));
       }
     }
   ],
