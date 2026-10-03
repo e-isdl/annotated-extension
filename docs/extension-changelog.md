@@ -715,3 +715,15 @@ Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.*
 Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.**
 Webapp changes are NOT yet deployed to Cloudflare Pages (production deploy needs the
 master''s OK per AGENTS.md).
+
+---
+
+## Word clipper fix: wrong video id field
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, this changelog.
+
+- The word clipper called `fetchYouTubeTranscript(data.youtube_id)`, but the clip
+  screen''s pageInfo carries the id as `data.videoId` — so the fetch ran with
+  `undefined` and the tab check threw "Return to the selected YouTube video tab to
+  load its captions." Now uses `data.videoId`.
+- **Local commit only — NOT pushed.**

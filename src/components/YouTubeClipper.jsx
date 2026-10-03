@@ -361,7 +361,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     setWordLoading(true);
     setWordError('');
     try {
-      const result = await fetchYouTubeTranscript(data.youtube_id);
+      const result = await fetchYouTubeTranscript(data.videoId);
       setSegments(result.segments || []);
     } catch (e) {
       setWordError(e.message || 'Could not load the transcript.');
