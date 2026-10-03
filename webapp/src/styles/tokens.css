@@ -25,12 +25,12 @@
 
 [data-theme="light"] {
   color-scheme: light;
-  --bg: #F5F5F7;
-  --surface: #FFFFFF;
-  --surface-2: #EEEEF2;
-  --surface-3: #E3E3E9;
-  --border: #D5D5DD;
-  --border-strong: #A9A9B6;
+  --bg: #F7F4EA;
+  --surface: #FFFDF3;
+  --surface-2: #F0EDE1;
+  --surface-3: #E6E2D4;
+  --border: #DDD8C7;
+  --border-strong: #B5AF9D;
   --text: #111114;
   --text-2: #3A3A42;
   --text-3: #62626D;
