@@ -673,3 +673,14 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   (AGENTS.md) — requested next.
 
 Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.**
+
+---
+
+## Play clip: live time back right of Replay (title removed)
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, this changelog.
+
+- The label right of Replay is the moving current time again (`formatShort(currentTime)`,
+  250 ms `VIDEO_TIME` poll while playing, updated from the toggle response too). The video
+  title stays only in the clip heading (FlowHeader).
+- **Local commit only — NOT pushed.**
