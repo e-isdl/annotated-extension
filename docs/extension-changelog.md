@@ -994,3 +994,16 @@ Files touched: src/components/YouTubeClipper.jsx, this changelog.
 - Fix: rebuilt the toggle plus the four helpers as proper component-level
   functions, verified the diff is purely structural, build passes.
 - Local commit only - NOT pushed.
+---
+
+## Clip starts where the video is
+
+Files touched: src/components/YouTubeClipper.jsx, this changelog.
+
+- Opening the clipper on a video now asks the tab for the live playback position
+  and sets start there with end 30s later (clamped to duration), instead of 0:00.
+  Runs once duration is known so the end never gets clobbered, and again whenever
+  the panel becomes visible.
+- Any manual touch (scrub, inputs, nudges, word drag, double-click) marks the times
+  touched and disables further auto-sync, so your adjustments are never overwritten.
+- Local commit only - NOT pushed.

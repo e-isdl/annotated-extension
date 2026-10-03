@@ -73,6 +73,32 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const [fabOpen, setFabOpen] = useState(false);
   const [fabVisible, setFabVisible] = useState(false);
   const wordAreaRef = useRef(null);
+  const durationRef = useRef(0);
+  durationRef.current = duration;
+  const timesTouchedRef = useRef(false);
+
+  const syncStartToVideoTime = (dur) => {
+    if (timesTouchedRef.current) return;
+    try {
+      chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+        if (!tab?.id || timesTouchedRef.current) return;
+        chrome.tabs.sendMessage(tab.id, { type: 'VIDEO_TIME' }, (res) => {
+          if (!res || !res.ok || typeof res.time !== 'number') return;
+          if (timesTouchedRef.current) return;
+          const safeDur = dur > 0 ? dur : 300;
+          const t = Math.floor(res.time);
+          if (!(t >= 0)) return;
+          const s = Math.max(0, Math.min(t, Math.max(0, safeDur - 1)));
+          const e = Math.min(s + 30, safeDur);
+          if (!(e > s)) return;
+          setStartSec(s);
+          setStartInput(formatTime(s));
+          setEndSec(e);
+          setEndInput(formatTime(e));
+        }).catch(() => {});
+      });
+    } catch (e) {}
+  };
 
   useEffect(() => {
     if (rec.url) return () => URL.revokeObjectURL(rec.url);
@@ -93,9 +119,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   useEffect(() => {
     if (data.duration && data.duration > 0) {
       setDuration(data.duration);
-      setEndSec(Math.min(30, data.duration));
-      setStartInput(formatTime(0));
-      setEndInput(formatTime(Math.min(30, data.duration)));
+      syncStartToVideoTime(data.duration);
       return;
     }
     fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${data.videoId}&format=json`)
@@ -113,14 +137,21 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             const d = results?.[0]?.result;
             if (d && d > 0) {
               setDuration(d);
-              setEndSec(Math.min(30, d));
-              setEndInput(formatTime(Math.min(30, d)));
+              syncStartToVideoTime(d);
             }
           });
         });
       })
       .catch(() => {});
   }, [data.videoId, data.duration]);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible') syncStartToVideoTime(durationRef.current || 0);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
 
   useEffect(() => {
     const handleConnect = (port) => {
@@ -266,24 +297,28 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const clipLen = endSec - startSec;
 
   const updateStart = (sec) => {
+    timesTouchedRef.current = true;
     const clamped = Math.max(0, Math.min(sec, endSec - 1));
     setStartSec(clamped);
     setStartInput(formatTime(clamped));
   };
 
   const updateEnd = (sec) => {
+    timesTouchedRef.current = true;
     const clamped = Math.min(duration, Math.max(sec, startSec + 1));
     setEndSec(clamped);
     setEndInput(formatTime(clamped));
   };
 
   const handleStartInput = (val) => {
+    timesTouchedRef.current = true;
     setStartInput(val);
     const sec = parseTime(val);
     if (!isNaN(sec) && sec >= 0 && sec < endSec) setStartSec(sec);
   };
 
   const handleEndInput = (val) => {
+    timesTouchedRef.current = true;
     setEndInput(val);
     const sec = parseTime(val);
     if (!isNaN(sec) && sec > startSec && sec <= duration) setEndSec(sec);
@@ -408,6 +443,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     s.setStartInput(formatTime(t));
     s.setEndSec(e);
     s.setEndInput(formatTime(e));
+    timesTouchedRef.current = true;
   }, []);
 
   const onWordHandleEvent = useCallback((which, phase, e) => {
@@ -437,12 +473,14 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
           s.setWordStart(best);
           s.setStartSec(t);
           s.setStartInput(formatTime(t));
+          timesTouchedRef.current = true;
         } else {
           if (best < s.wordStart) return;
           const t = Math.min(s.words[best].end, s.duration);
           s.setWordEnd(best);
           s.setEndSec(t);
           s.setEndInput(formatTime(t));
+          timesTouchedRef.current = true;
         }
       });
     };
