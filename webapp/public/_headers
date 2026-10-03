@@ -1,0 +1,15 @@
+# Security headers for all pages.
+# Applied by Cloudflare Pages at the edge, before any app code runs.
+#
+# The Content-Security-Policy-Report-Only header below enforces NOTHING.
+# It logs what a future strict CSP would block: watch the browser console
+# for violation reports across a full session (auth, clip pages with
+# YouTube/Twitter embeds, remote thumbnails/audio). When no violations
+# appear, rename the header to "Content-Security-Policy" to enforce it.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: DENY
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://platform.twitter.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; media-src 'self' https:; frame-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'

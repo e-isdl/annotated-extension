@@ -18,6 +18,10 @@ export default function AuthCallback() {
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
         if (accessToken && refreshToken) {
+          // Tokens must not linger in the URL: they survive in browser history
+          // and are visible on screen shares. Consume them as soon as they are
+          // handed to the Supabase client.
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
           supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
             .then(() => navigate('/'));
           return;

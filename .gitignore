@@ -8,3 +8,6 @@ dist/
 supabase/.temp/
 supabase/**/.temp/
 *.secret
+*.pem
+tmp/
+annotated-extension.zip
