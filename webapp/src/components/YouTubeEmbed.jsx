@@ -34,7 +34,7 @@ function loadYouTubeApi() {
 // at the clip's end time, and offers a replay control that restarts at the
 // clip start. The native YouTube replay control is deliberately covered by
 // the overlay, because it would restart the full video from 0:00.
-export default function YouTubeEmbed({ videoId, startSec, endSec, muted = true, autoplay = false }) {
+export default function YouTubeEmbed({ videoId, startSec, endSec, autoplay = false }) {
   const hostRef = useRef(null);
   const playerRef = useRef(null);
   const boundsRef = useRef({ start: 0, end: 0 });
@@ -62,12 +62,17 @@ export default function YouTubeEmbed({ videoId, startSec, endSec, muted = true, 
           start: boundsRef.current.start,
           ...(boundsRef.current.end > boundsRef.current.start ? { end: boundsRef.current.end } : {}),
           autoplay: autoplay ? 1 : 0,
-          mute: muted ? 1 : 0,
           playsinline: 1,
         },
         events: {
           onReady: (event) => {
             try { event.target.getIframe().title = 'Source video'; } catch (e) { /* ignore */ }
+            // Clips always start with sound: the embed is never left muted.
+            try {
+              event.target.unMute();
+              event.target.setVolume(100);
+              if (autoplay) event.target.playVideo();
+            } catch (e) { /* ignore */ }
             // The `end` playerVar usually stops playback, but it is not
             // guaranteed on every client, so playing past the clip end is
             // enforced here as a safety net.
@@ -83,6 +88,9 @@ export default function YouTubeEmbed({ videoId, startSec, endSec, muted = true, 
             }, 500);
           },
           onStateChange: (event) => {
+            if (event.data === YT_STATE_PLAYING) {
+              try { event.target.unMute(); event.target.setVolume(100); } catch (e) { /* ignore */ }
+            }
             if (event.data === YT_STATE_ENDED) setEnded(true);
           },
         },
@@ -98,7 +106,7 @@ export default function YouTubeEmbed({ videoId, startSec, endSec, muted = true, 
       mount.remove();
       setEnded(false);
     };
-  }, [videoId, autoplay, muted]);
+  }, [videoId, autoplay]);
 
   const replayClip = () => {
     const player = playerRef.current;
@@ -114,7 +122,7 @@ export default function YouTubeEmbed({ videoId, startSec, endSec, muted = true, 
     <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
       {apiFailed ? (
         <iframe
-          src={youtubeEmbedUrl(videoId, { startSec: start, endSec: end, muted, autoplay })}
+          src={youtubeEmbedUrl(videoId, { startSec: start, endSec: end, autoplay })}
           className="absolute inset-0 w-full h-full"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen

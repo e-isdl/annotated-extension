@@ -44,7 +44,7 @@ export default function ClipPage() {
   const tweetTextRef = useRef(null);
   const [tweetExpanded, setTweetExpanded] = useState(false);
   const [tweetExpandable, setTweetExpandable] = useState(false);
-  const [verbatimTranscript, setVerbatimTranscript] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const { push } = useToast();
 
@@ -301,7 +301,7 @@ export default function ClipPage() {
         ))}
         {clip.source_type === 'youtube' && (
           <div className="source-media">
-            <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted autoplay />
+            <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
             {range && (
               <div
                 className="yt-range"
@@ -344,9 +344,15 @@ export default function ClipPage() {
         <section className="source-transcript" aria-label="Transcript">
           <div className="source-transcript-head">
             {!annotation?.audio_url && <span className="source-transcript-label">Transcript</span>}
-            <button type="button" className={`post-action${verbatimTranscript ? ' post-action-saved' : ''}`} aria-pressed={verbatimTranscript} onClick={() => setVerbatimTranscript((value) => !value)}>Verbatim</button>
+            <button type="button" className={`post-action${showTranscript ? ' post-action-saved' : ''}`} aria-expanded={showTranscript} onClick={() => setShowTranscript((value) => !value)}>
+              {showTranscript ? 'Hide transcript' : 'Show transcript'}
+            </button>
           </div>
-          <p className="source-transcript-text">{verbatimTranscript ? transcript : cleanTranscript(transcript)}</p>
+          {showTranscript && (
+            <div className="source-transcript-box">
+              <p className="source-transcript-text">{cleanTranscript(transcript)}</p>
+            </div>
+          )}
         </section>
       )}
 

@@ -1,4 +1,4 @@
-export function youtubeEmbedUrl(videoId, { startSec = 0, endSec = 0, muted = true, autoplay = false } = {}) {
+export function youtubeEmbedUrl(videoId, { startSec = 0, endSec = 0, muted = false, autoplay = false } = {}) {
   const start = Math.max(0, Math.floor(Number(startSec) || 0));
   const end = Math.max(0, Math.floor(Number(endSec) || 0));
   const params = new URLSearchParams({

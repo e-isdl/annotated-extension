@@ -65,7 +65,7 @@ export default function DemoClipPage({ clip }) {
 
 function SourceMedia({ clip }) {
   if (clip.source_type === 'youtube' && clip.youtube_id) {
-    return <div className="source-media"><YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} muted autoplay /></div>;
+    return <div className="source-media"><YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay /></div>;
   }
   if (clip.source_type === 'podcast' && clip.audio_url) {
     return <div className="source-media"><AudioPlayer src={clip.audio_url} /></div>;
