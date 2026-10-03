@@ -238,3 +238,21 @@ leftover mistake â€” "leave the text as it is". No code changed.
   label already communicate validation.
 - Kept: duration chip, heading, rail, Start/End cards, nudges, length row, Continue.
 - **Local commit only — NOT pushed** (master''s order).
+
+---
+
+## Clip screen de-clutter #2 (master''s order)
+
+**Files touched:** `src/components/FlowHeader.jsx`, `src/components/ClipCreator.jsx`,
+`src/styles/panel.css`, this changelog.
+
+- Removed the Clip/Take progress rail entirely (back-nav from Take still exists via
+  AnnotationForm''s own back button).
+- Removed the platform icon and the video title below the rail. Header is now just a
+  centered platform eyebrow ("YouTube" etc.) + centered heading.
+- Heading "Which part matters?" centered and bumped 18px -> 20px.
+- Continue ("Continue to Annotate") now ghosts when disabled: `.btn-primary:disabled`
+  = 40% opacity + not-allowed cursor — so it ghosts whenever the clip is over 90s
+  (label already reads "Xs (max 90s to annotate)").
+- Dead CSS removed: rail/strip rules, `.thumb iframe`.
+- **Local commit only — NOT pushed.**

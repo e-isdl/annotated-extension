@@ -210,7 +210,7 @@ export default function ClipCreator({ pageInfo, session }) {
       </header>
 
       {step !== 'success' && (
-        <FlowHeader step={step} pageInfo={pageInfo} onBackToFirst={() => setStep('clip')} />
+        <FlowHeader step={step} pageInfo={pageInfo} />
       )}
 
       <div className="flex-1 overflow-y-auto">
