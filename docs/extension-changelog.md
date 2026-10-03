@@ -1155,3 +1155,10 @@ this changelog. Production: one stuck uploading row repaired to failed.
 - Webapp: uploads older than 20 minutes stop spinning and fall back to the
   embed. No more eternal Uploading state.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Release v2.3.6
+
+- Manifest bumped 2.3.5 to 2.3.6. Ships the integer-timestamp publish fix and
+  awaited uploads with timeout plus stale-upload fallback.
+- Pushed to master.
