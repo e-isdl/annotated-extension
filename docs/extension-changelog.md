@@ -1032,3 +1032,13 @@ Files touched: src/styles/panel.css, this changelog.
   min-height 0, so the transcript pane itself is the scroller. Scroll down 120px
   and the button appears.
 - Local commit only - NOT pushed.
+---
+
+## Word clipper: one Continue, back to time screen
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css, this changelog.
+
+- The word clipper keeps a single Continue: top bar and hover button both return to
+  the time screen, where watch, replay, record and embed all live. Removed the Back
+  button, the Embed/Record toggle and the three now-dead helpers.
+- Local commit only - NOT pushed.

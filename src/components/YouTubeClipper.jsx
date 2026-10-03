@@ -527,23 +527,6 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     setFabVisible(false);
   };
 
-  const wordContinue = () => {
-    if (canContinue) handleContinue();
-    else setWordClipperOpen(false);
-    setFabOpen(false);
-  };
-
-  const pickEmbedPlay = () => {
-    setPlayMode('embed');
-    setFabOpen(false);
-  };
-
-  const pickRecordPlay = () => {
-    setPlayMode('record');
-    if (rec.state !== 'done') setWordClipperOpen(false);
-    setFabOpen(false);
-  };
-
   const canContinue = rec.state === 'done' || playMode === 'embed';
   const locked = rec.state === 'recording' || rec.state === 'done';
 
@@ -600,46 +583,17 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
       <div className="clip-body word-clipper-full">
         <div className="word-clipper">
           <div className="word-clipper-top">
-            <button type="button" className="btn-ghost word-back" onClick={closeWordClipper}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Back to time clipper
-            </button>
-            <button
-              type="button"
-              className="btn-primary word-continue"
-              onClick={wordContinue}
-              disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
-            >
-              {canContinue ? 'Continue' : 'Record clip'}
-            </button>
-          </div>
-          <div className="word-play-toggle" role="radiogroup" aria-label="How should it play?">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={playMode === 'embed'}
-              className={`word-play-opt${playMode === 'embed' ? ' is-selected' : ''}`}
-              onClick={pickEmbedPlay}
-            >
-              Embed clip
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={playMode === 'record'}
-              className={`word-play-opt${playMode === 'record' ? ' is-selected' : ''}`}
-              onClick={pickRecordPlay}
-            >
-              Record clip
-            </button>
-          </div>
-          <div className="word-clipper-head">
             <span className="word-clipper-title">Word clipper</span>
             {words.length > 0 && (
               <span className="word-clipper-count">{wordEnd - wordStart + 1} words</span>
             )}
+            <button
+              type="button"
+              className="btn-primary word-continue"
+              onClick={closeWordClipper}
+            >
+              Continue
+            </button>
           </div>
           {wordLoading ? (
             <p className="word-clipper-msg">Loading transcript…</p>
@@ -670,10 +624,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
                 <div className="word-fab-wrap">
                   {fabOpen && (
                     <div className="word-fab-menu" role="menu">
-                      <button type="button" className="word-fab-item" onClick={closeWordClipper} role="menuitem">Back to time clipper</button>
-                      <button type="button" className="word-fab-item is-primary" onClick={wordContinue} role="menuitem">{canContinue ? 'Continue' : 'Record clip'}</button>
-                      <button type="button" className={`word-fab-item${playMode === 'embed' ? ' is-selected' : ''}`} onClick={pickEmbedPlay} role="menuitemradio" aria-checked={playMode === 'embed'}>Embed clip{playMode === 'embed' ? ' ✓' : ''}</button>
-                      <button type="button" className={`word-fab-item${playMode === 'record' ? ' is-selected' : ''}`} onClick={pickRecordPlay} role="menuitemradio" aria-checked={playMode === 'record'}>Record clip{playMode === 'record' ? ' ✓' : ''}</button>
+                      <button type="button" className="word-fab-item is-primary" onClick={closeWordClipper} role="menuitem">Continue</button>
                     </div>
                   )}
                   <button type="button" className="word-fab" onClick={() => setFabOpen((v) => !v)} aria-label="Clip actions" aria-expanded={fabOpen}>⋯</button>
