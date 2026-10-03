@@ -336,3 +336,16 @@ this changelog.
   - Recording card padding 14 -> 10/12, gap 10 -> 8.
 - Nothing removed, everything smaller — Continue should now be on screen with no scroll.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Clip screen sizing rebalanced (master''s order) — compaction was too aggressive
+
+**Files touched:** `src/styles/panel.css`, this changelog.
+
+- Master: after the compacting pass, almost half the screen was empty. Scaled back
+  up to a middle ground. Restored: time fields 24px, option cards 72px,
+  card padding 12/14, nudge/scrub padding, gaps 12, recording card padding 14.
+- Kept the modest trims: heading **18px** (was 20), thumbnail capped at
+  **140px** (uncapped 16:9 is ~180), clip-body gap 12 (was 14), paddings slightly lean.
+- **Local commit only — NOT pushed.**
