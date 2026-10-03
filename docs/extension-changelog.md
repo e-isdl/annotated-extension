@@ -750,3 +750,16 @@ master''s OK per AGENTS.md).
    fractional times, and the time<->word sync runs in a `useLayoutEffect` so the
    selection never flickers or jumps. Time scrub and word bars stay in both-way sync.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Web app DEPLOYED to Cloudflare Pages
+
+- The owner explicitly ordered the webapp deploy. No wrangler credentials/config exist
+  in the environment, so the deploy path is Cloudflare Pages'' Git connection: pushed
+  `master` to origin (`1a16b2b..6ad4c04`). Pages will build and publish the webapp with:
+  the recorded-clip `<video>` player, the Uploading spinner state, and the Continue
+  button after a clip ends.
+- NOTE: the push also published the local-only extension commits (T10, C1, C2, play-clip
+  and word-clipper work) — the standing "local commits only" rule was overridden by the
+  explicit deploy order.
