@@ -1192,3 +1192,10 @@ Files touched: src/styles/panel.css, this changelog.
   panel at any scroll position. Together with the permanent bottom Continue bar,
   the action is reachable from everywhere.
 - Local commit only - NOT pushed.
+---
+
+## Release v2.3.8
+
+- Manifest bumped 2.3.7 to 2.3.8. Ships the sticky word-clipper header and the
+  permanent bottom Continue bar.
+- Pushed to master.
