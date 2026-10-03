@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { fetchYouTubeTranscript } from '../lib/youtubeTranscript';
 
 function formatTime(s) {
   s = Math.max(0, Math.floor(s));
@@ -55,6 +56,14 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const [rec, setRec] = useState(IDLE_REC);
   const trackRef = useRef(null);
   const portRef = useRef(null);
+  const [wordClipperOpen, setWordClipperOpen] = useState(false);
+  const [segments, setSegments] = useState(null);
+  const [wordLoading, setWordLoading] = useState(false);
+  const [wordError, setWordError] = useState('');
+  const [wordStart, setWordStart] = useState(0);
+  const [wordEnd, setWordEnd] = useState(0);
+  const [draggingWord, setDraggingWord] = useState(null);
+  const wordAreaRef = useRef(null);
 
   useEffect(() => {
     if (rec.url) return () => URL.revokeObjectURL(rec.url);
@@ -272,6 +281,95 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     });
   };
 
+  const words = useMemo(() => {
+    if (!segments?.length) return [];
+    const segs = segments.filter((s) => s.end > startSec && s.start < endSec);
+    const out = [];
+    segs.forEach((seg) => {
+      const parts = String(seg.text || '').trim().split(/\s+/).filter(Boolean);
+      const span = Math.max(0.001, seg.end - seg.start);
+      parts.forEach((text, i) => {
+        out.push({
+          text,
+          start: seg.start + (span * i) / parts.length,
+          end: seg.start + (span * (i + 1)) / parts.length,
+        });
+      });
+    });
+    return out;
+  }, [segments, startSec, endSec]);
+
+  useEffect(() => {
+    if (!words.length) return;
+    let s = words.findIndex((w) => w.end > startSec);
+    if (s === -1) s = words.length - 1;
+    let e = -1;
+    words.forEach((w, i) => { if (w.start < endSec) e = i; });
+    if (e === -1) e = 0;
+    setWordStart(s);
+    setWordEnd(e);
+  }, [words, startSec, endSec]);
+
+  const wordIndexFromX = (clientX) => {
+    const area = wordAreaRef.current;
+    if (!area) return null;
+    const els = area.querySelectorAll('[data-word-index]');
+    let best = null;
+    let bestDist = Infinity;
+    els.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      const dist = Math.abs(clientX - (rect.left + rect.width / 2));
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = Number(el.getAttribute('data-word-index'));
+      }
+    });
+    return best;
+  };
+
+  const onWordHandleDown = (which) => (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingWord(which);
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  };
+
+  const onWordHandleMove = (e) => {
+    if (!draggingWord || !words.length) return;
+    const idx = wordIndexFromX(e.clientX);
+    if (idx == null) return;
+    if (draggingWord === 'start') {
+      const clamped = Math.min(idx, wordEnd);
+      setWordStart(clamped);
+      updateStart(Math.round(words[clamped].start));
+    } else {
+      const clamped = Math.max(idx, wordStart);
+      setWordEnd(clamped);
+      updateEnd(Math.round(words[clamped].end));
+    }
+  };
+
+  const onWordHandleUp = () => setDraggingWord(null);
+
+  const toggleWordClipper = async () => {
+    if (wordClipperOpen) {
+      setWordClipperOpen(false);
+      return;
+    }
+    setWordClipperOpen(true);
+    if (segments || wordError) return;
+    setWordLoading(true);
+    setWordError('');
+    try {
+      const result = await fetchYouTubeTranscript(data.youtube_id);
+      setSegments(result.segments || []);
+    } catch (e) {
+      setWordError(e.message || 'Could not load the transcript.');
+    } finally {
+      setWordLoading(false);
+    }
+  };
+
   const canContinue = rec.state === 'done' || playMode === 'embed';
   const locked = rec.state === 'recording' || rec.state === 'done';
 
@@ -464,6 +562,70 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
           </div>
         </div>
       </div>
+
+      <button type="button" className="btn-ghost word-clipper-toggle" onClick={toggleWordClipper}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        {wordClipperOpen ? 'Close word clipper' : 'Open word clipper'}
+      </button>
+
+      {wordClipperOpen && (
+        <div className="word-clipper">
+          <div className="word-clipper-head">
+            <span className="word-clipper-title">Word clipper</span>
+            {words.length > 0 && (
+              <span className="word-clipper-count">{wordEnd - wordStart + 1} words</span>
+            )}
+            <button type="button" className="word-clipper-close" onClick={() => setWordClipperOpen(false)} aria-label="Close word clipper">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          {wordLoading ? (
+            <p className="word-clipper-msg">Loading transcript…</p>
+          ) : wordError ? (
+            <p className="word-clipper-msg error">{wordError}</p>
+          ) : words.length === 0 ? (
+            <p className="word-clipper-msg">No transcript in this time range.</p>
+          ) : (
+            <>
+              <div className="word-area" ref={wordAreaRef}>
+                {words.map((w, i) => (
+                  <span key={i}>
+                    {i === wordStart && (
+                      <span
+                        className={`word-handle${draggingWord === 'start' ? ' dragging' : ''}`}
+                        data-handle="start"
+                        onPointerDown={onWordHandleDown('start')}
+                        onPointerMove={onWordHandleMove}
+                        onPointerUp={onWordHandleUp}
+                        onPointerCancel={onWordHandleUp}
+                      />
+                    )}
+                    <span data-word-index={i} className={i >= wordStart && i <= wordEnd ? 'word is-selected' : 'word'}>{w.text} </span>
+                    {i === wordEnd && (
+                      <span
+                        className={`word-handle${draggingWord === 'end' ? ' dragging' : ''}`}
+                        data-handle="end"
+                        onPointerDown={onWordHandleDown('end')}
+                        onPointerMove={onWordHandleMove}
+                        onPointerUp={onWordHandleUp}
+                        onPointerCancel={onWordHandleUp}
+                      />
+                    )}
+                  </span>
+                ))}
+              </div>
+              <div className="word-clipper-foot">
+                <span>{formatShort(words[wordStart]?.start ?? startSec)} – {formatShort(words[wordEnd]?.end ?? endSec)}</span>
+                <span className="word-clipper-hint">Drag the bars to clip by words</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="length-row">
         <span className={clipLen > 90 ? 'over' : ''}>Clip length {formatLength(clipLen)}</span>

@@ -684,3 +684,34 @@ Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.*
   250 ms `VIDEO_TIME` poll while playing, updated from the toggle response too). The video
   title stays only in the clip heading (FlowHeader).
 - **Local commit only — NOT pushed.**
+
+---
+
+## Webapp: Continue after clip end + Word clipper (T11-T16 extra)
+
+**Files touched:** `webapp/src/components/YouTubeEmbed.jsx`, `webapp/src/styles/globals.css`,
+`src/components/YouTubeClipper.jsx`, `src/styles/panel.css`, this changelog.
+
+### Webapp — Continue button after the clip ends
+- When the embed reaches the clip end, the overlay now offers **Replay clip** AND
+  **Continue** side by side. Continue seeks just past the clip end and plays on (sets a
+  `continuedRef` flag so the 500 ms end-enforcement poll never pauses again); the flag
+  resets on player cleanup. Overlay restyled from a full-cover button to a two-pill row.
+
+### Word clipper (clip screen, below the time clipper)
+- "Open word clipper" ghost button toggles a card with the transcript of the current
+  time range. Words are rendered as a flowing paragraph; the selected range sits on a
+  yellow marker, and two draggable bars (`| |`, pointer-capture, nearest-word hit
+  testing) set the selection by WORDS.
+- **Two-way sync**: dragging the time scrub recomputes the word selection from the
+  segment times (words are interpolated per segment); dragging a word bar updates
+  Start/End through the existing `updateStart`/`updateEnd`, so the time clipper follows.
+  The word list is derived client-side from the full caption segments (fetched once per
+  video via `fetchYouTubeTranscript`), so moving the time range never refetches.
+- Card shows word count, the mapped time range, and a hint; loading / error /
+  no-transcript-in-range states included. Selected words use the highlight yellow
+  (allowed: selected text).
+
+Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.**
+Webapp changes are NOT yet deployed to Cloudflare Pages (production deploy needs the
+master''s OK per AGENTS.md).

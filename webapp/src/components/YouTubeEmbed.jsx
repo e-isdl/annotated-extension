@@ -38,6 +38,7 @@ export default function YouTubeEmbed({ videoId, startSec, endSec, autoplay = fal
   const hostRef = useRef(null);
   const playerRef = useRef(null);
   const boundsRef = useRef({ start: 0, end: 0 });
+  const continuedRef = useRef(false);
   const [ended, setEnded] = useState(false);
   const [apiFailed, setApiFailed] = useState(false);
 
@@ -78,7 +79,8 @@ export default function YouTubeEmbed({ videoId, startSec, endSec, autoplay = fal
             // enforced here as a safety net.
             pollTimer = setInterval(() => {
               try {
-                if (event.target.getPlayerState() === YT_STATE_PLAYING
+                if (!continuedRef.current
+                  && event.target.getPlayerState() === YT_STATE_PLAYING
                   && boundsRef.current.end > boundsRef.current.start
                   && event.target.getCurrentTime() >= boundsRef.current.end) {
                   event.target.pauseVideo();
@@ -103,6 +105,7 @@ export default function YouTubeEmbed({ videoId, startSec, endSec, autoplay = fal
       if (pollTimer) clearInterval(pollTimer);
       try { player?.destroy(); } catch (e) { /* ignore */ }
       playerRef.current = null;
+      continuedRef.current = false;
       mount.remove();
       setEnded(false);
     };
@@ -115,6 +118,17 @@ export default function YouTubeEmbed({ videoId, startSec, endSec, autoplay = fal
       player.seekTo(boundsRef.current.start, true);
       player.playVideo();
       setEnded(false);
+    } catch (e) { /* ignore */ }
+  };
+
+  const continueVideo = () => {
+    const player = playerRef.current;
+    continuedRef.current = true;
+    setEnded(false);
+    if (!player?.seekTo) return;
+    try {
+      player.seekTo(boundsRef.current.end + 1, true);
+      player.playVideo();
     } catch (e) { /* ignore */ }
   };
 
@@ -133,10 +147,15 @@ export default function YouTubeEmbed({ videoId, startSec, endSec, autoplay = fal
           <div ref={hostRef} className="yt-player-host" />
         )}
         {ended && !apiFailed && (
-          <button type="button" className="yt-replay" aria-label="Replay clip from its start" onClick={replayClip}>
-            <span className="yt-replay__icon" aria-hidden="true">↻</span>
-            <span className="yt-replay__label">Replay clip</span>
-          </button>
+          <div className="yt-end-actions">
+            <button type="button" className="yt-replay" aria-label="Replay clip from its start" onClick={replayClip}>
+              <span className="yt-replay__icon" aria-hidden="true">↻</span>
+              <span className="yt-replay__label">Replay clip</span>
+            </button>
+            <button type="button" className="yt-continue" aria-label="Continue watching the full video" onClick={continueVideo}>
+              <span className="yt-continue__label">Continue</span>
+            </button>
+          </div>
         )}
       </div>
     </div>
