@@ -318,3 +318,21 @@ this changelog.
   the YouTube tab must stay open and in front; ads and DRM videos can''t be
   recorded; quality follows the player, capped by the bitrate above.
 - **Local commit only — NOT pushed.**
+
+---
+
+## Clip screen compacting (master''s order) — everything fits without scrolling
+
+**Files touched:** `src/styles/panel.css`, this changelog.
+
+- Master: had to scroll to reach Continue on the clip screen. Vertical cost cut:
+  - Heading 20px -> **16px**, header padding 14 -> 10, heading margin 6 -> 4.
+  - Thumbnail capped at **max-height 110px** (16:9 crop, object-fit cover).
+  - clip-body padding 14/16 -> 10/16/12, gap 14 -> **10**.
+  - Scrub padding 6 -> 4; time cards padding 12 -> 10, inner gap 8 -> 6;
+    time field 24px -> **20px**; nudge gap 8 -> 6.
+  - Play section/options gap 10 -> 8; option cards min-height 72 -> **64**,
+    padding 12/14 -> 10/12, inner gap 12 -> 10.
+  - Recording card padding 14 -> 10/12, gap 10 -> 8.
+- Nothing removed, everything smaller — Continue should now be on screen with no scroll.
+- **Local commit only — NOT pushed.**
