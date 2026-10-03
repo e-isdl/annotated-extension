@@ -55,7 +55,7 @@ function contractTranscript(currentText, words = 5) {
   return currentWords.slice(0, -words).join(' ');
 }
 
-export default function AnnotationForm({ clipData, onBack, onPublish, transcriptCache, setTranscriptCache, onTranscriptChange, communities = [], communityId = '', onCommunityChange }) {
+export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed, transcriptCache, setTranscriptCache, onTranscriptChange, communities = [], communityId = '', onCommunityChange }) {
   const [text, setText] = useState('');
   const [annotationType, setAnnotationType] = useState('Reaction');
   const [audioUrl, setAudioUrl] = useState(null);
@@ -119,18 +119,25 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
     if (onTranscriptChange) onTranscriptChange(transcript);
   }, [transcript]);
 
-  const [publishError, setPublishError] = useState('');
+  const [publishError, setPublishError] = useState(null);
+  const [publishStage, setPublishStage] = useState(null);
 
   const handlePublish = async () => {
     if (!text && !audioUrl) return;
     setPublishing(true);
-    setPublishError('');
+    setPublishError(null);
     try {
-      await onPublish({ text_content: text.trim() || null, audio_url: audioUrl, annotation_type: annotationType });
+      await onPublish({
+        text_content: text.trim() || null,
+        audio_url: audioUrl,
+        annotation_type: annotationType,
+        onStage: setPublishStage,
+      });
     } catch (err) {
-      setPublishError(err.message || 'Failed to publish. Please try again.');
+      setPublishError({ message: err.message || 'Failed to publish. Please try again.', code: err.code || null });
     }
     setPublishing(false);
+    setPublishStage(null);
   };
 
   const uploadAudioFile = async (file) => {
@@ -423,14 +430,50 @@ export default function AnnotationForm({ clipData, onBack, onPublish, transcript
         </div>
       )}
 
-      {publishError && <p className="text-sm text-[var(--red)] text-center">{publishError}</p>}
+      {publishError && (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-sm text-[var(--red)] text-center">{publishError.message}</p>
+          <div className="flex gap-2">
+            {publishError.code === 'upload_failed' && (
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={publishing}
+                className="btn-ghost text-sm px-4 py-2 disabled:opacity-40"
+              >
+                Try again
+              </button>
+            )}
+            {publishError.code === 'clip_too_big' && onUseEmbed && (
+              <button
+                type="button"
+                onClick={onUseEmbed}
+                className="btn-ghost text-sm px-4 py-2"
+              >
+                Use embed instead
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <button
         onClick={handlePublish}
         disabled={(!text && !audioUrl) || publishing || uploading}
         className="btn-primary w-full disabled:opacity-40"
       >
-        {publishing ? 'Publishing...' : 'Publish'}
+        {publishing ? (
+          publishStage === 'uploading' ? (
+            <>
+              <div className="w-4 h-4 rounded-full bg-accent/50 animate-pulse" />
+              Uploading
+            </>
+          ) : (
+            'Publishing...'
+          )
+        ) : (
+          'Publish'
+        )}
       </button>
       {!text && !audioUrl && (
         <p className="text-sm text-text-muted text-center">Text or audio commentary required</p>

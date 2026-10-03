@@ -258,6 +258,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .source-post-caption { margin: 5px 0 0; color: var(--text-primary); font-size: 14px; font-weight: 550; line-height: 1.4; }
 .source-post-title { margin: 0 0 12px; color: var(--text-3); font-size: 14px; font-weight: 400; line-height: 1.4; }
 .source-media { overflow: hidden; border-radius: 10px; background: var(--bg); }
+.post-video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
 .source-media:has(.yt-frame) { border-radius: 12px; }
 .yt-frame { border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
 .source-post-image { display: block; width: 100%; max-height: 460px; border-radius: 10px; object-fit: cover; }

@@ -377,3 +377,59 @@ this changelog.
   so a fresh Take always starts clean. Back-from-Take keeps the recording
   (component stays mounted).
 - **Local commit only — NOT pushed.**
+
+---
+
+## T10 — Post the clip, remove the downloader
+
+**Files touched:** `src/components/ClipCreator.jsx`, `src/components/AnnotationForm.jsx`,
+`src/components/YouTubeClipper.jsx`, `src/lib/postPublishing.js`,
+`webapp/src/pages/ClipPage.jsx`, `webapp/src/styles/globals.css`,
+`supabase/migrations/20261003000000_recorded_clip_video_url.sql`, this changelog.
+
+### Conflict + master decision
+- T1 conflict resolved by explicit master override: **"Edit the web app anyway"**
+  (task list said no web app edits; the web app had no reader for a recorded file).
+  Web app now has a `<video>` branch: `clip.video_url` renders
+  `<video controls playsInline>` inside `.source-media`, and the YouTube embed
+  branch is skipped when `video_url` is present. Feed cards/thumbnails and
+  transcripts untouched.
+
+### DB (migration ready, NOT yet applied — production push reported first per AGENTS)
+- `clips.video_url text` column (nullable, commented) + `create_extension_post`
+  gains `p_video_url` (https-only, youtube-only, same gating style as audio).
+- **Repo migrations were behind production** (live function already had
+  `p_duration`, social/X posts, `is_x_status_url`, current annotation types) —
+  so the function body in the new migration is synced from the LIVE
+  `pg_get_functiondef`, then `p_video_url` added; old 19-arg signature dropped
+  to avoid a PostgREST overload.
+
+### Embed path (option 1)
+- Unchanged, exactly as today: `start_sec`/`end_sec`, no file, no upload —
+  posts instantly and plays via the YouTube embed.
+
+### Record path (option 2)
+- On **Publish** with a recorded Blob: pre-check size against
+  **15 MB** (`MAX_CLIP_BYTES`, matches the doc''s 15 MB figure; the `clips`
+  bucket has `file_size_limit = null` — verified live), then upload to bucket
+  `clips` at `clips/recordings/{userId}/{ts}.{mp4|webm}`
+  (same 3-segment pattern the storage insert policy requires — its 3rd path
+  segment must be the uid) with the recorder''s real mime/content type;
+  `getPublicUrl` ? `video_url` ? RPC with the same `start_sec`/`end_sec`.
+- Publish button: spinner + **"Uploading"** during upload (`onStage` callback
+  from AnnotationForm -> ClipCreator), "Publishing..." for the create step.
+- Errors: upload fail -> **"Couldn''t upload the clip."** + **Try again**
+  (`code: upload_failed`); over limit -> **"This clip is too big. Record a
+  shorter one."** + **Use embed instead** (`code: clip_too_big`, checked before
+  any upload). "Use embed instead" bumps `embedRequest` -> clip screen,
+  YouTubeClipper switches to Embed and discards the recording.
+
+### T10.4 / misc
+- Downloader removal: still **nothing to delete** — re-verified greps for
+  `apify|yt-dlp|ytdlp|downloader|build.?clip|clip.?job` across
+  `src/`, `content.js`, `background.js`, root, `manifest.json`, `.env.example`
+  return zero matches (T1 + re-check 2026-10-03).
+- Articles/podcasts/X never record -> unaffected; `.env.example` unchanged.
+- Checks: `npm ci && npm run build` (root) and `npm ci && npm run build`
+  (webapp) both pass.
+- **Local commit only — NOT pushed.**

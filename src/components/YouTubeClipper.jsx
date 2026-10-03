@@ -43,7 +43,7 @@ function parseTime(str) {
   return 0;
 }
 
-export default function YouTubeClipper({ pageInfo, onReady, published }) {
+export default function YouTubeClipper({ pageInfo, onReady, published, embedRequest }) {
   const { data } = pageInfo;
   const [duration, setDuration] = useState(data.duration || 300);
   const [startSec, setStartSec] = useState(0);
@@ -64,6 +64,13 @@ export default function YouTubeClipper({ pageInfo, onReady, published }) {
   useEffect(() => {
     if (published) setRec(IDLE_REC);
   }, [published]);
+
+  useEffect(() => {
+    if (embedRequest > 0) {
+      setPlayMode('embed');
+      setRec(IDLE_REC);
+    }
+  }, [embedRequest]);
 
   useEffect(() => {
     if (data.duration && data.duration > 0) {

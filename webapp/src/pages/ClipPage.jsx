@@ -330,7 +330,12 @@ export default function ClipPage() {
     </a>
   </div>
         ))}
-        {clip.source_type === 'youtube' && (
+        {clip.video_url && (
+          <div className="source-media">
+            <video className="post-video" src={clip.video_url} controls playsInline preload="metadata" />
+          </div>
+        )}
+        {!clip.video_url && clip.source_type === 'youtube' && (
           <div className="source-media">
             <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
             {range && (
