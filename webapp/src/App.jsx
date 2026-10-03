@@ -55,8 +55,8 @@ function AppShell() {
           <Route path="/popular" element={<Feed sortOverride="top" />} />
           <Route path="/latest" element={<Feed sortOverride="new" />} />
           <Route path="/clip/:id" element={<ClipPage />} />
-          <Route path="/@:username/post/:slug/comment/:commentId" element={<ClipPage />} />
-          <Route path="/@:username/post/:slug" element={<ClipPage />} />
+          <Route path="/:username/post/:slug/comment/:commentId" element={<ClipPage />} />
+          <Route path="/:username/post/:slug" element={<ClipPage />} />
           <Route path="/post/:id/comment/:commentId" element={<ClipPage />} />
           <Route path="/post/:id" element={<ClipPage />} />
           <Route path="/c/:community/:post" element={<ClipPage />} />
