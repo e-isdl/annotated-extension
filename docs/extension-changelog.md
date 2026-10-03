@@ -514,3 +514,45 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   response reports the new state so the button flips between play / pause icons and
   "Play clip" / "Pause" labels.
 - **Local commit only — NOT pushed.**
+
+---
+
+## C2 — Take screen + transcript (T13 + T14 + T15 combined)
+
+**Files touched:** `src/components/AnnotationForm.jsx`, `src/styles/panel.css`, this changelog.
+
+### T13 — take screen reorder + redesign
+- Order is now: source strip -> **take box first** -> transcript toggle -> Community ->
+  Post type -> Post annotation. The commentary is the first thing under the heading.
+- Take box: `--surface`, 1px `--border`, radius 16, min-height 160px growing textarea,
+  16px, placeholder "What stood out to you?" in `--text-3`. Bottom bar: ghost mic button
+  "Speak it" + "up to 3 min" (real `MAX_SECONDS = 180` from AudioRecorder, kept in sync)
+  on the left, character counter (real per-type `ANNOTATION_LIMITS`) on the right.
+- The old Text/Audio segmented control is removed: text is the default mode, the mic
+  button switches to the existing audio recording mode (recording logic/limits unchanged);
+  "Remove audio" returns to text mode.
+- Community + Post type are now 48px selects with visible borders/chevrons (radius 12),
+  "(optional)" on the Community label line.
+- Publish button renamed to **Post annotation** (52px, radius 12, no icon) with the
+  14px `--text-2` line "Everyone can see this. It links to the original." under it.
+- All existing validation, loading, error behavior (incl. T10 upload errors, Try again,
+  Use embed instead, Uploading/Publishing stages) unchanged. The back button stays
+  (the plan''s rail was removed by the master earlier — conflict logged, code kept).
+
+### T14 — transcript behind a toggle (videos only)
+- One 52px full-width real button: chevron + "Transcript" + Show/Hide, collapsed by
+  default, `aria-expanded`. Articles never render it.
+- Open state: "Clip" / "Full" tabs replace the two red links; scroll area max-height
+  240px, 15px/1.6 `--text-2`. Word count shows only inside the Full tab.
+- Red uppercase TRANSCRIPT label and red link styling removed. Edit affordances kept
+  (clip edit with -5/+5 words tools, full edit), loading/error/no-transcript states kept,
+  transcriptCache + onTranscriptChange wiring untouched.
+
+### T15 — cleaned transcript text
+- Verified `src/lib/text.js` `cleanTranscript` already implements the spec (strips
+  [music]/[laughter]/[applause]/[clears throat]/[inaudible] tags, um/uh/erm fillers,
+  stutter repeats, collapses spaces) and is already applied at BOTH display sites
+  (clip view + full view). Display-only; stored text never changes. No code change
+  needed — logged as verified.
+
+Checks: `npm run build` passes. **Local commit only — NOT pushed.**
