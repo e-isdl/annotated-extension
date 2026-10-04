@@ -694,13 +694,6 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             {words.length > 0 && (
               <span className="word-clipper-count">{wordEnd - wordStart + 1} words</span>
             )}
-            <button
-              type="button"
-              className="btn-primary word-continue"
-              onClick={closeWordClipper}
-            >
-              Continue
-            </button>
           </div>
           <div className="word-findbar">
               <input
@@ -750,12 +743,14 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
                 <div ref={handleStartRef} className="word-handle-float" data-handle="start" onPointerDown={(e) => onWordHandleEvent('start', 'down', e)} />
                 <div ref={handleEndRef} className="word-handle-float" data-handle="end" onPointerDown={(e) => onWordHandleEvent('end', 'down', e)} />
               </div>
-              <div className="word-clipper-foot">
-                <span>{formatShort(words[wordStart]?.start ?? startSec)} – {formatShort(words[wordEnd]?.end ?? endSec)}</span>
-                <span className="word-clipper-hint">Double-click a word to select it · Drag the bars to adjust</span>
-              </div>
-              <div className="word-perma-continue">
-                <button type="button" className="btn-primary w-full" onClick={closeWordClipper}>Continue</button>
+              <div className="word-bottombar">
+                <div className="word-clipper-foot">
+                  <span>{formatShort(words[wordStart]?.start ?? startSec)} – {formatShort(words[wordEnd]?.end ?? endSec)}</span>
+                  <span className="word-clipper-hint">Double-click a word to select it · Drag the bars to adjust</span>
+                </div>
+                <div className="word-perma-continue">
+                  <button type="button" className="btn-primary w-full" onClick={closeWordClipper}>Continue</button>
+                </div>
               </div>
             </>
           )}

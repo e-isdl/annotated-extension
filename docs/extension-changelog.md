@@ -1599,3 +1599,16 @@ Files touched: src/styles/panel.css, this changelog.
   stays visible while the transcript scrolls. Top header keeps z-index 10,
   find bar sits at 9.
 - Local commit only - NOT pushed.
+---
+
+## Bottom-anchored clip bar, top Continue removed
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css,
+this changelog.
+
+- Removed the upper Continue button. The top header keeps title and count
+  only.
+- The time readout, hint text and Continue button now live in one sticky
+  bottom bar pinned to the viewport bottom with a solid card background,
+  mirroring the sticky top header and find bar.
+- Local commit only - NOT pushed.
