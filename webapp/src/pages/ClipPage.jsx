@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { deleteClip } from '../lib/api';
 import Avatar from '../components/Avatar';
 import CommunityAvatar from '../components/CommunityAvatar';
-import YouTubeEmbed from '../components/YouTubeEmbed';
+import YouTubeClipPlayer from '../components/YouTubeClipPlayer';
 import ClipPlayer from '../components/ClipPlayer';
 import AudioPlayer from '../components/AudioPlayer';
 import FileClaimButton from '../components/FileClaimButton';
@@ -17,7 +17,6 @@ import { getDemoClip } from '../lib/demoData';
 import DemoClipPage from './DemoClipPage';
 import { useToast } from '../components/ToastProvider';
 import { postHref } from '../lib/links';
-import { hasMoment } from '../lib/moment';
 import { isXPostUrl, matchStatusUrl } from '../lib/social';
 import { cleanTranscript } from '../lib/text';
 import { setActivePost } from '../lib/activePost';
@@ -237,15 +236,6 @@ export default function ClipPage() {
   const uploadStale = Boolean(clip.video_status === 'uploading' && clip.created_at && (Date.now() - new Date(clip.created_at).getTime() > 20 * 60 * 1000));
   const stillUploading = clip.video_status === 'uploading' && !uploadStale;
 
-  const range = hasMoment(clip.start_sec, clip.end_sec) && clip.duration > clip.end_sec
-    ? (() => {
-        const left = (clip.start_sec / clip.duration) * 100;
-        const right = (clip.end_sec / clip.duration) * 100;
-        const center = (left + right) / 2;
-        return { left, right, align: center < 34 ? 'left' : center > 66 ? 'right' : 'center' };
-      })()
-    : null;
-
   return (
     <article className="detail-page real-detail-page">
       <DetailHeader clip={clip} profile={profile}>
@@ -381,26 +371,7 @@ export default function ClipPage() {
         )}
         {(!clip.video_url || videoFailed || showEmbed) && !stillUploading && clip.source_type === 'youtube' && (
           <div className="source-media">
-            <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
-            {range && (
-              <div
-                className="yt-range"
-                aria-label={`Clip from ${formatSpan(clip.start_sec)} to ${formatSpan(clip.end_sec)} of a ${formatSpan(clip.duration)} video`}
-              >
-                <div className="yt-range__track">
-                  <span className="yt-range__clip" style={{ left: `${range.left}%`, width: `${range.right - range.left}%` }} />
-                  <span className="yt-range__tick" style={{ left: `${range.left}%` }} />
-                  <span className="yt-range__tick" style={{ left: `${range.right}%` }} />
-                </div>
-                <div className="yt-range__labels">
-                  <span className="yt-range__bound">{formatSpan(0)}</span>
-                  <span className="yt-range__range" style={{ textAlign: range.align }}>
-                    {formatSpan(clip.start_sec)} → {formatSpan(clip.end_sec)}
-                  </span>
-                  <span className="yt-range__bound">{formatSpan(clip.duration)}</span>
-                </div>
-              </div>
-            )}
+            <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
           </div>
         )}
         {clip.video_url && !stillUploading && !videoFailed && clip.source_type === 'youtube' && (
@@ -614,15 +585,6 @@ function formatDate(dateStr) {
 
 function sourceDomain(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'source'; }
-}
-
-function formatSpan(s) {
-  const total = Math.max(0, Math.floor(Number(s) || 0));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const sec = total % 60;
-  const pad = n => n.toString().padStart(2, '0');
-  return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
 }
 
 function youtubeSourceHref(clip) {

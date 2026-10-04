@@ -4,8 +4,8 @@ import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import VoteButtons from './VoteButtons';
 import AudioPlayer from './AudioPlayer';
-import YouTubeEmbed from './YouTubeEmbed';
 import ClipPlayer from './ClipPlayer';
+import YouTubeClipPlayer from './YouTubeClipPlayer';
 import SourceIcon from './SourceIcon';
 import { useToast } from './ToastProvider';
 import CommunityAvatar from './CommunityAvatar';
@@ -166,7 +166,7 @@ export default function ClipCard({ clip }) {
             {playableRecording ? (
               <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} />
             ) : (
-              <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
+              <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay onClose={() => setPlaying(false)} />
             )}
           </div>
         </div>

@@ -545,13 +545,28 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .yt-replay:hover { background: var(--accent); border-color: var(--accent); color: var(--on-red); }
 .yt-continue { height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--border-soft); background: var(--surface-2); color: var(--text-primary); font: 600 14px/1 var(--ui-font); cursor: pointer; }
 .yt-continue:hover { background: var(--accent); border-color: var(--accent); color: var(--on-red); }
-.yt-range { margin-top: 12px; padding: 10px; background: var(--bg); }
-.yt-range__track { position: relative; height: 6px; border-radius: 3px; background: var(--surface-3); }
-.yt-range__clip { position: absolute; top: 0; bottom: 0; min-width: 2px; border-radius: 3px; background: var(--warn); }
-.yt-range__tick { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--text); }
-.yt-range__labels { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; font-size: 12px; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.yt-range__bound { color: var(--text-3); opacity: 1; }
-.yt-range__range { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--warn); font-weight: 600; }
+/* Clip-scoped YouTube player: the embed plus a bar that only knows the clip.
+   Track, readout and seeks live in [start_sec, end_sec]; absolute video time
+   never appears. */
+.ytclip { width: 100%; min-width: 0; }
+.ytclip-frame { position: relative; aspect-ratio: 16 / 9; background: var(--bg); border-radius: 12px; overflow: hidden; }
+.ytclip-host { position: absolute; inset: 0; }
+.ytclip-host iframe { width: 100%; height: 100%; border: 0; }
+.ytclip-fallback { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.ytclip-shield { position: absolute; inset: 0; cursor: pointer; }
+.ytclip-close { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 0 2px; }
+.ytclip-bar { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 2px 0; }
+.ytclip-play { width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border-soft); background: var(--surface-2); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.ytclip-play:hover { border-color: var(--accent); color: var(--accent-text); }
+.ytclip-track { flex: 1; min-width: 0; height: 24px; background: transparent; cursor: pointer; -webkit-appearance: none; appearance: none; --p: 0%; }
+.ytclip-track::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: linear-gradient(to right, var(--accent) 0 var(--p), var(--surface-3) var(--p) 100%); }
+.ytclip-track::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; margin-top: -4.5px; border: none; border-radius: 50%; background: var(--accent); opacity: 0; transition: opacity 0.15s ease; }
+.ytclip-track:hover::-webkit-slider-thumb, .ytclip-track:active::-webkit-slider-thumb, .ytclip-track:focus-visible::-webkit-slider-thumb { opacity: 1; }
+.ytclip-track::-moz-range-track { height: 3px; border-radius: 2px; background: var(--surface-3); }
+.ytclip-track::-moz-range-progress { height: 3px; border-radius: 2px; background: var(--accent); }
+.ytclip-track::-moz-range-thumb { width: 12px; height: 12px; border: none; border-radius: 50%; background: var(--accent); opacity: 0; }
+.ytclip-track:hover::-moz-range-thumb, .ytclip-track:active::-moz-range-thumb, .ytclip-track:focus-visible::-moz-range-thumb { opacity: 1; }
+.ytclip-time { color: var(--text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 
 
 /* Empty comment states sit centered with breathing room. */

@@ -1234,3 +1234,25 @@ webapp/src/styles/globals.css, this changelog.
   max-width on the player and video, so the bar can no longer push past the
   card and clip the fullscreen button.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Clip-scoped YouTube player bar
+
+Files touched: webapp/src/components/YouTubeClipPlayer.jsx (new),
+webapp/src/pages/ClipPage.jsx, webapp/src/components/ClipCard.jsx,
+webapp/src/styles/globals.css, this changelog. Self-hosted recordings and the
+old embed on the demo page untouched.
+
+- New shared YouTubeClipPlayer on detail and feed: embed locked to the clip
+  with its own bar (play/pause, native range seek, clip-time readout). Seeks
+  clamp into bounds, end pauses and resets to start, play restarts from start.
+  No end param (dodges the related-videos end screen), stop enforced on a
+  100ms poll plus ENDED fallback, state synced from player events, shield div
+  toggles play on video click, destroy on unmount, iframe fallback if the API
+  never loads.
+- Detail page range strip removed with its helpers. Feed opens the same
+  component with autoplay and a close button; opening another tears down the
+  previous one, collapsing destroys the player.
+- Styling: theme vars only, red fill and thumb, 24px touch target, tabular
+  time, hover/drag thumb reveal, mobile-safe flex.
+- Local commit only - NOT pushed. Webapp NOT deployed.
