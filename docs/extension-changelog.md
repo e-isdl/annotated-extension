@@ -1588,3 +1588,14 @@ webapp/src/styles/globals.css, this changelog.
   geometry of the player that replaces it, so tapping play no longer moves
   the feed. Quote text hides only when an image will actually render.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Sticky find bar
+
+Files touched: src/styles/panel.css, this changelog.
+
+- The Find in transcript bar is now sticky beneath the pinned header
+  (top: 64px, the header exact height) with a solid card background, so it
+  stays visible while the transcript scrolls. Top header keeps z-index 10,
+  find bar sits at 9.
+- Local commit only - NOT pushed.
