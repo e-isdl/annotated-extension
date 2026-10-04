@@ -1767,3 +1767,12 @@ background.js, this changelog.
 - Honest limit: frame rate is whatever visible-tab shots deliver
   (roughly GIF-like), not full 30fps.
 - Local commit only - NOT pushed.
+---
+
+## Recording text shows elapsed seconds only
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- While recording, the status now reads Recording… Ns with whole
+  seconds and nothing else.
+- Local commit only - push and release follow on user order.

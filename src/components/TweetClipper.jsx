@@ -421,7 +421,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const statusText = phase === 'probing'
     ? 'Checking this post for video…'
     : phase === 'recording'
-      ? `Recording the whole tweet… ${recT.toFixed(1)}s of ${Math.ceil(recTarget)}s. Keep the tab open.`
+      ? `Recording… ${Math.floor(recT)}s`
       : phase === 'preview' && !useShot
         ? 'Tweet recorded with its video and text. It will loop silently on Annotated, like a GIF.'
         : phase === 'preview' && useShot
