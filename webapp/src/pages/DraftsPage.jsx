@@ -126,7 +126,7 @@ export default function DraftsPage() {
         return next;
       });
       try { await deleteDraft(supabase, draft.id); } catch {}
-    }, 5000);
+    }, 15000);
     setRemoved((current) => ({ ...current, [draft.id]: draft }));
   };
 

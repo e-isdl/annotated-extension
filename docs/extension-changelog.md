@@ -1517,3 +1517,22 @@ this changelog.
 - All localStorage reads and writes guarded so blocked site data can never
   kill either bundle at boot.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Find bar, 15s undo, lazy video mount
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css,
+src/components/DraftsScreen.jsx, webapp/src/components/ClipCard.jsx,
+webapp/src/pages/DraftsPage.jsx, webapp/src/pages/DraftEditPage.jsx,
+this changelog.
+
+- Word clipper find: magnifier button in the top bar plus Ctrl/Cmd+F focus,
+  Esc close. Match count, wrap-around arrows, Enter/Shift+Enter, all matches
+  outlined with the current one filled, centered on jump. Case-insensitive,
+  memoized spans, never touches clip times.
+- Draft delete: immediate optimistic removal everywhere with the Undo window
+  stretched to 15 seconds.
+- Feed videos mount only when their card scrolls into view, so toggling
+  video mode no longer spins up dozens of players at once. Scroll-pause
+  still parks off-screen ones without auto-resume.
+- Local commit only - NOT pushed. Webapp NOT deployed.

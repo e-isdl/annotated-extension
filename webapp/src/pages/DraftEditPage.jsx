@@ -162,7 +162,7 @@ export default function DraftEditPage() {
     deleteTimer.current = setTimeout(async () => {
       try { await deleteDraft(supabase, draft.id); } catch {}
       navigate('/drafts');
-    }, 5000);
+    }, 15000);
   };
 
   const handleUndoDelete = () => {

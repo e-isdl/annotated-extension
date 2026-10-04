@@ -83,7 +83,7 @@ export default function DraftsScreen({ drafts, loading, signedIn, onBack, onCont
         return next;
       });
       onDeleteConfirmed(draft.id);
-    }, 5000);
+    }, 15000);
     setRemoved((current) => ({ ...current, [draft.id]: draft }));
   };
 

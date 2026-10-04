@@ -36,9 +36,13 @@ function formatBytes(n) {
 
 const IDLE_REC = { state: 'idle', t: 0, error: null, blob: null, mime: null, url: null };
 
-const Word = memo(function Word({ w, index, selected, onWordDoubleClick }) {
+const Word = memo(function Word({ w, index, selected, isMatch, isCurrent, onWordDoubleClick }) {
+  const cls = 'word'
+    + (selected ? ' is-selected' : '')
+    + (isMatch ? ' is-match' : '')
+    + (isCurrent ? ' is-current' : '');
   return (
-    <span data-word-index={index} className={selected ? 'word is-selected' : 'word'} onDoubleClick={() => onWordDoubleClick(index)}>{w.text} </span>
+    <span data-word-index={index} className={cls} onDoubleClick={() => onWordDoubleClick(index)}>{w.text} </span>
   );
 });
 
@@ -397,6 +401,84 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     return out;
   }, [segments]);
 
+  const [findOpen, setFindOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState('');
+  const [findIndex, setFindIndex] = useState(0);
+  const findInputRef = useRef(null);
+  const wordOpenRef = useRef(false);
+  wordOpenRef.current = wordClipperOpen;
+  const lastScrolledMatch = useRef(-1);
+
+  const findMatches = useMemo(() => {
+    const q = findQuery.trim().toLowerCase();
+    if (!q) return [];
+    const out = [];
+    words.forEach((w, i) => {
+      if (w.text.toLowerCase().includes(q)) out.push(i);
+    });
+    return out;
+  }, [words, findQuery]);
+
+  const findSet = useMemo(() => new Set(findMatches), [findMatches]);
+  const findCount = findMatches.length;
+  const findPos = findCount === 0 ? 0 : ((findIndex % findCount) + findCount) % findCount;
+  const currentMatch = findCount === 0 ? -1 : findMatches[findPos];
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && String(e.key || '').toLowerCase() === 'f') {
+        if (!wordOpenRef.current) return;
+        e.preventDefault();
+        setFindOpen(true);
+        requestAnimationFrame(() => findInputRef.current?.focus());
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    if (!findOpen || currentMatch < 0 || currentMatch === lastScrolledMatch.current) return;
+    lastScrolledMatch.current = currentMatch;
+    requestAnimationFrame(() => {
+      wordAreaRef.current?.querySelector(`[data-word-index="${currentMatch}"]`)?.scrollIntoView({ block: 'center' });
+    });
+  }, [findOpen, currentMatch]);
+
+  const openFind = () => {
+    setFindOpen(true);
+    requestAnimationFrame(() => findInputRef.current?.focus());
+  };
+
+  const closeFind = () => {
+    setFindOpen(false);
+    setFindQuery('');
+    setFindIndex(0);
+    lastScrolledMatch.current = -1;
+  };
+
+  const stepFind = (dir) => {
+    if (findCount === 0) return;
+    lastScrolledMatch.current = -1;
+    setFindIndex((i) => i + dir);
+  };
+
+  const onFindQuery = (value) => {
+    setFindQuery(value);
+    setFindIndex(0);
+    lastScrolledMatch.current = -1;
+  };
+
+  const onFindKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      stepFind(e.shiftKey ? -1 : 1);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      closeFind();
+    }
+  };
+
   useLayoutEffect(() => {
     if (draggingWord || !words.length) return;
     let s = words.findIndex((w) => w.end > startSec);
@@ -537,6 +619,9 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const toggleWordClipper = async () => {
     if (wordClipperOpen) {
       setWordClipperOpen(false);
+      setFindOpen(false);
+      setFindQuery('');
+      setFindIndex(0);
       return;
     }
     setWordClipperOpen(true);
@@ -617,6 +702,12 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             {words.length > 0 && (
               <span className="word-clipper-count">{wordEnd - wordStart + 1} words</span>
             )}
+            <button type="button" className="word-findbtn" onClick={openFind} aria-label="Find in transcript" title="Find in transcript (Ctrl+F)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+                <path d="M16.5 16.5 21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
             <button
               type="button"
               className="btn-primary word-continue"
@@ -625,6 +716,38 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
               Continue
             </button>
           </div>
+          {findOpen && (
+            <div className="word-findbar">
+              <input
+                ref={findInputRef}
+                className="input word-findinput"
+                type="text"
+                value={findQuery}
+                onChange={(e) => onFindQuery(e.target.value)}
+                onKeyDown={onFindKeyDown}
+                placeholder="Find in transcript"
+                aria-label="Find in transcript"
+              />
+              <span className="word-findcount">
+                {findQuery.trim() ? (findCount > 0 ? `${findPos + 1}/${findCount}` : 'No matches') : ''}
+              </span>
+              <button type="button" className="word-findnav" onClick={() => stepFind(-1)} aria-label="Previous match" disabled={findCount === 0}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 15l6-6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button type="button" className="word-findnav" onClick={() => stepFind(1)} aria-label="Next match" disabled={findCount === 0}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button type="button" className="word-findclose" onClick={closeFind} aria-label="Close find">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          )}
           {wordLoading ? (
             <p className="word-clipper-msg">Loading transcript…</p>
           ) : wordError ? (
@@ -640,6 +763,8 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
                     w={w}
                     index={i}
                     selected={i >= wordStart && i <= wordEnd}
+                    isMatch={findOpen && findSet.has(i)}
+                    isCurrent={findOpen && i === currentMatch}
                     onWordDoubleClick={onWordDoubleClick}
                   />
                 ))}

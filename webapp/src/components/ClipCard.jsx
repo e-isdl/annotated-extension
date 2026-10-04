@@ -41,6 +41,8 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
   const [imageFailed, setImageFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
+  const cardRef = useRef(null);
+  const [cardVisible, setCardVisible] = useState(false);
   const uploadStale = clip.video_status === 'uploading' && clip.created_at && (Date.now() - new Date(clip.created_at).getTime() > 20 * 60 * 1000);
   const isUploadingVideo = clip.video_status === 'uploading' && !uploadStale;
   const playableRecording = Boolean(clip.video_url) && !isUploadingVideo && !videoFailed;
@@ -55,9 +57,23 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
   const hideQuote = hideTranscript && (clip.source_type === 'youtube' || clip.source_type === 'social');
 
   useEffect(() => {
-    if (autoPlayVideo && isVideoPost) setPlaying(true);
+    if (autoPlayVideo && isVideoPost && cardVisible) setPlaying(true);
     else if (!autoPlayVideo) setPlaying(false);
-  }, [autoPlayVideo]);
+  }, [autoPlayVideo, cardVisible]);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setCardVisible(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setCardVisible(entry.isIntersecting),
+      { threshold: 0.15 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const cardAriaLabel = `Open post: ${String(commentary || clip.title || 'post').slice(0, 140)}`;
   const onCardLinkClick = (event) => {
     const target = event.target;
@@ -129,7 +145,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
   };
 
   return (
-    <article className="post-card post-card-linked">
+    <article ref={cardRef} className="post-card post-card-linked">
       <div className="post-meta">
         {clip.community_slug && clip.community_name ? (
           <>
