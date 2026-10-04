@@ -1279,3 +1279,22 @@ this changelog. Self-hosted player and demo embed untouched.
   non-draggable, focus fenced to the wrapper with iframe blur backup.
 - Feed passes its thumbnail as the poster; detail passes its thumbnail.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## YouTube UI fully cropped and defused
+
+Files touched: webapp/src/components/YouTubeClipPlayer.jsx,
+webapp/src/styles/globals.css, this changelog.
+
+- FIX 1: clicks can no longer reach YouTube. The live iframe gets inline
+  pointer-events none plus tabIndex -1 in onReady (immune to cascade or
+  replacement timing), on top of the stylesheet rule. Cover stays mounted and
+  play-only; pause still flips it synchronously.
+- FIX 2: letterbox crop. The iframe renders taller than the 16:9 window so the
+  video letterboxes inside it and title bar, share icons, More videos and logo
+  land on the hidden bars. No video content cropped, cover/close/bar anchor to
+  the window, not the iframe.
+- FIX 3: close button defused. Real button with preventDefault, pointerdown and
+  mousedown stopPropagation, and pause-destroy-collapse ordering. Player root
+  stops every click so nothing inside can navigate the card.
+- Local commit only - NOT pushed. Webapp NOT deployed.

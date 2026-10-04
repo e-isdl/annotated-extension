@@ -124,8 +124,13 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
         events: {
           onReady: (event) => {
             if (cancelled) return;
-            try { event.target.getIframe().title = 'Source video'; } catch {}
-            try { event.target.getIframe().setAttribute('tabindex', '-1'); } catch {}
+            try {
+              const frame = event.target.getIframe();
+              frame.title = 'Source video';
+              frame.style.pointerEvents = 'none';
+              frame.tabIndex = -1;
+              frame.setAttribute('tabindex', '-1');
+            } catch {}
             try { event.target.unMute(); event.target.setVolume(100); } catch {}
             if (autoplay) {
               claimPlayback(stop);
@@ -202,6 +207,13 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
     refocus();
   };
 
+  const closePlayer = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try { playerRef.current?.pauseVideo(); } catch {}
+    try { onCloseRef.current?.(); } catch {}
+  };
+
   const seekToClipPos = (v) => {
     const { start: bs, end: be } = boundsRef.current;
     const clamped = Math.min(Math.max(0, Number(v) || 0), Math.max(0, be - bs));
@@ -217,7 +229,11 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
       : `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`);
 
   return (
-    <div className="ytclip" onDragStart={(e) => e.preventDefault()}>
+    <div
+      className="ytclip"
+      onDragStart={(e) => e.preventDefault()}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+    >
       <div
         ref={frameRef}
         className="ytclip-frame"
@@ -250,8 +266,10 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
           <button
             type="button"
             className="ytclip-close"
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
-            aria-label="Close player"
+            onClick={closePlayer}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            aria-label="Close video"
           >
             ×
           </button>
