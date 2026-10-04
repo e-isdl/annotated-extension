@@ -1,4 +1,5 @@
-﻿function detectPageInfo() {
+{
+function detectPageInfo() {
   const url = window.location.href;
   const info = { url, type: 'unknown', data: {} };
 
@@ -929,4 +930,5 @@ if (!window.__annotatedContentLoaded) {
   window.addEventListener('popstate', pushPageInfo);
 
   pushPageInfo();
+}
 }

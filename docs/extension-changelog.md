@@ -1711,3 +1711,17 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
   recording still stops at 5s, the old build is loaded: reload the
   extension on chrome://extensions and refresh the X tab, then retry.
 - Local commit only - NOT pushed.
+---
+
+## Tweet recorder self-heals stale tabs
+
+Files touched: content.js, src/components/TweetClipper.jsx, this changelog.
+
+- The 0.0s-of-0s stall was the panel talking to a stale tab script that
+  knows no probe message. The panel now re-injects content.js before
+  probing, so no tab refresh is needed.
+- content.js is wrapped in a block scope so re-injection redefines fresh
+  handlers without const collisions; the load-once guard still prevents
+  duplicate listeners.
+- A probe timeout now says to refresh the X tab instead of a bare failure.
+- Local commit only - NOT pushed.

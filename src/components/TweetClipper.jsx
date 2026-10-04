@@ -91,10 +91,19 @@ export default function TweetClipper({ pageInfo, onReady }) {
     setPhase('recording');
     setRecT(0);
     try {
-      const probe = await withTimeout(sendToActiveTab({ type: 'tweet-record-probe' }), CAPTURE_TIMEOUT_MS);
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      try {
+        if (tab?.id) await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
+      } catch {}
+      let probe = null;
+      try {
+        probe = await withTimeout(sendToActiveTab({ type: 'tweet-record-probe' }), CAPTURE_TIMEOUT_MS);
+      } catch {
+        probe = null;
+      }
       if (!probe?.ok) {
         if (probe?.code === 'no-media') { runScreenshotFlow(); return; }
-        throw new Error('Could not read this post.');
+        throw new Error(probe ? 'Could not read this post.' : 'No reply from the X tab — refresh the tab and try again.');
       }
       const targetMs = Math.max(1000, Math.min(probe.durationMs || 15000, MAX_RECORD_MS));
       setRecTarget(targetMs / 1000);
