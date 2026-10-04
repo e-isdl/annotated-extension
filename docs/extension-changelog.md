@@ -1367,3 +1367,35 @@ embed and transcripts untouched. Thumbnail kept per order (no4 skipped).
 - Close keeps pause-destroy-collapse with full guards and sits above the
   shield.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Drafts replace Stash
+
+Files touched: supabase/migrations/20261004000200_annotation_drafts.sql (new,
+applied: drafts table, owner RLS, drop of the unreleased stash objects),
+src/lib/drafts.js + webapp/src/lib/drafts.js (new shared module),
+src/components/ClipCreator.jsx, src/components/DraftsScreen.jsx (new),
+src/components/AnnotationForm.jsx, src/components/YouTubeClipper.jsx,
+src/components/ArticleClipper.jsx, src/components/TweetClipper.jsx,
+src/components/PodcastClipper.jsx, src/components/SuccessScreen.jsx,
+src/lib/postPublishing.js, content.js, src/styles/panel.css,
+webapp/src/pages/DraftsPage.jsx + DraftEditPage.jsx (new),
+webapp/src/App.jsx, webapp/src/components/AppSidebar.jsx,
+webapp/src/components/Navbar.jsx, webapp/src/pages/CreatePage.jsx,
+webapp/src/lib/mutations.js, webapp/src/styles/globals.css, this changelog.
+Removed: stash buttons/handlers/screens/routes and the clip_drafts objects.
+
+- Drafts live in one drafts table (jsonb payload, kind equals post type) with
+  owner-only RLS, a user recency index and an updated_at trigger. Verified
+  policies plus advisor pass (fixed the trigger search_path flag).
+- Extension: Drafts pill with count in the header, drafts screen (thumbnail,
+  kind chip, range, preview, edited-ago, Continue, delete with 5s Undo),
+  Save draft plus 800ms autosave with Saving/Draft saved status, draft id in
+  session storage, record-mode resume prefills the clip screen, articles
+  reopen their page and restore the highlight with a form fallback, publish
+  deletes the draft, sign-in guard.
+- Webapp: Drafts under Saved with live count, /drafts in feed language with
+  focus refetch, /drafts/:id edit page (commentary, community, type, range,
+  passage; Save, Publish, Delete with undo), Create composes with the same
+  autosave rules, publish cleans up. Mobile stacking, skeletons, retry.
+- Local commit only - NOT pushed. Webapp NOT deployed.

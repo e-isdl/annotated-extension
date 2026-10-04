@@ -650,6 +650,21 @@ function setArticleHighlight(range) {
   tryFallbackMark(capped);
 }
 
+function restoreHighlightByText(text) {
+  const needle = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  if (!needle) return false;
+  try {
+    if (typeof window.find !== 'function') return false;
+    const found = window.find(needle);
+    if (!found) return false;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) setArticleHighlight(sel.getRangeAt(0));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 if (!window.__annotatedContentLoaded) {
   window.__annotatedContentLoaded = true;
 
@@ -679,6 +694,10 @@ if (!window.__annotatedContentLoaded) {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'GET_PAGE_INFO') {
       sendResponse(detectPageInfo());
+      return true;
+    }
+    if (message.type === 'RESTORE_HIGHLIGHT') {
+      sendResponse({ ok: restoreHighlightByText(message.text) });
       return true;
     }
     if (message.type === 'CAPTURE_PREP') {

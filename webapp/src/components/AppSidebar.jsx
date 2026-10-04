@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
+import { listDrafts } from '../lib/drafts';
 import CommunityAvatar from './CommunityAvatar';
 
 const NAV_ITEMS = [
@@ -10,6 +11,7 @@ const NAV_ITEMS = [
   { label: 'New', path: '/latest', icon: '◷', sort: 'new' },
   { label: 'Explore', path: '/explore', icon: '⌕' },
   { label: 'Saved', path: '/saved', icon: '▱' },
+  { label: 'Drafts', path: '/drafts', icon: '✎' },
 ];
 
 export default function AppSidebar() {
@@ -18,6 +20,7 @@ export default function AppSidebar() {
   const [communities, setCommunities] = useState([]);
   const [popularCommunities, setPopularCommunities] = useState([]);
   const [failed, setFailed] = useState(false);
+  const [draftCount, setDraftCount] = useState(0);
   const currentSort = new URLSearchParams(location.search).get('sort');
   const isActive = (item) => item.path === '/' ? location.pathname === '/' && !currentSort : location.pathname === item.path || (item.sort && location.pathname === '/' && currentSort === item.sort);
 
@@ -45,8 +48,19 @@ export default function AppSidebar() {
       setPopularCommunities(popular);
     }
     loadCommunities();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { loadCommunities(); });
-    return () => { active = false; subscription.unsubscribe(); };
+    const loadDraftCount = async () => {
+      try {
+        const rows = await listDrafts(supabase);
+        if (active) setDraftCount(rows.length);
+      } catch {
+        if (active) setDraftCount(0);
+      }
+    };
+    loadDraftCount();
+    const onFocus = () => { loadDraftCount(); };
+    window.addEventListener('focus', onFocus);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { loadCommunities(); loadDraftCount(); });
+    return () => { active = false; subscription.unsubscribe(); window.removeEventListener('focus', onFocus); };
   }, []);
 
   const displayedCommunities = user && communities.length ? communities : popularCommunities;
@@ -57,7 +71,7 @@ export default function AppSidebar() {
       <div className="sidebar-section">
         <p className="sidebar-label">Discover</p>
         <nav className="flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => <Link key={item.label} to={item.path} className={`sidebar-link ${isActive(item) ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">{item.icon}</span>{item.label}</Link>)}
+          {NAV_ITEMS.map((item) => <Link key={item.label} to={item.path} className={`sidebar-link ${isActive(item) ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">{item.icon}</span>{item.label}{item.label === 'Drafts' && draftCount > 0 && <span className="sidebar-count">{draftCount > 99 ? '99+' : draftCount}</span>}</Link>)}
         </nav>
       </div>
 

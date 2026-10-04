@@ -1,16 +1,14 @@
 import { useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
-export default function PodcastClipper({ pageInfo, onReady, onSave }) {
+export default function PodcastClipper({ pageInfo, onReady }) {
   const [recording, setRecording] = useState(false);
   const [recorded, setRecorded] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-  const [readyPayload, setReadyPayload] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [stashError, setStashError] = useState('');
   const [seconds, setSeconds] = useState(0);
+  const [readyPayload, setReadyPayload] = useState(null);
   const mediaRef = useRef(null);
   const timerRef = useRef(null);
   const chunksRef = useRef([]);
@@ -18,7 +16,6 @@ export default function PodcastClipper({ pageInfo, onReady, onSave }) {
   const startRecording = async () => {
     setError('');
     setReadyPayload(null);
-    setStashError('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -67,7 +64,7 @@ export default function PodcastClipper({ pageInfo, onReady, onSave }) {
       const { error } = await supabase.storage.from('clips').upload(filename, blob, { contentType: 'audio/webm' });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('clips').getPublicUrl(filename);
-      setReadyPayload({
+      onReady({
         source_url: pageInfo.url,
         source_type: 'podcast',
         title: pageInfo.data.title,
@@ -77,19 +74,6 @@ export default function PodcastClipper({ pageInfo, onReady, onSave }) {
       setError(uploadError.message || 'Audio upload failed. Please try recording again.');
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleStash = async () => {
-    if (!readyPayload || saving) return;
-    setSaving(true);
-    setStashError('');
-    try {
-      await onSave(readyPayload);
-    } catch (e) {
-      setStashError(e.message || 'Could not stash this clip.');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -121,7 +105,7 @@ export default function PodcastClipper({ pageInfo, onReady, onSave }) {
         {error && <p className="text-xs text-claim text-center" role="alert">{error}</p>}
         {error && (
           <button
-            onClick={() => { if (audioUrl) URL.revokeObjectURL(audioUrl); setAudioUrl(null); setRecorded(false); setError(''); setReadyPayload(null); setStashError(''); }}
+            onClick={() => { if (audioUrl) URL.revokeObjectURL(audioUrl); setAudioUrl(null); setRecorded(false); setError(''); }}
             className="text-xs text-accent-text hover:text-accent transition-colors"
           >
             Record again
@@ -132,10 +116,6 @@ export default function PodcastClipper({ pageInfo, onReady, onSave }) {
             <button onClick={() => onReady(readyPayload)} className="btn-primary w-full">
               Continue to Annotate →
             </button>
-            <button onClick={handleStash} disabled={saving} className="btn-ghost w-full disabled:opacity-40">
-              {saving ? 'Stashing…' : 'Stash for later'}
-            </button>
-            {stashError && <p className="text-xs text-claim text-center" role="alert">{stashError}</p>}
           </>
         )}
       </div>

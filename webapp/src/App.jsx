@@ -12,7 +12,8 @@ import SearchPage from './pages/SearchPage';
 import ExplorePage from './pages/ExplorePage';
 import CreatePage from './pages/CreatePage';
 import SavedPage from './pages/SavedPage';
-import StashPage from './pages/StashPage';
+import DraftsPage from './pages/DraftsPage';
+import DraftEditPage from './pages/DraftEditPage';
 import CommunityPage from './pages/CommunityPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ClaimPage from './pages/ClaimPage';
@@ -72,7 +73,8 @@ function AppShell() {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/create" element={<CreatePage />} />
           <Route path="/saved" element={<SavedPage />} />
-          <Route path="/stash" element={<StashPage />} />
+          <Route path="/drafts" element={<DraftsPage />} />
+          <Route path="/drafts/:id" element={<DraftEditPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/claims/:id" element={<ClaimPage />} />
           <Route path="/source/:domain" element={<SourcePage />} />

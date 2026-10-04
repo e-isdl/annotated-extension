@@ -7,7 +7,9 @@ import AnnotationForm from './AnnotationForm';
 import SuccessScreen from './SuccessScreen';
 import FlowHeader from './FlowHeader';
 import { supabase } from '../lib/supabase';
-import { createExtensionPost, updateClipVideoUrl, createClipDraft } from '../lib/postPublishing';
+import { createExtensionPost, updateClipVideoUrl } from '../lib/postPublishing';
+import { listDrafts, deleteDraft } from '../lib/drafts';
+import DraftsScreen from './DraftsScreen';
 import { pageIdentity } from '../lib/pageInfo';
 
 const MAX_CLIP_BYTES = 15 * 1024 * 1024;
@@ -121,8 +123,30 @@ export default function ClipCreator({ pageInfo, session }) {
   const [transcriptCache, setTranscriptCache] = useState(null);
   const [currentTranscript, setCurrentTranscript] = useState(null);
   const [uploadState, setUploadState] = useState({ status: 'idle', error: null });
-  const [stashMode, setStashMode] = useState(false);
+  const [drafts, setDrafts] = useState([]);
+  const [draftsLoading, setDraftsLoading] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState(null);
+  const [resumeRange, setResumeRange] = useState(null);
+  const [resumeForm, setResumeForm] = useState(null);
+  const [formToken, setFormToken] = useState(0);
+  const [passageFallback, setPassageFallback] = useState(false);
   const recordedRef = useRef(null);
+  const pendingResumeRef = useRef(null);
+
+  const draftSessionKey = `annotated:draft:${pageKey}`;
+  const draftSessionGet = async () => {
+    try {
+      if (!chrome?.storage?.session) return null;
+      const result = await chrome.storage.session.get(draftSessionKey);
+      return result?.[draftSessionKey] ?? null;
+    } catch { return null; }
+  };
+  const draftSessionSet = (id) => {
+    try { chrome?.storage?.session?.set({ [draftSessionKey]: id }); } catch {}
+  };
+  const draftSessionRemove = () => {
+    try { chrome?.storage?.session?.remove(draftSessionKey); } catch {}
+  };
   const [communities, setCommunities] = useState([]);
   const [communityId, setCommunityId] = useState('');
 
@@ -138,61 +162,142 @@ export default function ClipCreator({ pageInfo, session }) {
 
   const pageKey = pageIdentity(pageInfo);
 
+  const enterAnnotate = (pending) => {
+    setClipData(pending.clipPayload);
+    setCurrentTranscript(null);
+    if (pending.communityId) setCommunityId(pending.communityId);
+    setCurrentDraftId(pending.draftId);
+    draftSessionSet(pending.draftId);
+    setResumeRange(null);
+    setResumeForm(pending.form || null);
+    setFormToken((t) => t + 1);
+    setPassageFallback(false);
+    setStep('annotate');
+  };
+
   useEffect(() => {
+    const pending = pendingResumeRef.current;
+    if (pending && pageInfo && pageInfo.url === pending.sourceUrl) {
+      pendingResumeRef.current = null;
+      enterAnnotate(pending);
+      restoreArticleHighlight(pending.passage);
+      return;
+    }
     setStep('clip');
     setClipData(null);
     setPublishedClip(null);
     setCurrentTranscript(null);
     setUploadState({ status: 'idle', error: null });
-    setStashMode(false);
+    setCurrentDraftId(null);
+    setResumeRange(null);
+    setResumeForm(null);
+    setPassageFallback(false);
     recordedRef.current = null;
   }, [pageKey]);
-
   const handleClipReady = useCallback((data) => {
     setClipData(data);
     setCurrentTranscript(null);
+    setResumeRange(null);
+    setResumeForm(null);
+    setFormToken((t) => t + 1);
     setStep('annotate');
   }, []);
 
-  const handleSaveDraft = async (data) => {
-    const recorded = data.recorded_clip;
-    if (recorded?.blob && recorded.blob.size > MAX_CLIP_BYTES) {
-      throw new Error('This clip is too big. Record a shorter one.');
+  const loadDrafts = useCallback(async () => {
+    if (!session?.user) { setDrafts([]); return; }
+    setDraftsLoading(true);
+    try {
+      setDrafts(await listDrafts(supabase));
+    } catch {
+      setDrafts([]);
+    } finally {
+      setDraftsLoading(false);
     }
-    const sourceUrl = data.source_url;
-    const sourceDomain = sourceUrl ? new URL(sourceUrl).hostname.replace(/^www\./, '') : null;
-    let videoUrl = null;
-    if (recorded?.blob) {
+  }, [session?.user?.id]);
+
+  const openDrafts = () => {
+    setStep('drafts');
+    loadDrafts();
+  };
+
+  const restoreArticleHighlight = async (passage) => {
+    if (!passage) return;
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) { setPassageFallback(true); return; }
+      const res = await chrome.tabs.sendMessage(tab.id, { type: 'RESTORE_HIGHLIGHT', text: passage }).catch(() => null);
+      setPassageFallback(!res?.ok);
+    } catch {
+      setPassageFallback(true);
+    }
+  };
+
+  const continueDraft = async (draft) => {
+    const p = draft.payload || {};
+    const sourceType = p.sourceType || 'article';
+    const clipPayload = {
+      source_url: draft.source_url,
+      source_type: sourceType,
+      title: draft.title || '',
+      author: p.author || null,
+      thumbnail: draft.thumbnail_url || null,
+      youtube_id: p.youtubeId || null,
+      article_text: p.articlePassage || null,
+      start_sec: p.startSec ?? null,
+      end_sec: p.endSec ?? null,
+      duration: p.duration ?? null,
+      audio_url: p.audioUrl || null,
+    };
+    const pending = {
+      draftId: draft.id,
+      sourceUrl: draft.source_url,
+      clipPayload,
+      communityId: draft.community_id || null,
+      passage: sourceType === 'article' ? (p.articlePassage || null) : null,
+      form: {
+        text: p.commentary || '',
+        annotationType: p.kind || 'Reaction',
+        audioUrl: p.audioUrl || null,
+      },
+    };
+    if (sourceType === 'youtube' && p.mode === 'record') {
+      setCurrentDraftId(draft.id);
+      draftSessionSet(draft.id);
+      setResumeRange(
+        p.startSec != null && p.endSec != null ? { start_sec: p.startSec, end_sec: p.endSec } : null,
+      );
+      setPassageFallback(false);
+      setClipData(clipPayload);
+      setCurrentTranscript(null);
+      if (draft.community_id) setCommunityId(draft.community_id);
+      setStep('clip');
+      return;
+    }
+    if (sourceType === 'article') {
       try {
-        videoUrl = await uploadClipFile(supabase, recorded);
-      } catch (e) {
-        console.error('[annotated] stash upload failed:', e);
-        throw new Error('Could not save the recording. Check your connection and try again.');
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id && tab.url !== draft.source_url) {
+          pendingResumeRef.current = pending;
+          await chrome.tabs.update(tab.id, { url: draft.source_url });
+          return;
+        }
+      } catch {
+        // fall through to in-place resume
       }
     }
-    await createClipDraft(supabase, {
-      community_id: null,
-      title: data.title,
-      source_url: sourceUrl,
-      source_type: data.source_type,
-      source_domain: sourceDomain,
-      source_title: data.title,
-      author: data.author || null,
-      thumbnail: data.thumbnail || null,
-      youtube_id: data.youtube_id || null,
-      source_audio_url: data.source_audio_url ?? data.audio_url ?? null,
-      transcript: null,
-      article_text: data.article_text || null,
-      start_sec: data.start_sec ?? null,
-      end_sec: data.end_sec ?? null,
-      duration: data.duration ?? null,
-      video_url: videoUrl,
-      video_status: 'ready',
-    });
-    clearPageHighlight();
-    setStashMode(true);
-    setPublishedClip(null);
-    setStep('success');
+    enterAnnotate(pending);
+    if (sourceType === 'article') restoreArticleHighlight(pending.passage);
+  };
+
+  const deleteDraftConfirmed = async (id) => {
+    try {
+      await deleteDraft(supabase, id);
+    } catch {}
+    if (currentDraftId === id) {
+      setCurrentDraftId(null);
+      draftSessionRemove();
+    }
+    loadDrafts();
   };
 
   const clearPageHighlight = () => {
@@ -260,6 +365,12 @@ export default function ClipCreator({ pageInfo, session }) {
     } catch {}
     setPublishedClip(published);
     setStep('success');
+    if (currentDraftId) {
+      try { await deleteDraft(supabase, currentDraftId); } catch {}
+      setCurrentDraftId(null);
+      draftSessionRemove();
+      loadDrafts();
+    }
     clearPageHighlight();
   };
 
@@ -283,10 +394,10 @@ export default function ClipCreator({ pageInfo, session }) {
   const renderClipper = () => {
     if (!pageInfo) return <div className="p-4 text-text-muted text-sm">Navigate to a page to start clipping.</div>;
     switch (pageInfo.type) {
-      case 'youtube': return <YouTubeClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} onSave={handleSaveDraft} published={step === 'success'} embedRequest={embedRequest} />;
-      case 'article': return <ArticleClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} onSave={handleSaveDraft} />;
-      case 'x': return <TweetClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} onSave={handleSaveDraft} />;
-      case 'podcast': return <PodcastClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} onSave={handleSaveDraft} />;
+      case 'youtube': return <YouTubeClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} published={step === 'success'} embedRequest={embedRequest} resumeRange={resumeRange} />;
+      case 'article': return <ArticleClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
+      case 'x': return <TweetClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
+      case 'podcast': return <PodcastClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
       default: return <UnsupportedPage />;
     }
   };
@@ -299,6 +410,21 @@ export default function ClipCreator({ pageInfo, session }) {
           <span className="font-bold text-[18px] tracking-tight text-text-primary">Annotated</span>
         </div>
         <div className="flex items-center gap-2 relative" ref={avatarMenuRef}>
+          <button
+            type="button"
+            onClick={openDrafts}
+            className="drafts-pill"
+            aria-label="Drafts"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+            <span>Drafts</span>
+            {drafts.length > 0 && (
+              <span className="draft-count">{drafts.length > 99 ? '99+' : drafts.length}</span>
+            )}
+          </button>
           <button
             type="button"
             onClick={toggleTheme}
@@ -347,7 +473,7 @@ export default function ClipCreator({ pageInfo, session }) {
         </div>
       </header>
 
-      {step !== 'success' && (
+      {step !== 'success' && step !== 'drafts' && (
         <FlowHeader step={step} pageInfo={pageInfo} />
       )}
 
@@ -356,9 +482,19 @@ export default function ClipCreator({ pageInfo, session }) {
           {renderClipper()}
         </div>
         <div style={{ display: step === 'annotate' ? 'block' : 'none' }}>
-          {clipData && <AnnotationForm clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} onUseEmbed={useEmbedInstead} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} communities={communities} communityId={communityId} onCommunityChange={setCommunityId} />}
+          {clipData && <AnnotationForm key={`${pageKey}-${formToken}`} clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} onUseEmbed={useEmbedInstead} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} communities={communities} communityId={communityId} onCommunityChange={setCommunityId} draftId={currentDraftId} onDraftIdChange={(id) => { setCurrentDraftId(id); if (id) draftSessionSet(id); }} canAutosave={Boolean(session?.user)} resume={resumeForm} showPassageFallback={passageFallback} />}
         </div>
-        {step === 'success' && <SuccessScreen clip={publishedClip} uploadState={uploadState} onRetryUpload={retryUpload} stashMode={stashMode} onReset={() => { setStep('clip'); setClipData(null); setStashMode(false); }} />}
+        {step === 'drafts' && (
+          <DraftsScreen
+            drafts={drafts}
+            loading={draftsLoading}
+            signedIn={Boolean(session?.user)}
+            onBack={() => setStep(clipData ? 'annotate' : 'clip')}
+            onContinue={continueDraft}
+            onDeleteConfirmed={deleteDraftConfirmed}
+          />
+        )}
+        {step === 'success' && <SuccessScreen clip={publishedClip} uploadState={uploadState} onRetryUpload={retryUpload} onReset={() => { setStep('clip'); setClipData(null); }} />}
       </div>
     </div>
   );

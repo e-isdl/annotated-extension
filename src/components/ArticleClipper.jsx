@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 
-export default function ArticleClipper({ pageInfo, onReady, onSave }) {
+export default function ArticleClipper({ pageInfo, onReady }) {
   const { data, url } = pageInfo;
   const [selectedText, setSelectedText] = useState(data.selectedText || '');
   const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [stashError, setStashError] = useState('');
 
   const WORD_LIMIT = 200;
 
@@ -30,26 +28,6 @@ export default function ArticleClipper({ pageInfo, onReady, onSave }) {
       article_text: selectedText,
       thumbnail: data.ogImage || null,
     });
-  };
-
-  const handleStash = async () => {
-    if (!hasText || isOverLimit || saving) return;
-    setSaving(true);
-    setStashError('');
-    try {
-      await onSave({
-        source_url: url,
-        source_type: 'article',
-        title: data.title,
-        author: data.author,
-        article_text: selectedText,
-        thumbnail: data.ogImage || null,
-      });
-    } catch (e) {
-      setStashError(e.message || 'Could not stash this clip.');
-    } finally {
-      setSaving(false);
-    }
   };
 
   let host = '';
@@ -111,14 +89,6 @@ export default function ArticleClipper({ pageInfo, onReady, onSave }) {
       >
         Continue to Annotate
       </button>
-      <button
-        onClick={handleStash}
-        disabled={!hasText || isOverLimit || saving}
-        className="btn-ghost w-full disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        {saving ? 'Stashing…' : 'Stash for later'}
-      </button>
-      {stashError && <p className="text-sm text-[var(--red)] text-center">{stashError}</p>}
     </div>
   );
 }

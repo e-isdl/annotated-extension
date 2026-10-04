@@ -322,7 +322,6 @@ export default function Navbar() {
                   <div className="account-menu" role="menu">
                     <Link to={`/u/${accountHandle}`} onClick={() => setShowMenu(false)} className="account-menu-item" role="menuitem">Your profile</Link>
                     <Link to="/saved" onClick={() => setShowMenu(false)} className="account-menu-item" role="menuitem">Saved</Link>
-                    <Link to="/stash" onClick={() => setShowMenu(false)} className="account-menu-item" role="menuitem">Stash</Link>
                     <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer" onClick={() => setShowMenu(false)} className="account-menu-item" role="menuitem">Install the extension</a>
                     <button type="button" onClick={() => { setShowMenu(false); signOut(); }} className="account-menu-item" role="menuitem">Sign out</button>
                   </div>

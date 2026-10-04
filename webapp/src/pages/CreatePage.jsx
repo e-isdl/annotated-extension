@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import { generateSlug } from '../lib/api';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
-import { createAnnotatedPost, createExtensionPost } from '../lib/mutations';
+import { createAnnotatedPost } from '../lib/mutations';
+import { deleteDraft, upsertDraft } from '../lib/drafts';
 import CommunityAvatar from '../components/CommunityAvatar';
 import { isXPostUrl } from '../lib/social';
 import { ANNOTATION_TYPES, ANNOTATION_LIMITS } from '../lib/annotationLimits';
@@ -27,30 +28,11 @@ export default function CreatePage() {
   const [status, setStatus] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [duplicateClips, setDuplicateClips] = useState([]);
-  const [searchParams] = useSearchParams();
-  const [draft, setDraft] = useState(null);
-
-  useEffect(() => {
-    const draftId = searchParams.get('draft');
-    if (!draftId) return undefined;
-    let active = true;
-    (async () => {
-      const { data } = await supabase.from('clip_drafts').select('*').eq('id', draftId).maybeSingle();
-      if (!active || !data) return;
-      setDraft(data);
-      setMode(data.source_type === 'youtube' ? 'moment' : 'source');
-      setForm((current) => ({
-        ...current,
-        url: data.source_url || '',
-        title: data.title || '',
-        quote: data.article_text || '',
-        startSec: data.start_sec ?? '',
-        endSec: data.end_sec ?? '',
-      }));
-      setStatus('');
-    })();
-    return () => { active = false; };
-  }, []);
+  const [draftId, setDraftId] = useState(null);
+  const [draftStatus, setDraftStatus] = useState('');
+  const draftTimer = useRef(null);
+  const draftIdRef = useRef(null);
+  draftIdRef.current = draftId || draftIdRef.current;
 
   useEffect(() => {
     let active = true;
@@ -103,6 +85,78 @@ export default function CreatePage() {
     setStatus('');
   }
 
+  const draftable = () => {
+    const url = form.url.trim();
+    if (!url || !isValidUrl(url)) return null;
+    if (!form.title.trim() && !form.quote.trim() && !form.commentary.trim()) return null;
+    let youtubeId = null;
+    try {
+      if (sourceType === 'youtube') {
+        youtubeId = new URL(url).searchParams.get('v') || url.split('/').pop() || null;
+      }
+    } catch {}
+    return {
+      kind: form.type,
+      source_url: url,
+      title: form.title.trim() || null,
+      thumbnail_url: null,
+      community_id: selectedCommunity?.id || null,
+      payload: {
+        commentary: form.commentary.trim(),
+        mode,
+        startSec: mode === 'moment' && form.startSec !== '' ? Number(form.startSec) : null,
+        endSec: mode === 'moment' && form.endSec !== '' ? Number(form.endSec) : null,
+        articlePassage: form.quote.trim() || null,
+        sourceType,
+        youtubeId,
+        duration: null,
+        author: null,
+      },
+    };
+  };
+
+  const persistDraft = async () => {
+    const snapshot = draftable();
+    if (!snapshot) return null;
+    const id = await upsertDraft(supabase, { id: draftIdRef.current, ...snapshot });
+    if (id && id !== draftIdRef.current) {
+      draftIdRef.current = id;
+      setDraftId(id);
+    }
+    return id;
+  };
+
+  useEffect(() => {
+    if (!user) return undefined;
+    if (!draftable()) return undefined;
+    setDraftStatus('Saving…');
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = setTimeout(async () => {
+      try {
+        await persistDraft();
+        setDraftStatus('Draft saved');
+      } catch {
+        setDraftStatus('');
+      }
+    }, 800);
+    return () => { if (draftTimer.current) clearTimeout(draftTimer.current); };
+  }, [form, user]);
+
+  useEffect(() => () => { if (draftTimer.current) clearTimeout(draftTimer.current); }, []);
+
+  const saveDraftNow = async () => {
+    if (!user) { setDraftStatus('Sign in to save drafts.'); return; }
+    if (!form.url.trim() || !isValidUrl(form.url.trim())) { setDraftStatus('Add a source URL to save a draft.'); return; }
+    if (!form.title.trim() && !form.quote.trim() && !form.commentary.trim()) { setDraftStatus('Nothing to save yet.'); return; }
+    setDraftStatus('Saving…');
+    try {
+      await persistDraft();
+      setDraftStatus('Draft saved');
+    } catch (e) {
+      setDraftStatus(e.message || 'Could not save draft.');
+    }
+  };
+
   async function publish(event) {
     event.preventDefault();
     const title = form.title.trim();
@@ -125,34 +179,6 @@ export default function CreatePage() {
     setPublishing(true);
     setStatus('');
     try {
-      if (draft?.video_url && sourceType === 'youtube') {
-        const clip = await createExtensionPost(supabase, {
-          community_id: selectedCommunity?.id || null,
-          title,
-          source_url: url || null,
-          source_type: sourceType,
-          source_domain: url ? domain : null,
-          source_title: title,
-          author: draft.author ?? null,
-          thumbnail: draft.thumbnail ?? null,
-          youtube_id: draft.youtube_id ?? null,
-          source_audio_url: null,
-          transcript: null,
-          annotation_type: form.type,
-          article_text: form.quote.trim() || null,
-          start_sec: startSec,
-          end_sec: endSec,
-          duration: draft.duration ?? null,
-          slug: generateSlug(title),
-          annotation: commentary,
-          annotation_audio_url: null,
-          video_url: draft.video_url,
-          video_status: 'ready',
-        });
-        try { await supabase.from('clip_drafts').delete().eq('id', draft.id); } catch {}
-        navigate(`/post/${clip.id}`);
-        return;
-      }
       const clip = await createAnnotatedPost(supabase, {
         community_id: selectedCommunity?.id || null,
         source_url: url || null,
@@ -167,8 +193,8 @@ export default function CreatePage() {
         slug: generateSlug(title),
         annotation: needsSource ? commentary : title,
       });
-      if (draft) { try { await supabase.from('clip_drafts').delete().eq('id', draft.id); } catch {} }
       navigate(postHref({ ...clip, community_slug: selectedCommunity?.slug }));
+      if (draftIdRef.current) { try { await deleteDraft(supabase, draftIdRef.current); } catch {} }
     } catch (error) {
       setStatus(error.message || 'We could not publish this thread yet.');
     } finally {
@@ -195,10 +221,7 @@ export default function CreatePage() {
             ))}
           </div>
 
-          {draft && <p className="field-hint">Finishing a stashed clip — posting removes it from your stash.</p>}
-
-          <label className="form-label">Community <span className="text-text-muted font-normal">(optional)</span>
-            <select className="input" value={form.community} onChange={(event) => update('community', event.target.value)} disabled={!communitiesReady}>
+          <label className="form-label">Community <span className="text-text-muted font-normal">(optional)</span>            <select className="input" value={form.community} onChange={(event) => update('community', event.target.value)} disabled={!communitiesReady}>
               <option value="">{communitiesReady ? 'No community' : 'Loading communities…'}</option>
               {communities.map((community) => <option key={community.slug} value={community.slug}>c/{community.name}</option>)}
             </select>
@@ -239,6 +262,10 @@ export default function CreatePage() {
           </label>}
           {status && <p className="form-status" role="alert">{status}</p>}
           <button type="submit" className="btn-primary w-full" disabled={publishing || !communitiesReady}>{publishing ? 'Publishing…' : user ? selectedCommunity ? `Post to c/${selectedCommunity.name}` : 'Post' : 'Sign in to post ↗'}</button>
+          <button type="button" onClick={saveDraftNow} className="btn-ghost w-full">
+            Save draft
+          </button>
+          {draftStatus && <p className="draft-status">{draftStatus}</p>}
         </div>
 
         <div className="create-preview-wrap">

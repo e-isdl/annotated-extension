@@ -51,13 +51,13 @@ function parseTime(str) {
   return 0;
 }
 
-export default function YouTubeClipper({ pageInfo, onReady, onSave, published, embedRequest }) {
+export default function YouTubeClipper({ pageInfo, onReady, published, embedRequest, resumeRange }) {
   const { data } = pageInfo;
   const [duration, setDuration] = useState(data.duration || 300);
-  const [startSec, setStartSec] = useState(0);
-  const [endSec, setEndSec] = useState(Math.min(30, data.duration || 300));
-  const [startInput, setStartInput] = useState('0:00:00');
-  const [endInput, setEndInput] = useState('0:00:30');
+  const [startSec, setStartSec] = useState(resumeRange?.start_sec ?? 0);
+  const [endSec, setEndSec] = useState(resumeRange?.end_sec ?? Math.min(30, data.duration || 300));
+  const [startInput, setStartInput] = useState(formatTime(resumeRange?.start_sec ?? 0));
+  const [endInput, setEndInput] = useState(formatTime(resumeRange?.end_sec ?? Math.min(30, data.duration || 300)));
   const [dragging, setDragging] = useState(null);
   const [playMode, setPlayMode] = useState('embed');
   const [rec, setRec] = useState(IDLE_REC);
@@ -142,6 +142,17 @@ export default function YouTubeClipper({ pageInfo, onReady, onSave, published, e
       })
       .catch(() => {});
   }, [data.videoId, data.duration]);
+
+  useEffect(() => {
+    if (!resumeRange) return;
+    const s = Math.max(0, resumeRange.start_sec ?? 0);
+    const e = resumeRange.end_sec ?? Math.min(30, data.duration || 300);
+    if (!(e > s)) return;
+    setStartSec(s);
+    setEndSec(e);
+    setStartInput(formatTime(s));
+    setEndInput(formatTime(e));
+  }, [resumeRange]);
 
   useEffect(() => {
     const onVis = () => {
@@ -237,8 +248,6 @@ export default function YouTubeClipper({ pageInfo, onReady, onSave, published, e
 
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [stashError, setStashError] = useState('');
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -339,31 +348,6 @@ export default function YouTubeClipper({ pageInfo, onReady, onSave, published, e
         ? { recorded_clip: { blob: rec.blob, mime: rec.mime, seconds: rec.t } }
         : {}),
     });
-  };
-
-  const handleStash = async () => {
-    if (endSec <= startSec || clipLen <= 0 || clipLen > 90 || saving) return;
-    setSaving(true);
-    setStashError('');
-    try {
-      await onSave({
-        source_url: pageInfo.url,
-        source_type: 'youtube',
-        title: data.title,
-        youtube_id: data.videoId,
-        start_sec: Math.floor(startSec),
-        end_sec: Math.ceil(endSec),
-        duration: duration || null,
-        thumbnail: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`,
-        ...(playMode === 'record' && rec.blob
-          ? { recorded_clip: { blob: rec.blob, mime: rec.mime, seconds: rec.t } }
-          : {}),
-      });
-    } catch (e) {
-      setStashError(e.message || 'Could not stash this clip.');
-    } finally {
-      setSaving(false);
-    }
   };
 
   const words = useMemo(() => {
@@ -899,16 +883,6 @@ export default function YouTubeClipper({ pageInfo, onReady, onSave, published, e
           {canContinue ? 'Continue' : 'Record clip'}
         </button>
       )}
-      {rec.state !== 'recording' && (
-        <button
-          onClick={handleStash}
-          disabled={saving || clipLen > 90 || clipLen <= 0 || endSec <= startSec}
-          className="btn-ghost w-full disabled:opacity-40"
-        >
-          {saving ? 'Stashing…' : 'Stash for later'}
-        </button>
-      )}
-      {stashError && <p className="text-sm text-[var(--red)] text-center">{stashError}</p>}
     </div>
   );
 }

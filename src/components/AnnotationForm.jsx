@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { upsertDraft } from '../lib/drafts';
 import AudioRecorder from './AudioRecorder';
 import { excerptYouTubeTranscript, fetchYouTubeTranscript, formatYouTubeTranscript } from '../lib/youtubeTranscript';
 import { cleanTranscript } from '../lib/text';
@@ -56,11 +57,11 @@ function contractTranscript(currentText, words = 5) {
   return currentWords.slice(0, -words).join(' ');
 }
 
-export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed, transcriptCache, setTranscriptCache, onTranscriptChange, communities = [], communityId = '', onCommunityChange }) {
-  const [text, setText] = useState('');
-  const [annotationType, setAnnotationType] = useState('Reaction');
-  const [audioUrl, setAudioUrl] = useState(null);
-  const [mode, setMode] = useState('text');
+export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed, transcriptCache, setTranscriptCache, onTranscriptChange, communities = [], communityId = '', onCommunityChange, draftId, onDraftIdChange, canAutosave, resume, showPassageFallback }) {
+  const [text, setText] = useState(resume?.text || '');
+  const [annotationType, setAnnotationType] = useState(resume?.annotationType || 'Reaction');
+  const [audioUrl, setAudioUrl] = useState(resume?.audioUrl || null);
+  const [mode, setMode] = useState(resume?.audioUrl ? 'audio' : 'text');
   const [publishing, setPublishing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -129,6 +130,79 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
 
   const [publishError, setPublishError] = useState(null);
   const [publishStage, setPublishStage] = useState(null);
+  const [draftStatus, setDraftStatus] = useState('');
+  const draftIdRef = useRef(draftId || null);
+  draftIdRef.current = draftId || draftIdRef.current;
+  const saveTimer = useRef(null);
+
+  const hasDraftContent = Boolean(
+    text.trim() || audioUrl
+    || (isYouTube && clipData.start_sec != null && clipData.end_sec != null)
+    || (isArticle && clipData.article_text),
+  );
+
+  const buildDraftPayload = () => ({
+    commentary: text.trim(),
+    kind: annotationType,
+    communityId: communityId || null,
+    mode: clipData.recorded_clip ? 'record' : 'embed',
+    startSec: clipData.start_sec ?? null,
+    endSec: clipData.end_sec ?? null,
+    articlePassage: isArticle ? (clipData.article_text || null) : null,
+    audioUrl: audioUrl || null,
+    sourceType: clipData.source_type,
+    youtubeId: clipData.youtube_id || null,
+    duration: clipData.duration ?? null,
+    author: clipData.author || null,
+  });
+
+  const persistDraft = async () => {
+    if (!canAutosave || !hasDraftContent) return null;
+    const payload = buildDraftPayload();
+    const id = await upsertDraft(supabase, {
+      id: draftIdRef.current,
+      kind: payload.kind,
+      source_url: clipData.source_url,
+      title: clipData.title || null,
+      thumbnail_url: clipData.thumbnail || null,
+      community_id: payload.communityId,
+      payload,
+    });
+    if (id && id !== draftIdRef.current) {
+      draftIdRef.current = id;
+      if (onDraftIdChange) onDraftIdChange(id);
+    }
+    return id;
+  };
+
+  useEffect(() => {
+    if (!canAutosave || !hasDraftContent) return undefined;
+    setDraftStatus('Saving…');
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await persistDraft();
+        setDraftStatus('Draft saved');
+      } catch {
+        setDraftStatus('');
+      }
+    }, 800);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [text, annotationType, audioUrl, communityId, clipData, canAutosave]);
+
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
+
+  const saveDraftNow = async () => {
+    if (!canAutosave) return;
+    if (!hasDraftContent) { setDraftStatus('Nothing to save yet.'); return; }
+    setDraftStatus('Saving…');
+    try {
+      await persistDraft();
+      setDraftStatus('Draft saved');
+    } catch (e) {
+      setDraftStatus(e.message || 'Could not save draft.');
+    }
+  };
 
   const handlePublish = async () => {
     if (!text && !audioUrl) return;
@@ -212,6 +286,13 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
           )}
         </div>
       </div>
+
+      {isArticle && showPassageFallback && clipData.article_text && (
+        <div className="draft-passage">
+          <p className="draft-passage-text">{clipData.article_text}</p>
+          <p className="draft-passage-hint">Couldn't find this on the page — select it again to re-attach.</p>
+        </div>
+      )}
 
       <div className="take-box">
         <textarea
@@ -552,6 +633,15 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
           'Post annotation'
         )}
       </button>
+      <button
+        type="button"
+        onClick={saveDraftNow}
+        disabled={!canAutosave}
+        className="btn-ghost w-full disabled:opacity-40"
+      >
+        Save draft
+      </button>
+      {draftStatus && <p className="draft-status">{draftStatus}</p>}
     </div>
   );
 }
