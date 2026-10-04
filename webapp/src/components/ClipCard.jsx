@@ -164,7 +164,7 @@ export default function ClipCard({ clip }) {
         <div className="source-preview source-preview-playing">
           <div className="source-preview-player" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
             {playableRecording ? (
-              <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} />
+              <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} />
             ) : (
               <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
             )}

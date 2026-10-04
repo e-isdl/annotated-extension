@@ -1218,3 +1218,19 @@ this changelog.
   badge instead of a fake player, and uploads dead over 20 minutes fall through
   to the embed like the detail page.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Player duration and overflow hardening
+
+Files touched: webapp/src/components/ClipPlayer.jsx,
+webapp/src/components/ClipCard.jsx, webapp/src/pages/ClipPage.jsx,
+webapp/src/styles/globals.css, this changelog.
+
+- Duration: the player only read metadata once, so mp4s without faststart stuck
+  at 0:00 with a pinned-full bar. It now also tracks durationchange (fires when
+  the browser resolves it late), preloads auto, and falls back to the known
+  clip length for the total and progress until real metadata arrives.
+- Overflow: flex min-width guards on the bar, seek and player wrapper, plus
+  max-width on the player and video, so the bar can no longer push past the
+  card and clip the fullscreen button.
+- Local commit only - NOT pushed. Webapp NOT deployed.

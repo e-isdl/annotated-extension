@@ -376,7 +376,7 @@ export default function ClipPage() {
         )}
         {clip.video_url && !stillUploading && !videoFailed && !showEmbed && (
           <div className="source-media">
-            <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} />
+            <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} />
           </div>
         )}
         {(!clip.video_url || videoFailed || showEmbed) && !stillUploading && clip.source_type === 'youtube' && (

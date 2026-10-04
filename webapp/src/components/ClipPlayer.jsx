@@ -7,7 +7,7 @@ function formatClock(s) {
   return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
-export default function ClipPlayer({ src, onError }) {
+export default function ClipPlayer({ src, onError, fallbackDuration }) {
   const wrapRef = useRef(null);
   const videoRef = useRef(null);
   const seekRef = useRef(null);
@@ -57,6 +57,16 @@ export default function ClipPlayer({ src, onError }) {
     if (v.paused) v.play().catch(() => {});
     else v.pause();
   }, []);
+
+  const readDuration = (video) => {
+    const d = video?.duration;
+    if (Number.isFinite(d) && d > 0) setDuration(d);
+  };
+
+  const fallbackTotal = Number.isFinite(Number(fallbackDuration)) && Number(fallbackDuration) > 0
+    ? Number(fallbackDuration)
+    : 0;
+  const effectiveDuration = duration > 0 ? duration : fallbackTotal;
 
   const ratioForEvent = (clientX) => {
     const el = seekRef.current;
@@ -121,8 +131,8 @@ export default function ClipPlayer({ src, onError }) {
     } catch {}
   };
 
-  const playedPct = duration > 0 ? (current / duration) * 100 : 0;
-  const bufferedPct = duration > 0 ? Math.min(100, (buffered / duration) * 100) : 0;
+  const playedPct = effectiveDuration > 0 ? Math.min(100, (current / effectiveDuration) * 100) : 0;
+  const bufferedPct = effectiveDuration > 0 && buffered > 0 ? Math.min(100, (buffered / effectiveDuration) * 100) : 0;
 
   return (
     <div className="clip-player" ref={wrapRef}>
@@ -131,12 +141,13 @@ export default function ClipPlayer({ src, onError }) {
         className="clip-player-video"
         src={src}
         playsInline
-        preload="metadata"
+        preload="auto"
         onClick={toggle}
         onPlay={() => { setPlaying(true); setWaiting(false); }}
         onPause={() => setPlaying(false)}
         onTimeUpdate={(e) => { if (!scrubbing) setCurrent(e.currentTarget.currentTime); }}
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+        onLoadedMetadata={(e) => readDuration(e.currentTarget)}
+        onDurationChange={(e) => readDuration(e.currentTarget)}
         onProgress={(e) => {
           const v = e.currentTarget;
           try { if (v.buffered.length) setBuffered(v.buffered.end(v.buffered.length - 1)); } catch {}
@@ -174,7 +185,7 @@ export default function ClipPlayer({ src, onError }) {
             </svg>
           )}
         </button>
-        <span className="clip-player-time">{formatClock(current)} / {formatClock(duration)}</span>
+        <span className="clip-player-time">{formatClock(current)} / {effectiveDuration > 0 ? formatClock(effectiveDuration) : '--:--'}</span>
         <div
           className="clip-player-seek"
           ref={seekRef}
