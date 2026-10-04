@@ -1461,3 +1461,16 @@ this changelog.
 - Both players pause below 20 percent visibility and on tab hide, no
   auto-resume. No more background audio while scrolling.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## White-screen crash: state read before declaration
+
+Files touched: src/components/ClipCreator.jsx,
+webapp/src/components/ClipPlayer.jsx,
+webapp/src/components/YouTubeClipPlayer.jsx, this changelog.
+
+- Same bug in three places: a ref mirror like playingRef.current = playing
+  ran before the matching useState line, throwing on every render of any
+  player or the clipper shell. Declarations reordered so state always comes
+  first. Pattern-swept both codebases, no other instances.
+- Local commit only - NOT pushed. Webapp NOT deployed.

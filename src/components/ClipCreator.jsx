@@ -133,6 +133,8 @@ export default function ClipCreator({ pageInfo, session }) {
   const recordedRef = useRef(null);
   const pendingResumeRef = useRef(null);
 
+  const pageKey = pageIdentity(pageInfo);
+
   const draftSessionKey = `annotated:draft:${pageKey}`;
   const draftSessionGet = async () => {
     try {
@@ -159,8 +161,6 @@ export default function ClipCreator({ pageInfo, session }) {
       .catch(() => { if (active) setCommunities([]); });
     return () => { active = false; };
   }, []);
-
-  const pageKey = pageIdentity(pageInfo);
 
   const enterAnnotate = (pending) => {
     setClipData(pending.clipPayload);

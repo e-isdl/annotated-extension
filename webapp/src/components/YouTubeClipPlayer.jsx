@@ -72,8 +72,6 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const frameRef = useRef(null);
   const hostRef = useRef(null);
   const playerRef = useRef(null);
-  const playingRef = useRef(false);
-  playingRef.current = playing;
   const boundsRef = useRef({ start: 0, end: 0 });
   const draggingRef = useRef(false);
   const onCloseRef = useRef(onClose);
@@ -84,6 +82,8 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const mutedRef = useRef(startMuted);
   const [pos, setPos] = useState(0);
   const [apiFailed, setApiFailed] = useState(false);
+  const playingRef = useRef(false);
+  playingRef.current = playing;
 
   const start = Math.max(0, Number(startSec) || 0);
   const rawEnd = Number(endSec) || 0;

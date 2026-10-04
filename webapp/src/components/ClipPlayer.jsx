@@ -13,8 +13,6 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
   const seekRef = useRef(null);
   const autoMutedRef = useRef(false);
   const mutedAutoplayRef = useRef(mutedAutoplay);
-  const playingRef = useRef(false);
-  playingRef.current = playing;
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -22,6 +20,8 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
   const [muted, setMuted] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [scrubbing, setScrubbing] = useState(false);
+  const playingRef = useRef(false);
+  playingRef.current = playing;
 
   useEffect(() => {
     const v = videoRef.current;
