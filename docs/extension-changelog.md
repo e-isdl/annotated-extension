@@ -1199,3 +1199,22 @@ Files touched: src/styles/panel.css, this changelog.
 - Manifest bumped 2.3.7 to 2.3.8. Ships the sticky word-clipper header and the
   permanent bottom Continue bar.
 - Pushed to master.
+---
+
+## Feed video plays inline
+
+Files touched: webapp/src/components/ClipCard.jsx, webapp/src/styles/globals.css,
+this changelog.
+
+- Root cause of the hostage thumbnail: feed cards had no player at all. Every
+  click ran the image expander, including on video posts. The expander now only
+  serves plain images.
+- YouTube posts show a play-button thumbnail. Click (or Enter) swaps in the real
+  player inline: the recorded ClipPlayer when a finished upload exists, else the
+  YouTube embed autoplaying from the left timestamp with the right timestamp as
+  the stop bound. Dead recording URLs fall through to the embed automatically.
+- Clicks inside the player are fenced off from the card link so controls never
+  navigate away. Escape closes the player. Uploading posts show an Uploading
+  badge instead of a fake player, and uploads dead over 20 minutes fall through
+  to the embed like the detail page.
+- Local commit only - NOT pushed. Webapp NOT deployed.

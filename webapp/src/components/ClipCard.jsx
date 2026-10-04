@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import VoteButtons from './VoteButtons';
 import AudioPlayer from './AudioPlayer';
+import YouTubeEmbed from './YouTubeEmbed';
+import ClipPlayer from './ClipPlayer';
 import SourceIcon from './SourceIcon';
 import { useToast } from './ToastProvider';
 import CommunityAvatar from './CommunityAvatar';
@@ -37,6 +39,19 @@ export default function ClipCard({ clip }) {
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const uploadStale = clip.video_status === 'uploading' && clip.created_at && (Date.now() - new Date(clip.created_at).getTime() > 20 * 60 * 1000);
+  const isUploadingVideo = clip.video_status === 'uploading' && !uploadStale;
+  const playableRecording = Boolean(clip.video_url) && !isUploadingVideo && !videoFailed;
+  const playableEmbed = isYouTube && Boolean(clip.youtube_id) && !playableRecording && !isUploadingVideo;
+  const isVideoPost = playableRecording || playableEmbed;
+  const playInline = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!isVideoPost) return;
+    setPlaying(true);
+  };
   const isXPost = isXPostUrl(clip.source_url);
   const posterHandle = isXPost ? (matchStatusUrl(clip.source_url)?.handle || String(clip.author || '').replace(/^@/, '')) : '';
   const href = postHref(clip);
@@ -65,11 +80,11 @@ export default function ClipCard({ clip }) {
   }, [clip.id]);
 
   useEffect(() => {
-    if (!mediaExpanded) return undefined;
-    const onKey = (event) => { if (event.key === 'Escape') setMediaExpanded(false); };
+    if (!mediaExpanded && !playing) return undefined;
+    const onKey = (event) => { if (event.key === 'Escape') { setMediaExpanded(false); setPlaying(false); } };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [mediaExpanded]);
+  }, [mediaExpanded, playing]);
 
   const handleShare = async (event) => {
     event.preventDefault();
@@ -145,7 +160,17 @@ export default function ClipCard({ clip }) {
 
         {clip.source_type === 'text' ? (
           clip.article_text && <p className="post-text-body">{clip.article_text}</p>
-        ) : mediaExpanded && canExpand ? (
+        ) : playing && isVideoPost ? (
+        <div className="source-preview source-preview-playing">
+          <div className="source-preview-player" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
+            {playableRecording ? (
+              <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} />
+            ) : (
+              <YouTubeEmbed videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
+            )}
+          </div>
+        </div>
+        ) : mediaExpanded && canExpand && !isVideoPost ? (
         <div className="source-preview source-preview-expanded">
           <div className="source-preview-media" role="button" tabIndex={0} aria-label="Collapse preview" onClick={toggleMedia} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleMedia(event); }}>
             <img src={sourceImage} alt={clip.title || 'Source preview'} className={`source-preview-image-expanded${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />
@@ -171,19 +196,33 @@ export default function ClipCard({ clip }) {
             {sourceTitle && sourceTitle !== commentary && <p className="source-title">{sourceTitle}</p>}
           </div>
           {sourceImage && !imageFailed && (
-            <img
-              src={sourceImage}
-              alt=""
-              className={`source-preview-image${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`}
-              loading="lazy"
-              role="button"
-              tabIndex={0}
-              aria-label="Expand preview"
-              aria-expanded={mediaExpanded}
-              onClick={toggleMedia}
-              onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleMedia(event); }}
-              onError={() => setImageFailed(true)}
-            />
+            isUploadingVideo ? (
+              <span className="source-preview-thumbwrap">
+                <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />
+                <span className="source-preview-uploading">Uploading…</span>
+              </span>
+            ) : isVideoPost ? (
+              <button type="button" className="source-preview-thumbbtn" onClick={playInline} aria-label={`Play clip from ${formatTime(clip.start_sec)}`}>
+                <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />
+                <span className="source-preview-play" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
+                </span>
+              </button>
+            ) : (
+              <img
+                src={sourceImage}
+                alt=""
+                className={`source-preview-image${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`}
+                loading="lazy"
+                role="button"
+                tabIndex={0}
+                aria-label="Expand preview"
+                aria-expanded={mediaExpanded}
+                onClick={toggleMedia}
+                onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleMedia(event); }}
+                onError={() => setImageFailed(true)}
+              />
+            )
           )}
           {sourceImage && imageFailed && (
             <div className="source-preview-image source-thumb-fallback">
