@@ -1563,3 +1563,14 @@ this changelog.
   like Continue. Removed the magnifier toggle, the close button and all
   show/hide state. Ctrl/Cmd+F still focuses the input, Esc clears it.
 - Local commit only - NOT pushed.
+---
+
+## Full-width X screenshots in video mode
+
+Files touched: webapp/src/components/ClipCard.jsx,
+webapp/src/styles/globals.css, this changelog.
+
+- In video mode, X posts with screenshots now render the image full-width
+  under the source line, on the same stage videos get, instead of the small
+  side thumbnail. Click expands it as before. Normal mode untouched.
+- Local commit only - NOT pushed. Webapp NOT deployed.

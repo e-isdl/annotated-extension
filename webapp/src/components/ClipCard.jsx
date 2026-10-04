@@ -248,6 +248,22 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
             <img src={sourceImage} alt={clip.title || 'Source preview'} className={`source-preview-image-expanded${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />
           </div>
         </div>
+        ) : hideTranscript && isXPost && sourceImage && !imageFailed ? (
+        <div className="source-preview source-preview-fullimage">
+          <div className="source-preview-copy">
+            <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>
+            {posterHandle && <p className="source-quote-poster">@{posterHandle}</p>}
+          </div>
+          <button
+            type="button"
+            className="source-preview-thumbbtn-full"
+            onClick={toggleMedia}
+            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleMedia(event); }}
+            aria-label="Expand screenshot"
+          >
+            <img src={sourceImage} alt="" loading="lazy" onError={() => setImageFailed(true)} />
+          </button>
+        </div>
         ) : (
         <div className="source-preview">
           <div className="source-preview-copy">

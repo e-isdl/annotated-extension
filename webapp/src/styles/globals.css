@@ -158,6 +158,11 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .source-preview-expanded { flex-direction: column; gap: 0; min-height: 0; }
 .source-preview-media { display: block; width: 100%; cursor: zoom-out; line-height: 0; }
 .source-preview-image-expanded { display: block; width: 100%; max-height: 64vh; object-fit: contain; background: var(--card); }
+/* Full-width screenshots for X posts in video mode: same stage as videos */
+.source-preview-fullimage { flex-direction: column; gap: 8px; min-height: 0; }
+.source-preview-fullimage .source-preview-copy { padding: 10px 12px 0; }
+.source-preview-thumbbtn-full { display: block; width: 100%; border: none; padding: 0; border-radius: 12px; overflow: hidden; background: var(--card); cursor: zoom-in; }
+.source-preview-thumbbtn-full img { display: block; width: 100%; height: auto; max-height: 480px; object-fit: contain; background: var(--card); }
 /* Feed inline video: thumbnail becomes a play button, click swaps in the player */
 .source-preview-playing { flex-direction: column; gap: 0; min-height: 0; }
 .source-preview-player { width: 100%; min-width: 0; overflow: hidden; border-radius: 12px; }
