@@ -63,6 +63,9 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const canvasRef = useRef(null);
   const recCtlRef = useRef(null);
   const startedRef = useRef(false);
+  const [stage, setStage] = useState('');
+  const stageRef = useRef('');
+  const setStageBoth = (s) => { stageRef.current = s; setStage(s); };
 
   const teardownRecording = () => {
     const ctl = recCtlRef.current;
@@ -86,12 +89,14 @@ export default function TweetClipper({ pageInfo, onReady }) {
 
   const startRecording = async () => {
     teardownRecording();
+    setStageBoth('');
     setRecError(null);
     setClip(null);
     setPhase('recording');
     setRecT(0);
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      setStageBoth('Reading the post…');
       try {
         if (tab?.id) await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
       } catch {}
@@ -108,12 +113,15 @@ export default function TweetClipper({ pageInfo, onReady }) {
       const targetMs = Math.max(1000, Math.min(probe.durationMs || 15000, MAX_RECORD_MS));
       setRecTarget(targetMs / 1000);
 
+      setStageBoth('Opening tab capture…');
       const idRes = await chrome.runtime.sendMessage({ type: 'GET_TAB_STREAM_ID' }).catch(() => null);
       if (!idRes?.ok || !idRes.streamId) throw new Error('Could not capture this tab.');
 
+      setStageBoth('Starting the camera…');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: idRes.streamId } },
       });
+      setStageBoth('Warming up…');
       const tabVideo = tabVideoRef.current;
       if (!tabVideo) { stream.getTracks().forEach((t) => { try { t.stop(); } catch {} }); throw new Error('Recording stopped.'); }
       tabVideo.srcObject = stream;
@@ -184,8 +192,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
         let poster = ctl.poster || null;
         if (!poster) {
           try { poster = canvas.toDataURL('image/jpeg', 0.85); } catch {}
-        }
-        const actualMs = Math.min(targetMs, Date.now() - ctl.t0);
+        }        const actualMs = Math.min(targetMs, Date.now() - ctl.t0);
         setClip({
           blob,
           mime: recorder.mimeType || mimeType || 'video/webm',
@@ -195,6 +202,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
           durationMs: actualMs,
           poster,
         });
+        setStageBoth('');
         setPhase('preview');
       };
 
@@ -231,9 +239,13 @@ export default function TweetClipper({ pageInfo, onReady }) {
       }, 500);
       ctl.stopTimer = setTimeout(() => finishRecording(), targetMs + 5000);
     } catch (err) {
-      console.error('tweet recording failed:', err?.message || err);
+      console.error('[tweet-record] failed at stage:', stageRef.current, err?.name || '', err?.message || err);
       teardownRecording();
-      setRecError(err?.name === 'NotAllowedError' ? 'Tab capture was blocked.' : (err?.message || 'Could not record this post.'));
+      const raw = err?.name && err.name !== 'Error' ? ` (${err.name})` : '';
+      const hint = /No reply/.test(err?.message || '')
+        ? err.message
+        : `Stopped at “${stageRef.current || 'starting'}”: ${err?.message || 'Could not record this post.'}${raw}`;
+      setRecError(err?.name === 'NotAllowedError' ? 'Tab capture was blocked.' : hint);
       setPhase('failed');
     }
   };
@@ -370,7 +382,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const statusText = phase === 'probing'
     ? 'Checking this post for video…'
     : phase === 'recording'
-      ? `Recording the whole tweet… ${recT.toFixed(1)}s of ${Math.ceil(recTarget)}s. Keep the tab open.`
+      ? `Recording the whole tweet… ${recT.toFixed(1)}s of ${Math.ceil(recTarget)}s. Keep the tab open.${stage ? ` (${stage})` : ''}`
       : phase === 'preview' && !useShot
         ? 'Tweet recorded with its video and text. It will loop silently on Annotated, like a GIF.'
         : phase === 'preview' && useShot

@@ -1725,3 +1725,14 @@ Files touched: content.js, src/components/TweetClipper.jsx, this changelog.
   duplicate listeners.
 - A probe timeout now says to refresh the X tab instead of a bare failure.
 - Local commit only - NOT pushed.
+---
+
+## Tweet recorder shows its failure stage
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- Recording now reports its stage on screen (reading the post, opening
+  tab capture, starting the camera, warming up) and failures say which
+  stage died with the raw error, so the next failure pinpoints the cause
+  instead of a bare Working stall.
+- Local commit only - NOT pushed.
