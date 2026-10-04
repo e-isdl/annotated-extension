@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import { generateSlug } from '../lib/api';
 import { postHref } from '../lib/links';
 import { hasMoment } from '../lib/moment';
-import { createAnnotatedPost } from '../lib/mutations';
+import { createAnnotatedPost, createExtensionPost } from '../lib/mutations';
 import CommunityAvatar from '../components/CommunityAvatar';
 import { isXPostUrl } from '../lib/social';
 import { ANNOTATION_TYPES, ANNOTATION_LIMITS } from '../lib/annotationLimits';
@@ -27,6 +27,30 @@ export default function CreatePage() {
   const [status, setStatus] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [duplicateClips, setDuplicateClips] = useState([]);
+  const [searchParams] = useSearchParams();
+  const [draft, setDraft] = useState(null);
+
+  useEffect(() => {
+    const draftId = searchParams.get('draft');
+    if (!draftId) return undefined;
+    let active = true;
+    (async () => {
+      const { data } = await supabase.from('clip_drafts').select('*').eq('id', draftId).maybeSingle();
+      if (!active || !data) return;
+      setDraft(data);
+      setMode(data.source_type === 'youtube' ? 'moment' : 'source');
+      setForm((current) => ({
+        ...current,
+        url: data.source_url || '',
+        title: data.title || '',
+        quote: data.article_text || '',
+        startSec: data.start_sec ?? '',
+        endSec: data.end_sec ?? '',
+      }));
+      setStatus('');
+    })();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -101,6 +125,34 @@ export default function CreatePage() {
     setPublishing(true);
     setStatus('');
     try {
+      if (draft?.video_url && sourceType === 'youtube') {
+        const clip = await createExtensionPost(supabase, {
+          community_id: selectedCommunity?.id || null,
+          title,
+          source_url: url || null,
+          source_type: sourceType,
+          source_domain: url ? domain : null,
+          source_title: title,
+          author: draft.author ?? null,
+          thumbnail: draft.thumbnail ?? null,
+          youtube_id: draft.youtube_id ?? null,
+          source_audio_url: null,
+          transcript: null,
+          annotation_type: form.type,
+          article_text: form.quote.trim() || null,
+          start_sec: startSec,
+          end_sec: endSec,
+          duration: draft.duration ?? null,
+          slug: generateSlug(title),
+          annotation: commentary,
+          annotation_audio_url: null,
+          video_url: draft.video_url,
+          video_status: 'ready',
+        });
+        try { await supabase.from('clip_drafts').delete().eq('id', draft.id); } catch {}
+        navigate(`/post/${clip.id}`);
+        return;
+      }
       const clip = await createAnnotatedPost(supabase, {
         community_id: selectedCommunity?.id || null,
         source_url: url || null,
@@ -115,6 +167,7 @@ export default function CreatePage() {
         slug: generateSlug(title),
         annotation: needsSource ? commentary : title,
       });
+      if (draft) { try { await supabase.from('clip_drafts').delete().eq('id', draft.id); } catch {} }
       navigate(postHref({ ...clip, community_slug: selectedCommunity?.slug }));
     } catch (error) {
       setStatus(error.message || 'We could not publish this thread yet.');
@@ -141,6 +194,8 @@ export default function CreatePage() {
               </button>
             ))}
           </div>
+
+          {draft && <p className="field-hint">Finishing a stashed clip — posting removes it from your stash.</p>}
 
           <label className="form-label">Community <span className="text-text-muted font-normal">(optional)</span>
             <select className="input" value={form.community} onChange={(event) => update('community', event.target.value)} disabled={!communitiesReady}>

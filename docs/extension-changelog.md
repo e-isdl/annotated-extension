@@ -1318,3 +1318,31 @@ Thumbnail stays per order (change 4 skipped).
 - No dark circles: cover is poster-only, thumbnail keeps no overlay. The bar
   play button remains the visible control.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Stash: save clips now, annotate later
+
+Files touched: supabase/migrations/20261004000100_clip_drafts.sql (new, applied
+to prod), src/lib/postPublishing.js, src/components/ClipCreator.jsx,
+src/components/YouTubeClipper.jsx, src/components/ArticleClipper.jsx,
+src/components/TweetClipper.jsx, src/components/PodcastClipper.jsx,
+src/components/SuccessScreen.jsx, webapp/src/lib/mutations.js,
+webapp/src/pages/StashPage.jsx (new), webapp/src/App.jsx,
+webapp/src/components/Navbar.jsx, webapp/src/pages/CreatePage.jsx,
+this changelog.
+
+- New clip_drafts table, owner-only RLS (select/insert/delete), separate from
+  clips so drafts can never leak into feed, profiles or search. Validated
+  create_clip_draft RPC live in prod.
+- Extension: Stash for later on all four clippers. Recordings upload first,
+  then the draft stores the URL (upload helper split out and shared with the
+  publish path). Size and empty guards shared. Stashed success screen links to
+  /stash. Podcast holds its payload for review with Continue plus Stash.
+- Webapp: /stash lists own drafts with Finish (prefills Create: mode, URL,
+  title, quote, times, recording carried through) and two-tap delete. Publish
+  uses the video-capable RPC when the draft has a recording, otherwise the
+  normal path, then deletes the draft. Stash link in the account menu.
+- Known limits: stashed YouTube clips carry no transcript (fetched in the
+  take flow, not saved); repurposing a recording draft to another source
+  drops its video.
+- Local commit only - NOT pushed. Webapp NOT deployed.

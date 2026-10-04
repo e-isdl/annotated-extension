@@ -7,24 +7,28 @@ import AnnotationForm from './AnnotationForm';
 import SuccessScreen from './SuccessScreen';
 import FlowHeader from './FlowHeader';
 import { supabase } from '../lib/supabase';
-import { createExtensionPost, updateClipVideoUrl } from '../lib/postPublishing';
+import { createExtensionPost, updateClipVideoUrl, createClipDraft } from '../lib/postPublishing';
 import { pageIdentity } from '../lib/pageInfo';
 
 const MAX_CLIP_BYTES = 15 * 1024 * 1024;
 const UPLOAD_TIMEOUT_MS = 180000;
 
+async function uploadClipFile(supabase, recorded) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('not signed in');
+  if (!recorded?.blob || recorded.blob.size === 0) throw new Error('empty recording');
+  const ext = (recorded.mime || '').includes('mp4') ? 'mp4' : 'webm';
+  const contentType = recorded.mime || (ext === 'mp4' ? 'video/mp4' : 'video/webm');
+  const filename = `clips/recordings/${user.id}/${Date.now()}.${ext}`;
+  const { error: uploadError } = await supabase.storage.from('clips').upload(filename, recorded.blob, { contentType });
+  if (uploadError) throw uploadError;
+  return supabase.storage.from('clips').getPublicUrl(filename).data.publicUrl;
+}
+
 async function uploadRecordedClip(supabase, recorded, clipId) {
   const doUpload = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('not signed in');
-      if (!recorded?.blob || recorded.blob.size === 0) throw new Error('empty recording');
-      const ext = (recorded.mime || '').includes('mp4') ? 'mp4' : 'webm';
-      const contentType = recorded.mime || (ext === 'mp4' ? 'video/mp4' : 'video/webm');
-      const filename = `clips/recordings/${user.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('clips').upload(filename, recorded.blob, { contentType });
-      if (uploadError) throw uploadError;
-      const publicUrl = supabase.storage.from('clips').getPublicUrl(filename).data.publicUrl;
+      const publicUrl = await uploadClipFile(supabase, recorded);
       await updateClipVideoUrl(supabase, clipId, publicUrl, 'ready');
       return true;
     } catch (e) {
@@ -117,6 +121,7 @@ export default function ClipCreator({ pageInfo, session }) {
   const [transcriptCache, setTranscriptCache] = useState(null);
   const [currentTranscript, setCurrentTranscript] = useState(null);
   const [uploadState, setUploadState] = useState({ status: 'idle', error: null });
+  const [stashMode, setStashMode] = useState(false);
   const recordedRef = useRef(null);
   const [communities, setCommunities] = useState([]);
   const [communityId, setCommunityId] = useState('');
@@ -139,6 +144,7 @@ export default function ClipCreator({ pageInfo, session }) {
     setPublishedClip(null);
     setCurrentTranscript(null);
     setUploadState({ status: 'idle', error: null });
+    setStashMode(false);
     recordedRef.current = null;
   }, [pageKey]);
 
@@ -147,6 +153,47 @@ export default function ClipCreator({ pageInfo, session }) {
     setCurrentTranscript(null);
     setStep('annotate');
   }, []);
+
+  const handleSaveDraft = async (data) => {
+    const recorded = data.recorded_clip;
+    if (recorded?.blob && recorded.blob.size > MAX_CLIP_BYTES) {
+      throw new Error('This clip is too big. Record a shorter one.');
+    }
+    const sourceUrl = data.source_url;
+    const sourceDomain = sourceUrl ? new URL(sourceUrl).hostname.replace(/^www\./, '') : null;
+    let videoUrl = null;
+    if (recorded?.blob) {
+      try {
+        videoUrl = await uploadClipFile(supabase, recorded);
+      } catch (e) {
+        console.error('[annotated] stash upload failed:', e);
+        throw new Error('Could not save the recording. Check your connection and try again.');
+      }
+    }
+    await createClipDraft(supabase, {
+      community_id: null,
+      title: data.title,
+      source_url: sourceUrl,
+      source_type: data.source_type,
+      source_domain: sourceDomain,
+      source_title: data.title,
+      author: data.author || null,
+      thumbnail: data.thumbnail || null,
+      youtube_id: data.youtube_id || null,
+      source_audio_url: data.source_audio_url ?? data.audio_url ?? null,
+      transcript: null,
+      article_text: data.article_text || null,
+      start_sec: data.start_sec ?? null,
+      end_sec: data.end_sec ?? null,
+      duration: data.duration ?? null,
+      video_url: videoUrl,
+      video_status: 'ready',
+    });
+    clearPageHighlight();
+    setStashMode(true);
+    setPublishedClip(null);
+    setStep('success');
+  };
 
   const clearPageHighlight = () => {
     try {
@@ -236,10 +283,10 @@ export default function ClipCreator({ pageInfo, session }) {
   const renderClipper = () => {
     if (!pageInfo) return <div className="p-4 text-text-muted text-sm">Navigate to a page to start clipping.</div>;
     switch (pageInfo.type) {
-      case 'youtube': return <YouTubeClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} published={step === 'success'} embedRequest={embedRequest} />;
-      case 'article': return <ArticleClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
-      case 'x': return <TweetClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
-      case 'podcast': return <PodcastClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} />;
+      case 'youtube': return <YouTubeClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} onSave={handleSaveDraft} published={step === 'success'} embedRequest={embedRequest} />;
+      case 'article': return <ArticleClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} onSave={handleSaveDraft} />;
+      case 'x': return <TweetClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} onSave={handleSaveDraft} />;
+      case 'podcast': return <PodcastClipper key={pageKey} pageInfo={pageInfo} onReady={handleClipReady} onSave={handleSaveDraft} />;
       default: return <UnsupportedPage />;
     }
   };
@@ -311,7 +358,7 @@ export default function ClipCreator({ pageInfo, session }) {
         <div style={{ display: step === 'annotate' ? 'block' : 'none' }}>
           {clipData && <AnnotationForm clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} onUseEmbed={useEmbedInstead} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} communities={communities} communityId={communityId} onCommunityChange={setCommunityId} />}
         </div>
-        {step === 'success' && <SuccessScreen clip={publishedClip} uploadState={uploadState} onRetryUpload={retryUpload} onReset={() => { setStep('clip'); setClipData(null); }} />}
+        {step === 'success' && <SuccessScreen clip={publishedClip} uploadState={uploadState} onRetryUpload={retryUpload} stashMode={stashMode} onReset={() => { setStep('clip'); setClipData(null); setStashMode(false); }} />}
       </div>
     </div>
   );

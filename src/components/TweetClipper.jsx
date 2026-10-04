@@ -19,11 +19,13 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-export default function TweetClipper({ pageInfo, onReady }) {
+export default function TweetClipper({ pageInfo, onReady, onSave }) {
   const { data, url } = pageInfo;
   const title = String(data.title || '').trim();
   const [capture, setCapture] = useState('working');
   const [thumbnail, setThumbnail] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [stashError, setStashError] = useState('');
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -81,6 +83,26 @@ export default function TweetClipper({ pageInfo, onReady }) {
     });
   };
 
+  const handleStash = async () => {
+    if (busy || saving) return;
+    setSaving(true);
+    setStashError('');
+    try {
+      await onSave({
+        source_url: url,
+        source_type: 'social',
+        title: title || 'X post',
+        author: data.author || data.handle || null,
+        article_text: title || null,
+        thumbnail: capture === 'ready' ? thumbnail : null,
+      });
+    } catch (e) {
+      setStashError(e.message || 'Could not stash this clip.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const busy = capture === 'working';
 
   return (
@@ -118,6 +140,14 @@ export default function TweetClipper({ pageInfo, onReady }) {
       >
         {busy ? 'Preparing screenshot…' : 'Continue to Annotate →'}
       </button>
+      <button
+        onClick={handleStash}
+        disabled={busy || saving}
+        className="btn-ghost w-full disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {saving ? 'Stashing…' : 'Stash for later'}
+      </button>
+      {stashError && <p className="text-sm text-[var(--red)] text-center">{stashError}</p>}
     </div>
   );
 }
