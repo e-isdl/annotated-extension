@@ -203,7 +203,7 @@ export default function Navbar() {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
     document.documentElement.dataset.theme = next;
-    localStorage.setItem('annotated-theme', next);
+    try { localStorage.setItem('annotated-theme', next); } catch {}
   };
 
 

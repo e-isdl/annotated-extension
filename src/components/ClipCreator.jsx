@@ -75,7 +75,7 @@ export default function ClipCreator({ pageInfo, session }) {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
     document.documentElement.dataset.theme = next;
-    localStorage.setItem('annotated-theme', next);
+    try { localStorage.setItem('annotated-theme', next); } catch {}
   };
 
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);

@@ -1503,3 +1503,17 @@ this changelog.
   on the annotate screen, the Create page and the draft edit page. Manual
   saves still report status; empty forms still refuse.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Crash safety: error boundaries plus storage guards
+
+Files touched: src/main.jsx, src/components/ErrorBoundary.jsx (new),
+webapp/src/main.jsx, webapp/src/components/ErrorBoundary.jsx (new),
+src/components/ClipCreator.jsx, webapp/src/components/Navbar.jsx,
+this changelog.
+
+- Both roots wrapped in an error boundary: any render crash now shows its
+  message with a reload button instead of a blank screen.
+- All localStorage reads and writes guarded so blocked site data can never
+  kill either bundle at boot.
+- Local commit only - NOT pushed. Webapp NOT deployed.
