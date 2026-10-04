@@ -58,8 +58,6 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
     if (!isVideoPost) return;
     setPlaying(true);
   };
-  const hideQuote = hideTranscript && (clip.source_type === 'youtube' || clip.source_type === 'social') && Boolean(sourceImage) && !imageFailed;
-  const tweetExpanded = mediaExpanded || (hideTranscript && isXPost);
 
   const closePlayer = () => {
     dismissedRef.current = true;
@@ -135,6 +133,8 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
     event.stopPropagation();
     if (canExpand) setMediaExpanded((open) => !open);
   };
+  const hideQuote = hideTranscript && (clip.source_type === 'youtube' || clip.source_type === 'social') && Boolean(sourceImage) && !imageFailed;
+  const tweetExpanded = mediaExpanded || (hideTranscript && isXPost);
 
   useEffect(() => {
     if (String(clip.id).startsWith('demo-')) return;

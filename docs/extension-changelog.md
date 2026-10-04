@@ -1612,3 +1612,15 @@ this changelog.
   bottom bar pinned to the viewport bottom with a solid card background,
   mirroring the sticky top header and find bar.
 - Local commit only - NOT pushed.
+---
+
+## White-screen crash: use-before-declare in feed card
+
+Files touched: webapp/src/components/ClipCard.jsx, this changelog.
+
+- The See-tweet-equivalence edit placed hideQuote and tweetExpanded above
+  the sourceImage and isXPost declarations they read, throwing on every
+  feed card render. Moved both below their dependencies. The on-screen
+  error boundary caught it and printed Cannot access Pe before
+  initialization.
+- Local commit only - NOT pushed. Webapp NOT deployed.
