@@ -371,7 +371,7 @@ export default function ClipPage() {
         )}
         {(!clip.video_url || videoFailed || showEmbed) && !stillUploading && clip.source_type === 'youtube' && (
           <div className="source-media">
-            <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay posterSrc={clip.thumbnail} />
+            <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay />
           </div>
         )}
         {clip.video_url && !stillUploading && !videoFailed && clip.source_type === 'youtube' && (

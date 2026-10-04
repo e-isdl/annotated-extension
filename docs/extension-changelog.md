@@ -1346,3 +1346,24 @@ this changelog.
   take flow, not saved); repurposing a recording draft to another source
   drops its video.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Player rollback to first version plus seeking fixes
+
+Files touched: webapp/src/components/YouTubeClipPlayer.jsx,
+webapp/src/components/ClipCard.jsx, webapp/src/pages/ClipPage.jsx,
+webapp/src/styles/globals.css, this changelog. Self-hosted player, demo
+embed and transcripts untouched. Thumbnail kept per order (no4 skipped).
+
+- Rolled back: cover/poster layer and its state gone, thumbnail play circle
+  restored, no crop (plain 16:9 iframe fill), no warm-up code anywhere (none
+  existed). Click shield restored over the iframe; pause is pauseVideo,
+  play is playVideo, YouTube pause screen accepted.
+- Seeking: player was already out of every anchor from the delink work, and
+  that holds. Root data-no-nav with click/pointer/mouse guards, card link
+  bails on data-no-nav and during the post-drag suppression window, range
+  with pointer capture, touch-action none and lostpointercapture, card link
+  non-draggable, ghost <style> already global.
+- Close keeps pause-destroy-collapse with full guards and sits above the
+  shield.
+- Local commit only - NOT pushed. Webapp NOT deployed.

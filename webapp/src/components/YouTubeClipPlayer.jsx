@@ -66,9 +66,9 @@ function formatClipTime(s) {
 // A YouTube embed locked to one clip. The track, readout and seeks only ever
 // know about [startSec, endSec]: clip time, never absolute video time.
 // The iframe itself is never touchable: pointer events are off, it is out of
-// the tab order, and a cover hides every pixel of YouTube chrome until the
-// player reports PLAYING. Self-hosted recordings keep their own player.
-export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay = false, onClose, posterSrc }) {
+// the tab order, and a click shield sits above it. Self-hosted recordings
+// keep their own player.
+export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay = false, onClose }) {
   const frameRef = useRef(null);
   const hostRef = useRef(null);
   const playerRef = useRef(null);
@@ -80,7 +80,6 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const [playing, setPlaying] = useState(false);
   const [pos, setPos] = useState(0);
   const [apiFailed, setApiFailed] = useState(false);
-  const [posterFailed, setPosterFailed] = useState(false);
 
   const start = Math.max(0, Number(startSec) || 0);
   const rawEnd = Number(endSec) || 0;
@@ -88,10 +87,6 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const clipLen = Math.max(0, end - start);
   const rangeMax = Math.max(0.1, clipLen);
   boundsRef.current = { start, end };
-
-  useEffect(() => {
-    setPosterFailed(false);
-  }, [videoId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -232,10 +227,6 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
 
   const shownPos = Math.min(pos, rangeMax);
   const fillPct = rangeMax > 0 ? (shownPos / rangeMax) * 100 : 0;
-  const poster = posterSrc
-    || (posterFailed
-      ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
-      : `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`);
 
   return (
     <div
@@ -266,9 +257,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
           <div ref={hostRef} className="ytclip-host" />
         )}
         {!apiFailed && (
-          <div className={`ytclip-cover${playing ? ' is-hidden' : ''}`} aria-hidden={playing ? 'true' : 'false'}>
-            <img src={poster} alt="" draggable={false} onError={() => setPosterFailed(true)} />
-          </div>
+          <div className="ytclip-shield" onClick={toggle} aria-hidden="true" />
         )}
         {onClose && !apiFailed && (
           <button

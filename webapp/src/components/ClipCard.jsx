@@ -177,7 +177,7 @@ export default function ClipCard({ clip }) {
             {playableRecording ? (
               <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} />
             ) : (
-              <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay onClose={() => setPlaying(false)} posterSrc={sourceImage} />
+              <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay onClose={() => setPlaying(false)} />
             )}
           </div>
         </div>
@@ -215,6 +215,9 @@ export default function ClipCard({ clip }) {
             ) : isVideoPost ? (
               <button type="button" className="source-preview-thumbbtn" onClick={playInline} aria-label={`Play clip from ${formatTime(clip.start_sec)}`}>
                 <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />
+                <span className="source-preview-play" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
+                </span>
               </button>
             ) : (
               <img
