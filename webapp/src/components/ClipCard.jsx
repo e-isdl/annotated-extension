@@ -138,7 +138,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
     if (canExpand) setMediaExpanded((open) => !open);
   };
   const hideQuote = hideTranscript && (clip.source_type === 'youtube' || clip.source_type === 'social') && Boolean(sourceImage) && !imageFailed;
-  const tweetExpanded = mediaExpanded || (hideTranscript && isXPost);
+  const tweetExpanded = !hasMedia && (mediaExpanded || (hideTranscript && isXPost));
 
   useEffect(() => {
     if (String(clip.id).startsWith('demo-')) return;
@@ -283,7 +283,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
           </div>
           {(hasMedia || (sourceImage && !imageFailed)) && (
             hasMedia ? (
-              <LoopPlayer src={clip.media_url} poster={clip.poster_url || sourceImage} autoPlay={autoPlayVideo} loop={hasLoop} />
+              <LoopPlayer src={clip.media_url} poster={clip.poster_url || sourceImage} autoPlay loop={hasLoop} />
             ) : isUploadingVideo ? (
               <span className="source-preview-thumbwrap">
                 <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />
@@ -340,7 +340,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
         <button type="button" onClick={handleSave} className={`post-action ${isXPost && canExpand ? '' : 'post-action-last '}${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
         </button>
-        {isXPost && canExpand && !hideTranscript && (
+        {isXPost && canExpand && !hideTranscript && !hasMedia && (
           <button type="button" onClick={toggleMedia} className="post-action post-action-last" aria-expanded={mediaExpanded}>
             <SourceIcon type="social" /> {mediaExpanded ? 'Hide tweet' : 'See tweet'}
           </button>

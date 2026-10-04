@@ -232,6 +232,7 @@ export default function ClipPage() {
   if (!clip) return <NotFound />;
 
   const isX = isXPostUrl(clip.source_url);
+  const hasMedia = (clip.media_kind === 'loop' || clip.media_kind === 'clip') && Boolean(clip.media_url);
   const posterHandle = isX ? (matchStatusUrl(clip.source_url)?.handle || String(clip.author || '').replace(/^@/, '')) : '';
   const hasSourceImage = !isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && Boolean(clip.source_image_url || clip.thumbnail);
   const uploadStale = Boolean(clip.video_status === 'uploading' && clip.created_at && (Date.now() - new Date(clip.created_at).getTime() > 20 * 60 * 1000));
@@ -325,7 +326,20 @@ export default function ClipPage() {
           </div>
           <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
         </div>}
-        {isX && (clip.thumbnail && !imageFailed ? (
+        {isX && (hasMedia ? (
+          <div className="source-media source-media-x">
+            <LoopPlayer
+              src={clip.media_url}
+              poster={clip.poster_url || clip.thumbnail}
+              label={clip.media_kind === 'loop' ? 'Recorded loop, silent' : 'Recorded video, silent'}
+              loop={clip.media_kind === 'loop'}
+              controls={clip.media_kind === 'clip'}
+            />
+            <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
+              ↗ view original on x
+            </a>
+          </div>
+        ) : clip.thumbnail && !imageFailed ? (
           <div className="source-media source-media-x">
             <img src={clip.thumbnail} alt={clip.title || 'X post'} className="source-post-image source-post-image-x" loading="lazy" onError={() => setImageFailed(true)} />
             <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
@@ -368,17 +382,6 @@ export default function ClipPage() {
         {clip.video_url && !stillUploading && !videoFailed && !showEmbed && (
           <div className="source-media">
             <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} />
-          </div>
-        )}
-        {clip.media_url && (clip.media_kind === 'loop' || clip.media_kind === 'clip') && (
-          <div className="source-media">
-            <LoopPlayer
-              src={clip.media_url}
-              poster={clip.poster_url || clip.thumbnail}
-              label={clip.media_kind === 'loop' ? 'Recorded loop, silent' : 'Recorded video, silent'}
-              loop={clip.media_kind === 'loop'}
-              controls={clip.media_kind === 'clip'}
-            />
           </div>
         )}
         {(!clip.video_url || videoFailed || showEmbed) && !stillUploading && clip.source_type === 'youtube' && (
