@@ -127,17 +127,11 @@ export default function CreatePage() {
   };
 
   useEffect(() => {
-    if (!user) return undefined;
+    if (!user || !draftIdRef.current) return undefined;
     if (!draftable()) return undefined;
-    setDraftStatus('Saving…');
     if (draftTimer.current) clearTimeout(draftTimer.current);
     draftTimer.current = setTimeout(async () => {
-      try {
-        await persistDraft();
-        setDraftStatus('Draft saved');
-      } catch {
-        setDraftStatus('');
-      }
+      try { await persistDraft(); } catch {}
     }, 800);
     return () => { if (draftTimer.current) clearTimeout(draftTimer.current); };
   }, [form, user]);

@@ -1490,3 +1490,16 @@ src/components/ClipCreator.jsx, this changelog.
   with saved fields, articles re-highlight with the form fallback. Stale
   pending resumes are dropped instead of hijacking later navigation.
 - Local commit only - NOT pushed.
+---
+
+## Drafts: explicit create, silent background updates
+
+Files touched: src/components/AnnotationForm.jsx,
+webapp/src/pages/CreatePage.jsx, webapp/src/pages/DraftEditPage.jsx,
+this changelog.
+
+- Rule change: no draft row exists until a Save control is clicked. After
+  that, background autosave (800ms, silent, no status) keeps the row fresh
+  on the annotate screen, the Create page and the draft edit page. Manual
+  saves still report status; empty forms still refuse.
+- Local commit only - NOT pushed. Webapp NOT deployed.

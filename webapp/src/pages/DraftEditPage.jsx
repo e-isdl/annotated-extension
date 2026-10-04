@@ -100,6 +100,27 @@ export default function DraftEditPage() {
     }
   };
 
+  const saveTimer = useRef(null);
+
+  useEffect(() => {
+    if (!draft || deleted) return undefined;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await upsertDraft(supabase, {
+          id: draft.id,
+          kind,
+          source_url: draft.source_url,
+          title: draft.title,
+          thumbnail_url: draft.thumbnail_url,
+          community_id: communityId || null,
+          payload: collectPayload(),
+        });
+      } catch {}
+    }, 800);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [draft?.id, deleted, commentary, communityId, kind, startSec, endSec, passage]);
+
   const handlePublish = async () => {
     if (!draft || busy) return;
     if (!commentary.trim()) { setStatus('Write your take before posting.'); return; }
