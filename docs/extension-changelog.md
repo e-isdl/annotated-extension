@@ -1747,3 +1747,23 @@ Files touched: content.js, this changelog.
   registers on every injection (previous one removed first) while DOM
   listeners stay load-once guarded behind a second flag.
 - Local commit only - NOT pushed.
+---
+
+## Tweet recorder rebuilt on screenshots, zero tab trust
+
+Files touched: src/components/TweetClipper.jsx, content.js,
+background.js, this changelog.
+
+- The tabCapture chain is gone. Recording now loops chrome visible-tab
+  shots cropped to the tweet card on a canvas, so it uses only the
+  proven screenshot mechanism and depends on no tab script, stream id,
+  or microphone-style camera permission.
+- Page measuring runs through self-contained scripting functions, so a
+  stale or missing content script can no longer stall the probe. The
+  dead probe, live-bounds, and stream-id code is removed.
+- Records the video full length up to 60s at 2 Mbps, follows the card
+  if layout shifts, aborts if the X tab loses focus, and publishes a
+  silent looping kind loop clip as before.
+- Honest limit: frame rate is whatever visible-tab shots deliver
+  (roughly GIF-like), not full 30fps.
+- Local commit only - NOT pushed.

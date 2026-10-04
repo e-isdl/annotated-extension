@@ -249,20 +249,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     captureTweetScreenshot().then(sendResponse);
     return true;
   }
-  if (message.type === 'GET_TAB_STREAM_ID') {
-    (async () => {
-      try {
-        const tab = await getActiveTab();
-        if (tab?.id == null) { sendResponse({ ok: false }); return; }
-        const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
-        if (!streamId) { sendResponse({ ok: false }); return; }
-        sendResponse({ ok: true, streamId, tabId: tab.id });
-      } catch (e) {
-        sendResponse({ ok: false });
-      }
-    })();
-    return true;
-  }
 });
 
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {

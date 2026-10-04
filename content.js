@@ -527,47 +527,6 @@ async function handleRecordClip(message, sendResponse) {
 }
 
 const HIGHLIGHT_WORD_LIMIT = 200; // keep in sync with WORD_LIMIT in src/components/ArticleClipper.jsx
-
-// ---- X/Twitter whole-tweet screen recording (probe + live bounds) ----
-// The side panel captures the tab stream and crops this card, so the
-// recording holds the full tweet (author, text, video) with readable text.
-
-async function tweetRecordProbe() {
-  const found = findTweetVideo();
-  if (!found) return { ok: false, code: 'no-media' };
-  const { article, video } = found;
-  try { article.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
-  await new Promise((resolve) => setTimeout(resolve, 450));
-  await waitForTweetMedia(article, 4000);
-  const bounds = tweetCaptureBounds(article);
-  if (!bounds || bounds.w < 40 || bounds.h < 40) return { ok: false, code: 'no-media' };
-  let durationMs = 0;
-  if (Number.isFinite(video.duration) && video.duration > 0) {
-    durationMs = Math.floor(video.duration * 1000);
-  }
-  return {
-    ok: true,
-    durationMs,
-    bounds,
-    vw: window.innerWidth,
-    vh: window.innerHeight,
-    dpr: window.devicePixelRatio || 1,
-  };
-}
-
-function tweetLiveBounds() {
-  const article = findTweetArticle();
-  if (!article) return { ok: false };
-  const bounds = tweetCaptureBounds(article);
-  if (!bounds || bounds.w < 40 || bounds.h < 40) return { ok: false };
-  return {
-    ok: true,
-    bounds,
-    vw: window.innerWidth,
-    vh: window.innerHeight,
-    dpr: window.devicePixelRatio || 1,
-  };
-}
 let fallbackMarks = [];
 let clipMonitor = null;
 let clipMonitorOnPause = null;
@@ -853,14 +812,6 @@ if (!window.__annotatedContentLoaded) {
     }
     if (message.type === 'record-clip') {
       handleRecordClip(message, sendResponse);
-      return true;
-    }
-    if (message.type === 'tweet-record-probe') {
-      tweetRecordProbe().then((res) => sendResponse(res));
-      return true;
-    }
-    if (message.type === 'tweet-live-bounds') {
-      sendResponse(tweetLiveBounds());
       return true;
     }
     if (message.type === 'cancel-recording') {
