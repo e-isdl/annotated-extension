@@ -370,9 +370,15 @@ export default function ClipPage() {
             <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} />
           </div>
         )}
-        {clip.media_kind === 'loop' && clip.media_url && (
+        {clip.media_url && (clip.media_kind === 'loop' || clip.media_kind === 'clip') && (
           <div className="source-media">
-            <LoopPlayer src={clip.media_url} poster={clip.poster_url || clip.thumbnail} label="Recorded loop, silent" />
+            <LoopPlayer
+              src={clip.media_url}
+              poster={clip.poster_url || clip.thumbnail}
+              label={clip.media_kind === 'loop' ? 'Recorded loop, silent' : 'Recorded video, silent'}
+              loop={clip.media_kind === 'loop'}
+              controls={clip.media_kind === 'clip'}
+            />
           </div>
         )}
         {(!clip.video_url || videoFailed || showEmbed) && !stillUploading && clip.source_type === 'youtube' && (

@@ -1676,3 +1676,26 @@ supabase/migrations/20261004000300_tweet_loop_media.sql, this changelog.
   ambient autoplay, pauses offscreen, poster + tap-to-play for
   reduced-motion); detail page plays the loop large. See tweet stays.
 - Local commit only - NOT pushed.
+---
+
+## Whole-tweet screen recording (no loops)
+
+Files touched: content.js, background.js,
+src/components/TweetClipper.jsx, webapp/src/components/LoopPlayer.jsx,
+webapp/src/components/ClipCard.jsx, webapp/src/pages/ClipPage.jsx,
+supabase/migrations/20261004000400_tweet_recorded_clips.sql, this changelog.
+
+- Recorder redesigned: captures the whole tweet card (author, text, video)
+  as one normal video instead of extracting just the video file, and
+  nothing loops - kind clip plays once with tap-replay in feed and native
+  controls on detail.
+- Panel-side capture: background hands the tab stream id to the panel,
+  which crops the tweet card on a canvas at up to 2x DPR so text stays
+  readable, records at 2 Mbps, and follows the card if layout shifts.
+  Records the video full length up to 60s with progress and cancel; the
+  poster is grabbed from an early frame.
+- Content script slimmed to a record probe plus live bounds; the old
+  file-extraction recorder is gone. Pure-photo posts keep screenshots.
+- DB (applied): media_kind now allows loop or clip, duration cap raised
+  to 65s.
+- Local commit only - NOT pushed.

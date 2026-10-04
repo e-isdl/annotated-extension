@@ -53,6 +53,8 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
   const playableRecording = Boolean(clip.video_url) && !isUploadingVideo && !videoFailed;
   const playableEmbed = isYouTube && Boolean(clip.youtube_id) && !playableRecording && !isUploadingVideo;
   const hasLoop = clip.media_kind === 'loop' && Boolean(clip.media_url);
+  const hasClipMedia = clip.media_kind === 'clip' && Boolean(clip.media_url);
+  const hasMedia = hasLoop || hasClipMedia;
   const isVideoPost = playableRecording || playableEmbed;
   const playInline = (event) => {
     event.preventDefault();
@@ -261,7 +263,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
           <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />
         </button>
         ) : (
-        <div className={`source-preview${hasLoop ? ' source-preview-loop' : ''}`}>
+        <div className={`source-preview${hasMedia ? ' source-preview-loop' : ''}`}>
           <div className="source-preview-copy">
             {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
             {posterHandle && <p className="source-quote-poster">@{posterHandle}</p>}
@@ -279,9 +281,9 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
             )}
             {sourceTitle && sourceTitle !== commentary && <p className="source-title">{sourceTitle}</p>}
           </div>
-          {(hasLoop || (sourceImage && !imageFailed)) && (
-            hasLoop ? (
-              <LoopPlayer src={clip.media_url} poster={clip.poster_url || sourceImage} autoPlay={autoPlayVideo} />
+          {(hasMedia || (sourceImage && !imageFailed)) && (
+            hasMedia ? (
+              <LoopPlayer src={clip.media_url} poster={clip.poster_url || sourceImage} autoPlay={autoPlayVideo} loop={hasLoop} />
             ) : isUploadingVideo ? (
               <span className="source-preview-thumbwrap">
                 <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />

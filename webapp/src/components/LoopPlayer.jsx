@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 
-// Chromeless looping player for recorded X video/GIF loops. Ambient autoplay
-// in feeds (muted, plays inline), pausing offscreen; reduced-motion users get
-// the poster frame with tap-to-play instead of autoplay.
-export default function LoopPlayer({ src, poster, autoPlay = true, label }) {
+// Player for recorded X media. Loops repeat silently like a GIF; plain clips
+// play once as a normal video (tap replays in feed, native controls on detail).
+// Autoplay is always muted; reduced-motion users get the poster with tap-to-play.
+export default function LoopPlayer({ src, poster, autoPlay = true, label, loop = true, controls = false }) {
   const ref = useRef(null);
   const reduceMotion = typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
@@ -35,31 +35,37 @@ export default function LoopPlayer({ src, poster, autoPlay = true, label }) {
     };
   }, [src, autoPlay, reduceMotion]);
 
-  const togglePaused = (event) => {
-    if (!reduceMotion) return;
+  const replay = (event) => {
+    if (loop && !reduceMotion) return;
     event.preventDefault();
     event.stopPropagation();
     const el = ref.current;
     if (!el) return;
     try {
-      if (el.paused) el.play().catch(() => {});
-      else el.pause();
+      if (el.paused || el.ended) {
+        if (el.ended) el.currentTime = 0;
+        el.play().catch(() => {});
+      } else {
+        el.pause();
+      }
     } catch {}
   };
 
+  const needsTap = !loop || reduceMotion;
   return (
     <video
       ref={ref}
       src={src}
       poster={poster || undefined}
-      loop
+      loop={loop}
       muted
       playsInline
       autoPlay={!reduceMotion && autoPlay}
       preload="metadata"
+      controls={controls}
       className="source-loop-video"
-      aria-label={label || 'Recorded loop, silent'}
-      {...(reduceMotion ? { 'data-no-nav': true, onClick: togglePaused, role: 'button', tabIndex: 0 } : {})}
+      aria-label={label || (loop ? 'Recorded loop, silent' : 'Recorded video, silent')}
+      {...(needsTap && !controls ? { 'data-no-nav': true, onClick: replay, role: 'button', tabIndex: 0 } : {})}
     />
   );
 }

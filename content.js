@@ -1,4 +1,4 @@
-function detectPageInfo() {
+﻿function detectPageInfo() {
   const url = window.location.href;
   const info = { url, type: 'unknown', data: {} };
 
@@ -527,320 +527,45 @@ async function handleRecordClip(message, sendResponse) {
 
 const HIGHLIGHT_WORD_LIMIT = 200; // keep in sync with WORD_LIMIT in src/components/ArticleClipper.jsx
 
-// ---- X/Twitter silent loop capture (<=5s, source resolution so text stays readable) ----
-const TWEET_LOOP_MAX_MS = 5000;
-const TWEET_LOOP_MAX_W = 1280;
-const TWEET_LOOP_BPS = 5000000;
-let activeTweetRec = null;
+// ---- X/Twitter whole-tweet screen recording (probe + live bounds) ----
+// The side panel captures the tab stream and crops this card, so the
+// recording holds the full tweet (author, text, video) with readable text.
 
-function stopActiveTweetRec(reason) {
-  const rec = activeTweetRec;
-  if (!rec) return;
-  rec.cancelled = true;
-  try { clearTimeout(rec.stopTimer); } catch (e) {}
-  try { clearInterval(rec.progressId); } catch (e) {}
-  try { if (rec.drawRaf) cancelAnimationFrame(rec.drawRaf); } catch (e) {}
-  try { if (rec.srcVideo) rec.srcVideo.pause(); } catch (e) {}
-  try {
-    if (rec.extraStream) rec.extraStream.getTracks().forEach((t) => { try { t.stop(); } catch (e2) {} });
-  } catch (e) {}
-  try {
-    if (rec.recorder && rec.recorder.state !== 'inactive') rec.recorder.stop();
-  } catch (e) {}
-  try { if (rec.cleanup) rec.cleanup(); } catch (e) {}
-  try {
-    rec.port.postMessage({ type: 'error', code: 'stopped', message: reason || 'Recording stopped.' });
-  } catch (e) {}
-  activeTweetRec = null;
-}
-
-function findTweetVideo() {
-  const article = findTweetArticle();
-  if (!article) return null;
-  const videos = Array.from(article.querySelectorAll('video'))
-    .filter((v) => v && (v.currentSrc || v.src || v.readyState >= 1));
-  if (!videos.length) return null;
-  return { article, video: videos[0] };
-}
-
-// Direct capture when the player allows it; otherwise fetch the file and
-// rebuild it as a same-origin blob video (captureStream always allows those).
-async function buildTweetStream(video) {
-  try {
-    const direct = video.captureStream ? video.captureStream() : video.mozCaptureStream();
-    if (direct && direct.getVideoTracks().length) {
-      return {
-        stream: new MediaStream(direct.getVideoTracks()),
-        srcVideo: video,
-        cleanup: () => {
-          try { direct.getTracks().forEach((t) => { try { t.stop(); } catch (e) {} }); } catch (e) {}
-        },
-      };
-    }
-  } catch (e) {}
-  const src = video.currentSrc || video.src || '';
-  if (!/^https?:\/\//.test(src)) throw new Error('protected');
-  const res = await fetch(src);
-  if (!res.ok) throw new Error('protected');
-  const blob = await res.blob();
-  if (!blob.size) throw new Error('protected');
-  const url = URL.createObjectURL(blob);
-  const el = document.createElement('video');
-  el.muted = true;
-  el.playsInline = true;
-  el.preload = 'auto';
-  el.style.cssText = 'position:fixed;width:4px;height:4px;opacity:0;pointer-events:none;left:0;top:0;';
-  document.documentElement.appendChild(el);
-  const cleanup = () => {
-    try { el.pause(); } catch (e) {}
-    try { el.removeAttribute('src'); } catch (e) {}
-    try { el.parentNode && el.parentNode.removeChild(el); } catch (e) {}
-    try { URL.revokeObjectURL(url); } catch (e) {}
-  };
-  try {
-    el.src = url;
-    await new Promise((resolve, reject) => {
-      const to = setTimeout(() => reject(new Error('protected')), 12000);
-      el.addEventListener('loadeddata', () => { clearTimeout(to); resolve(); }, { once: true });
-      el.addEventListener('error', () => { clearTimeout(to); reject(new Error('protected')); }, { once: true });
-    });
-    await el.play().catch(() => { throw new Error('protected'); });
-    const rebuilt = el.captureStream ? el.captureStream() : el.mozCaptureStream();
-    if (!rebuilt || !rebuilt.getVideoTracks().length) throw new Error('protected');
-    const stream = new MediaStream(rebuilt.getVideoTracks());
-    return {
-      stream,
-      srcVideo: el,
-      extraStream: rebuilt,
-      cleanup,
-    };
-  } catch (e) {
-    cleanup();
-    throw e;
-  }
-}
-
-async function handleRecordTweetMedia(message, sendResponse) {
-  if (activeTweetRec) {
-    sendResponse({ ok: false, code: 'busy', message: 'Recording stopped.' });
-    return;
-  }
+async function tweetRecordProbe() {
   const found = findTweetVideo();
-  if (!found) {
-    return sendResponse({ ok: false, code: 'no-media', message: 'This post has no video or GIF to record.' });
-  }
-  if (document.visibilityState !== 'visible') {
-    return sendResponse({ ok: false, code: 'hidden', message: 'Keep this tab in front while recording.' });
-  }
+  if (!found) return { ok: false, code: 'no-media' };
   const { article, video } = found;
-  const port = chrome.runtime.connect({ name: 'annotated-tweet-recorder' });
-  port.onDisconnect.addListener(() => {
-    if (activeTweetRec && !activeTweetRec.done) stopActiveTweetRec('Recording stopped.');
-  });
-  const rec = {
-    port, recorder: null, progressId: null, stopTimer: null, drawRaf: 0,
-    cancelled: false, done: false, cleanup: null, extraStream: null,
-    srcVideo: null, canvasStream: null,
-  };
-  activeTweetRec = rec;
-  sendResponse({ ok: true });
-
-  try {
-    try { article.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
-    await new Promise((resolve) => setTimeout(resolve, 450));
-    if (rec.cancelled) return;
-    await waitForTweetMedia(article, 4000);
-    if (rec.cancelled) return;
-
-    const built = await buildTweetStream(video).catch(() => null);
-    if (!built) {
-      stopActiveTweetRec("This video can't be recorded. It may be protected.");
-      return;
-    }
-    rec.cleanup = built.cleanup;
-    rec.extraStream = built.extraStream || null;
-    const srcVideo = built.srcVideo;
-    rec.srcVideo = srcVideo;
-
-    let vw = srcVideo.videoWidth || 0;
-    let vh = srcVideo.videoHeight || 0;
-    let durMs = 0;
-    if (Number.isFinite(srcVideo.duration) && srcVideo.duration > 0) {
-      durMs = Math.floor(srcVideo.duration * 1000);
-    }
-    if ((!vw || !vh) && video !== srcVideo) {
-      vw = video.videoWidth || vw;
-      vh = video.videoHeight || vh;
-    }
-    if (!vw || !vh) {
-      stopActiveTweetRec("This video can't be recorded. Try again once it plays.");
-      return;
-    }
-    const recordMs = Math.max(500, Math.min(durMs || TWEET_LOOP_MAX_MS, TWEET_LOOP_MAX_MS));
-
-    try { srcVideo.pause(); } catch (e) {}
-    try { srcVideo.currentTime = 0; } catch (e) {}
-    await waitForEvent(srcVideo, 'seeked', 5000);
-    if (rec.cancelled) return;
-    const playingWait = waitForEvent(srcVideo, 'playing', 10000);
-    try {
-      await srcVideo.play();
-    } catch (e) {
-      stopActiveTweetRec('Press play on the video once, then try again.');
-      return;
-    }
-    await playingWait;
-    if (rec.cancelled) return;
-    vw = srcVideo.videoWidth || vw;
-    vh = srcVideo.videoHeight || vh;
-
-    let poster = null;
-    try {
-      const frame = document.createElement('canvas');
-      frame.width = vw;
-      frame.height = vh;
-      const fctx = frame.getContext('2d');
-      fctx.drawImage(srcVideo, 0, 0, vw, vh);
-      poster = frame.toDataURL('image/jpeg', 0.85);
-    } catch (e) {}
-
-    let stream = built.stream;
-    let outW = vw;
-    let outH = vh;
-    if (vw > TWEET_LOOP_MAX_W) {
-      try {
-        const scale = TWEET_LOOP_MAX_W / vw;
-        outW = TWEET_LOOP_MAX_W;
-        outH = Math.max(2, Math.round(vh * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = outW;
-        canvas.height = outH;
-        const canvasCtx = canvas.getContext('2d');
-        if (canvasCtx) {
-          const drawFrame = () => {
-            if (rec.cancelled || rec.done) return;
-            try { canvasCtx.drawImage(srcVideo, 0, 0, outW, outH); } catch (e) {}
-            rec.drawRaf = requestAnimationFrame(drawFrame);
-          };
-          drawFrame();
-          const canvasStream = canvas.captureStream(30);
-          rec.canvasStream = canvasStream;
-          stream = new MediaStream(canvasStream.getVideoTracks());
-        }
-      } catch (e) {}
-    }
-
-    const mimeTypes = [
-      'video/mp4;codecs=avc1.42E01E',
-      'video/webm;codecs=vp9',
-      'video/webm;codecs=vp8',
-    ];
-    const mimeType = mimeTypes.find((t) => {
-      try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; }
-    });
-
-    let recorder;
-    try {
-      recorder = new MediaRecorder(stream, {
-        ...(mimeType ? { mimeType } : {}),
-        videoBitsPerSecond: TWEET_LOOP_BPS,
-      });
-    } catch (e) {
-      stopActiveTweetRec("This video can't be recorded. It may be protected.");
-      return;
-    }
-    rec.recorder = recorder;
-
-    let chunkIndex = 0;
-    let pendingChunks = 0;
-    let stopRequested = false;
-    const postDone = () => {
-      if (rec.cancelled) return;
-      rec.done = true;
-      try { clearTimeout(rec.stopTimer); } catch (e) {}
-      try { clearInterval(rec.progressId); } catch (e) {}
-      try { if (rec.drawRaf) cancelAnimationFrame(rec.drawRaf); } catch (e) {}
-      try {
-        if (rec.canvasStream) rec.canvasStream.getVideoTracks().forEach((track) => { try { track.stop(); } catch (e2) {} });
-      } catch (e) {}
-      try {
-        if (rec.extraStream) rec.extraStream.getTracks().forEach((track) => { try { track.stop(); } catch (e2) {} });
-      } catch (e) {}
-      try { if (rec.cleanup) rec.cleanup(); } catch (e) {}
-      try {
-        port.postMessage({
-          type: 'done',
-          mime: recorder.mimeType || mimeType || 'video/webm',
-          seconds: recordMs / 1000,
-          durationMs: recordMs,
-          w: outW,
-          h: outH,
-          poster,
-          chunks: chunkIndex,
-        });
-      } catch (e) {}
-      activeTweetRec = null;
-    };
-    recorder.ondataavailable = (e) => {
-      if (!e.data || e.data.size === 0 || rec.cancelled) return;
-      const i = chunkIndex;
-      chunkIndex += 1;
-      pendingChunks += 1;
-      encodeBlobBase64(e.data).then((b64) => {
-        pendingChunks -= 1;
-        if (!rec.cancelled) {
-          try { port.postMessage({ type: 'chunk', i, data: b64 }); } catch (err) {}
-        }
-        if (stopRequested && pendingChunks === 0) postDone();
-      }).catch(() => {
-        pendingChunks -= 1;
-        if (stopRequested && pendingChunks === 0) postDone();
-      });
-    };
-
-    recorder.onstop = () => {
-      clearTimeout(rec.stopTimer);
-      clearInterval(rec.progressId);
-      try { srcVideo.pause(); } catch (e) {}
-      try { if (rec.drawRaf) cancelAnimationFrame(rec.drawRaf); } catch (e) {}
-      try {
-        if (rec.canvasStream) rec.canvasStream.getVideoTracks().forEach((track) => { try { track.stop(); } catch (e2) {} });
-      } catch (e) {}
-      if (rec.cancelled) return;
-      stopRequested = true;
-      if (pendingChunks === 0) postDone();
-    };
-
-    const t0 = Date.now();
-    rec.progressId = setInterval(() => {
-      if (rec.cancelled) return;
-      const t = Math.min(recordMs / 1000, (Date.now() - t0) / 1000);
-      try { port.postMessage({ type: 'progress', t }); } catch (e) {}
-      if (document.visibilityState !== 'visible') {
-        stopActiveTweetRec('Keep this tab in front while recording.');
-        return;
-      }
-      if (Date.now() - t0 >= recordMs) {
-        try { srcVideo.pause(); } catch (e) {}
-        try { if (recorder.state !== 'inactive') recorder.stop(); } catch (e) {}
-      }
-    }, 200);
-
-    rec.stopTimer = setTimeout(() => {
-      try { srcVideo.pause(); } catch (e) {}
-      try { if (recorder.state !== 'inactive') recorder.stop(); } catch (e) {}
-    }, recordMs + 4000);
-
-    stream.getVideoTracks().forEach((track) => {
-      track.addEventListener('ended', () => {
-        if (!rec.cancelled && !rec.done) stopActiveTweetRec('Recording stopped.');
-      });
-    });
-
-    recorder.start(500);
-  } catch (e) {
-    stopActiveTweetRec('Recording stopped.');
+  try { article.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
+  await new Promise((resolve) => setTimeout(resolve, 450));
+  await waitForTweetMedia(article, 4000);
+  const bounds = tweetCaptureBounds(article);
+  if (!bounds || bounds.w < 40 || bounds.h < 40) return { ok: false, code: 'no-media' };
+  let durationMs = 0;
+  if (Number.isFinite(video.duration) && video.duration > 0) {
+    durationMs = Math.floor(video.duration * 1000);
   }
+  return {
+    ok: true,
+    durationMs,
+    bounds,
+    vw: window.innerWidth,
+    vh: window.innerHeight,
+    dpr: window.devicePixelRatio || 1,
+  };
+}
+
+function tweetLiveBounds() {
+  const article = findTweetArticle();
+  if (!article) return { ok: false };
+  const bounds = tweetCaptureBounds(article);
+  if (!bounds || bounds.w < 40 || bounds.h < 40) return { ok: false };
+  return {
+    ok: true,
+    bounds,
+    vw: window.innerWidth,
+    vh: window.innerHeight,
+    dpr: window.devicePixelRatio || 1,
+  };
 }
 let fallbackMarks = [];
 let clipMonitor = null;
@@ -1119,13 +844,12 @@ if (!window.__annotatedContentLoaded) {
       handleRecordClip(message, sendResponse);
       return true;
     }
-    if (message.type === 'record-tweet-media') {
-      handleRecordTweetMedia(message, sendResponse);
+    if (message.type === 'tweet-record-probe') {
+      tweetRecordProbe().then((res) => sendResponse(res));
       return true;
     }
-    if (message.type === 'cancel-tweet-recording') {
-      stopActiveTweetRec('Recording stopped.');
-      sendResponse({ ok: true });
+    if (message.type === 'tweet-live-bounds') {
+      sendResponse(tweetLiveBounds());
       return true;
     }
     if (message.type === 'cancel-recording') {
