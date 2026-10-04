@@ -1298,3 +1298,23 @@ webapp/src/styles/globals.css, this changelog.
   mousedown stopPropagation, and pause-destroy-collapse ordering. Player root
   stops every click so nothing inside can navigate the card.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Card delinked, crop out, circles out
+
+Files touched: webapp/src/components/ClipCard.jsx,
+webapp/src/components/YouTubeClipPlayer.jsx, webapp/src/styles/globals.css,
+this changelog. Self-hosted player, demo embed and transcripts untouched.
+Thumbnail stays per order (change 4 skipped).
+
+- Seek nav kill: the player is no longer a descendant of any anchor. The card
+  is a div, the post link is an absolutely positioned sibling overlay, and all
+  card content floats above it. Player root carries data-no-nav with click,
+  pointer and mouse guards; the card link bails on data-no-nav hits and while
+  a module-level post-drag suppression window is open (set on seek
+  pointerdown, refreshed on pointerup). Range keeps pointer capture.
+- Crop removed: iframe fills the 16:9 frame exactly, still untouchable and
+  still covered while not playing.
+- No dark circles: cover is poster-only, thumbnail keeps no overlay. The bar
+  play button remains the visible control.
+- Local commit only - NOT pushed. Webapp NOT deployed.

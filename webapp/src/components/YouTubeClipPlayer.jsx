@@ -14,6 +14,15 @@ let apiPromise = null;
 // Only one inline YouTube clip holds playback at a time. Opening another
 // pauses and tears down the previous one through its stop callback.
 let activeStop = null;
+let suppressNavUntil = 0;
+
+export function suppressCardNav(ms = 400) {
+  suppressNavUntil = Date.now() + ms;
+}
+
+export function isCardNavSuppressed() {
+  return Date.now() < suppressNavUntil;
+}
 
 function loadYouTubeApi() {
   if (typeof window === 'undefined') return Promise.resolve(null);
@@ -231,8 +240,12 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   return (
     <div
       className="ytclip"
+      data-no-nav
       onDragStart={(e) => e.preventDefault()}
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerUp={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       <div
         ref={frameRef}
@@ -255,11 +268,6 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
         {!apiFailed && (
           <div className={`ytclip-cover${playing ? ' is-hidden' : ''}`} aria-hidden={playing ? 'true' : 'false'}>
             <img src={poster} alt="" draggable={false} onError={() => setPosterFailed(true)} />
-            <span className="ytclip-cover-play" aria-hidden="true">
-              <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 5v14l11-7z" fill="currentColor" />
-              </svg>
-            </span>
           </div>
         )}
         {onClose && !apiFailed && (
@@ -305,10 +313,11 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => {
               e.stopPropagation();
+              suppressCardNav();
               draggingRef.current = true;
               try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
             }}
-            onPointerUp={() => { draggingRef.current = false; }}
+            onPointerUp={() => { draggingRef.current = false; suppressCardNav(); }}
             onPointerCancel={() => { draggingRef.current = false; }}
             onLostPointerCapture={() => { draggingRef.current = false; }}
             style={{ '--p': `${fillPct}%` }}

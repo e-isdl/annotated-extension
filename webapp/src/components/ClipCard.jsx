@@ -5,7 +5,7 @@ import { getCurrentUser } from '../lib/authUser';
 import VoteButtons from './VoteButtons';
 import AudioPlayer from './AudioPlayer';
 import ClipPlayer from './ClipPlayer';
-import YouTubeClipPlayer from './YouTubeClipPlayer';
+import YouTubeClipPlayer, { isCardNavSuppressed } from './YouTubeClipPlayer';
 import SourceIcon from './SourceIcon';
 import { useToast } from './ToastProvider';
 import CommunityAvatar from './CommunityAvatar';
@@ -51,6 +51,17 @@ export default function ClipCard({ clip }) {
     event.stopPropagation();
     if (!isVideoPost) return;
     setPlaying(true);
+  };
+  const cardAriaLabel = `Open post: ${String(commentary || clip.title || 'post').slice(0, 140)}`;
+  const onCardLinkClick = (event) => {
+    const target = event.target;
+    if (target && target.closest && target.closest('[data-no-nav]')) {
+      event.preventDefault();
+      return;
+    }
+    if (isCardNavSuppressed()) {
+      event.preventDefault();
+    }
   };
   const isXPost = isXPostUrl(clip.source_url);
   const posterHandle = isXPost ? (matchStatusUrl(clip.source_url)?.handle || String(clip.author || '').replace(/^@/, '')) : '';
@@ -112,7 +123,7 @@ export default function ClipCard({ clip }) {
   };
 
   return (
-    <article className="post-card">
+    <article className="post-card post-card-linked">
       <div className="post-meta">
         {clip.community_slug && clip.community_name ? (
           <>
@@ -139,7 +150,7 @@ export default function ClipCard({ clip }) {
         <span className={`badge badge-${clip.source_type}`}><SourceIcon type={clip.source_type} />{sourceLabel}</span>
       </div>
 
-      <Link to={href} className="block no-underline group" draggable={false}>
+      <div className="post-card-main">
         {commentary && (
           <>
             <h2 ref={commentaryRef} className={`post-annotation-preview${commentaryExpanded ? '' : ' post-annotation-preview-clamped'}`}>{commentary}</h2>
@@ -204,9 +215,6 @@ export default function ClipCard({ clip }) {
             ) : isVideoPost ? (
               <button type="button" className="source-preview-thumbbtn" onClick={playInline} aria-label={`Play clip from ${formatTime(clip.start_sec)}`}>
                 <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />
-                <span className="source-preview-play" aria-hidden="true">
-                  <svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
-                </span>
               </button>
             ) : (
               <img
@@ -239,7 +247,7 @@ export default function ClipCard({ clip }) {
             <span className="timestamp">{formatTime(clip.end_sec)}</span>
           </div>
         )}
-      </Link>
+      </div>
 
       <div className="post-actions">
         <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
@@ -258,6 +266,7 @@ export default function ClipCard({ clip }) {
           </button>
         )}
       </div>
+      <Link to={href} className="post-card-link" aria-label={cardAriaLabel} draggable={false} onClick={onCardLinkClick} />
     </article>
   );
 }
