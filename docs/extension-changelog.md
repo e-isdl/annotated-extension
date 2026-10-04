@@ -1624,3 +1624,15 @@ Files touched: webapp/src/components/ClipCard.jsx, this changelog.
   error boundary caught it and printed Cannot access Pe before
   initialization.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Single sticky header block
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css,
+this changelog.
+
+- The header and find bar are now one sticky wrapper pinned at top 0, so no
+  pixel math can drift again (the old top: 64px broke when the upper button
+  left). Solid card background, hairline divider and soft shadow seal it
+  against scrolling text in both themes.
+- Local commit only - NOT pushed.

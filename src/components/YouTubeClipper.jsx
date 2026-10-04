@@ -689,13 +689,14 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     return (
       <div className="clip-body word-clipper-full">
         <div className="word-clipper">
-          <div className="word-clipper-top">
-            <span className="word-clipper-title">Word clipper</span>
-            {words.length > 0 && (
-              <span className="word-clipper-count">{wordEnd - wordStart + 1} words</span>
-            )}
-          </div>
-          <div className="word-findbar">
+          <div className="word-stickyhead">
+            <div className="word-clipper-top">
+              <span className="word-clipper-title">Word clipper</span>
+              {words.length > 0 && (
+                <span className="word-clipper-count">{wordEnd - wordStart + 1} words</span>
+              )}
+            </div>
+            <div className="word-findbar">
               <input
                 ref={findInputRef}
                 className="input word-findinput"
@@ -720,6 +721,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
                 </svg>
               </button>
             </div>
+          </div>
           {wordLoading ? (
             <p className="word-clipper-msg">Loading transcript…</p>
           ) : wordError ? (
