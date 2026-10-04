@@ -1636,3 +1636,19 @@ this changelog.
   left). Solid card background, hairline divider and soft shadow seal it
   against scrolling text in both themes.
 - Local commit only - NOT pushed.
+---
+
+## True word times, frozen derivation, sealed header
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css,
+this changelog.
+
+- Front cutoff root cause: the sequential clamp pushed every overlapped
+  caption word forward and never let later words come back, drifting
+  starts later and later. Word times are now raw per-cue truth.
+- A skip flag freezes the time-to-word derivation after drags and double
+  clicks, so nothing overwrites the picked indices; time-scrub sync still
+  derives normally.
+- Sticky header sealed with higher stacking, paint isolation and a stronger
+  shadow so transcript can never bleed through in either theme.
+- Local commit only - NOT pushed.

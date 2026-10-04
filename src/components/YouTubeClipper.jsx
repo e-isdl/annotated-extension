@@ -362,12 +362,11 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
       const parts = cleaned.trim().split(/\s+/).filter(Boolean);
       if (!parts.length) return;
       const span = Math.max(0.001, spanEnd - spanStart);
+      // Word times stay raw: each cue's own timing is the truth. Never clamp
+      // against neighbors, overlapping cues would ratchet everything forward.
       parts.forEach((text, i) => {
-        let start = spanStart + (span * i) / parts.length;
-        let end = spanStart + (span * (i + 1)) / parts.length;
-        const prev = out[out.length - 1];
-        if (prev && start < prev.end) start = prev.end;
-        if (end <= start) end = start + 0.01;
+        const start = spanStart + (span * i) / parts.length;
+        const end = spanStart + (span * (i + 1)) / parts.length;
         out.push({ text, start, end });
       });
     };
@@ -474,6 +473,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   useLayoutEffect(() => {
     if (draggingWord || !words.length) return;
+    if (skipDeriveRef.current) { skipDeriveRef.current = false; return; }
     let s = words.findIndex((w) => w.end > startSec);
     if (s === -1) s = words.length - 1;
     let e = -1;
@@ -484,7 +484,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   }, [words, startSec, endSec, draggingWord]);
 
   const wordStateRef = useRef(null);
-  wordStateRef.current = {
+  const skipDeriveRef = useRef(false);  wordStateRef.current = {
     draggingWord, wordStart, wordEnd, words, startSec, endSec, duration,
     setWordStart, setWordEnd, setStartSec, setEndSec, setStartInput, setEndInput,
   };
@@ -548,6 +548,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     const t = Math.max(0, w.start);
     let e = Math.min(s.words[ei].end, s.duration);
     if (e <= t) return;
+    skipDeriveRef.current = true;
     s.setWordStart(index);
     s.setWordEnd(ei);
     s.setStartSec(t);
@@ -581,6 +582,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
         if (s.draggingWord === 'start') {
           if (best > s.wordEnd) return;
           const t = Math.max(0, s.words[best].start);
+          skipDeriveRef.current = true;
           s.setWordStart(best);
           s.setStartSec(t);
           s.setStartInput(formatTime(t));
@@ -588,6 +590,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
         } else {
           if (best < s.wordStart) return;
           const t = Math.min(s.words[best].end, s.duration);
+          skipDeriveRef.current = true;
           s.setWordEnd(best);
           s.setEndSec(t);
           s.setEndInput(formatTime(t));
