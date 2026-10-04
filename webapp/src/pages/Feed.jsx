@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ClipCard from '../components/ClipCard';
+import { getHideTranscripts, subscribeHideTranscripts } from '../lib/transcriptPrefs';
 import { DEMO_CLIPS } from '../lib/demoData';
 
 const SORT_OPTIONS = [
@@ -18,9 +19,7 @@ export default function Feed({ sortOverride = null }) {
   const [clips, setClips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [usingDemo, setUsingDemo] = useState(false);
-  const [hideTranscripts, setHideTranscripts] = useState(() => {
-    try { return localStorage.getItem('annotated-hide-transcripts') === '1'; } catch { return false; }
-  });
+  const [hideTranscripts, setHideTranscripts] = useState(() => getHideTranscripts());
   const sort = SORT_OPTIONS.some((option) => option.value === requestedSort) ? requestedSort : 'best';
   const activeSort = SORT_OPTIONS.find((option) => option.value === sort) || SORT_OPTIONS[0];
 
@@ -71,12 +70,7 @@ export default function Feed({ sortOverride = null }) {
     return () => { cancelled = true; };
   }, [sort]);
 
-  const toggleTranscripts = () => {
-    setHideTranscripts((value) => {
-      try { localStorage.setItem('annotated-hide-transcripts', value ? '0' : '1'); } catch {}
-      return !value;
-    });
-  };
+  useEffect(() => subscribeHideTranscripts((value) => setHideTranscripts(value)), []);
 
   return (
     <div className="feed-page">
@@ -87,14 +81,6 @@ export default function Feed({ sortOverride = null }) {
             {usingDemo && <span className="demo-badge">DEMO FEED</span>}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={toggleTranscripts}
-          className="btn-ghost feed-transcript-toggle"
-          aria-pressed={hideTranscripts}
-        >
-          {hideTranscripts ? 'Show transcripts' : 'Hide transcripts'}
-        </button>
       </section>
 
       <div className="feed-tabs" role="tablist" aria-label="Feed sort">

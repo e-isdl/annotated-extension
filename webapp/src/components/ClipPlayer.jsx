@@ -13,6 +13,8 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
   const seekRef = useRef(null);
   const autoMutedRef = useRef(false);
   const mutedAutoplayRef = useRef(mutedAutoplay);
+  const playingRef = useRef(false);
+  playingRef.current = playing;
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -148,6 +150,32 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
     };
   }, [src, unmuteNow, mutedAutoplay]);
 
+  useEffect(() => {
+    const root = wrapRef.current;
+    if (!root || typeof IntersectionObserver === 'undefined') return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting && playingRef.current) {
+          try { videoRef.current?.pause(); } catch {}
+          setPlaying(false);
+        }
+      },
+      { threshold: 0.2 },
+    );
+    observer.observe(root);
+    const onVis = () => {
+      if (document.hidden && playingRef.current) {
+        try { videoRef.current?.pause(); } catch {}
+        setPlaying(false);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [src]);
+
   const toggleFull = () => {
     try {
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -190,11 +218,6 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
           <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M8 5v14l11-7z" fill="currentColor" />
           </svg>
-        </button>
-      )}
-      {muted && (
-        <button type="button" className="clip-player-unmute" onClick={unmuteNow}>
-          Tap for sound
         </button>
       )}
       <div className="clip-player-bar">

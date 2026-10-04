@@ -1416,3 +1416,48 @@ this changelog.
   respected and never auto-reverses. Tap-for-sound pill on both while muted.
   Detail-page behavior unchanged.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Feed video-mode fixes
+
+Files touched: webapp/src/components/Navbar.jsx, webapp/src/pages/Feed.jsx,
+webapp/src/lib/transcriptPrefs.js (new), webapp/src/components/ClipCard.jsx,
+webapp/src/components/ClipPlayer.jsx,
+webapp/src/components/YouTubeClipPlayer.jsx, webapp/src/styles/globals.css,
+this changelog. Also removes the leftover StashPage file.
+
+- Transcripts toggle moved to the Navbar beside the theme button, backed by a
+  shared persisted prefs module so Navbar and Feed never drift.
+- Hiding applies to YouTube captions and X text only. Articles and podcasts
+  keep their quotes. X cards go screenshot-only in this mode, as wanted.
+- Fixed the autoplay massacre: muted autoplay no longer claims playback, so
+  all embeds play instead of murdering each other. Only an explicit
+  tap-for-sound takes over. Both Tap-for-sound pills removed, tap behavior
+  kept.
+- Both players pause below 20 percent visibility and on tab hide, no
+  auto-resume. No more background audio while scrolling.
+- Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Feed video-mode fixes plus annotate-screen Drafts entry
+
+Files touched: src/components/AnnotationForm.jsx,
+src/components/ClipCreator.jsx, webapp/src/components/Navbar.jsx,
+webapp/src/pages/Feed.jsx, webapp/src/lib/transcriptPrefs.js (new),
+webapp/src/components/ClipCard.jsx, webapp/src/components/ClipPlayer.jsx,
+webapp/src/components/YouTubeClipPlayer.jsx, webapp/src/styles/globals.css,
+this changelog.
+
+- View drafts button below Save draft on the annotate screen, in addition to
+  the header pill.
+- Transcripts toggle moved to the Navbar beside the theme button, backed by a
+  shared persisted prefs module so Navbar and Feed never drift.
+- Hiding applies to YouTube captions and X text only. Articles and podcasts
+  keep their quotes. X cards go screenshot-only in this mode, as wanted.
+- Fixed the autoplay massacre: muted autoplay no longer claims playback, so
+  all embeds play instead of murdering each other. Only an explicit
+  tap-for-sound takes over. Both Tap-for-sound pills removed, tap behavior
+  kept.
+- Both players pause below 20 percent visibility and on tab hide, no
+  auto-resume. No more background audio while scrolling.
+- Local commit only - NOT pushed. Webapp NOT deployed.

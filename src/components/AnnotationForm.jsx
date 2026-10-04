@@ -57,7 +57,7 @@ function contractTranscript(currentText, words = 5) {
   return currentWords.slice(0, -words).join(' ');
 }
 
-export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed, transcriptCache, setTranscriptCache, onTranscriptChange, communities = [], communityId = '', onCommunityChange, draftId, onDraftIdChange, canAutosave, resume, showPassageFallback }) {
+export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed, transcriptCache, setTranscriptCache, onTranscriptChange, communities = [], communityId = '', onCommunityChange, draftId, onDraftIdChange, canAutosave, resume, showPassageFallback, onOpenDrafts }) {
   const [text, setText] = useState(resume?.text || '');
   const [annotationType, setAnnotationType] = useState(resume?.annotationType || 'Reaction');
   const [audioUrl, setAudioUrl] = useState(resume?.audioUrl || null);
@@ -642,6 +642,13 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
         Save draft
       </button>
       {draftStatus && <p className="draft-status">{draftStatus}</p>}
+      <button
+        type="button"
+        onClick={onOpenDrafts}
+        className="btn-ghost w-full"
+      >
+        View drafts
+      </button>
     </div>
   );
 }

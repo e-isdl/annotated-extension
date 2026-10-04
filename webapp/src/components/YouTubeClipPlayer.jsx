@@ -72,6 +72,8 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const frameRef = useRef(null);
   const hostRef = useRef(null);
   const playerRef = useRef(null);
+  const playingRef = useRef(false);
+  playingRef.current = playing;
   const boundsRef = useRef({ start: 0, end: 0 });
   const draggingRef = useRef(false);
   const onCloseRef = useRef(onClose);
@@ -143,7 +145,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
               try { event.target.unMute(); event.target.setVolume(100); } catch {}
             }
             if (autoplay) {
-              claimPlayback(stop);
+              if (!startMuted) claimPlayback(stop);
               try { event.target.seekTo(bs, true); } catch {}
               try { event.target.playVideo(); } catch {}
             }
@@ -188,6 +190,32 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
     };
   }, [videoId, startSec, endSec, autoplay]);
 
+  useEffect(() => {
+    const root = frameRef.current?.closest('.ytclip');
+    if (!root || typeof IntersectionObserver === 'undefined') return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting && playingRef.current) {
+          try { playerRef.current?.pauseVideo(); } catch {}
+          setPlaying(false);
+        }
+      },
+      { threshold: 0.2 },
+    );
+    observer.observe(root);
+    const onVis = () => {
+      if (document.hidden && playingRef.current) {
+        try { playerRef.current?.pauseVideo(); } catch {}
+        setPlaying(false);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [videoId]);
+
   const refocus = () => {
     try {
       const active = document.activeElement;
@@ -199,6 +227,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const play = () => {
     const p = playerRef.current;
     if (!p?.playVideo) return;
+    claimPlayback(stopRef.current);
     claimPlayback(stopRef.current);
     const { start: bs, end: be } = boundsRef.current;
     let cur = bs;
@@ -220,6 +249,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
     mutedRef.current = false;
     setMuted(false);
     if (!p) return;
+    claimPlayback(stopRef.current);
     try { p.unMute(); p.setVolume(100); } catch {}
     try { p.playVideo(); } catch {}
   };
@@ -278,15 +308,6 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
         )}
         {!apiFailed && (
           <div className="ytclip-shield" onClick={toggle} aria-hidden="true" />
-        )}
-        {muted && !apiFailed && (
-          <button
-            type="button"
-            className="ytclip-unmute"
-            onClick={(e) => { e.stopPropagation(); unmuteAndPlay(); refocus(); }}
-          >
-            Tap for sound
-          </button>
         )}
         {onClose && !apiFailed && (
           <button

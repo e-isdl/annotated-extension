@@ -482,7 +482,7 @@ export default function ClipCreator({ pageInfo, session }) {
           {renderClipper()}
         </div>
         <div style={{ display: step === 'annotate' ? 'block' : 'none' }}>
-          {clipData && <AnnotationForm key={`${pageKey}-${formToken}`} clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} onUseEmbed={useEmbedInstead} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} communities={communities} communityId={communityId} onCommunityChange={setCommunityId} draftId={currentDraftId} onDraftIdChange={(id) => { setCurrentDraftId(id); if (id) draftSessionSet(id); }} canAutosave={Boolean(session?.user)} resume={resumeForm} showPassageFallback={passageFallback} />}
+          {clipData && <AnnotationForm key={`${pageKey}-${formToken}`} clipData={clipData} onBack={() => setStep('clip')} onPublish={handlePublish} onUseEmbed={useEmbedInstead} transcriptCache={transcriptCache} setTranscriptCache={setTranscriptCache} onTranscriptChange={setCurrentTranscript} communities={communities} communityId={communityId} onCommunityChange={setCommunityId} draftId={currentDraftId} onDraftIdChange={(id) => { setCurrentDraftId(id); if (id) draftSessionSet(id); }} canAutosave={Boolean(session?.user)} resume={resumeForm} showPassageFallback={passageFallback} onOpenDrafts={openDrafts} />}
         </div>
         {step === 'drafts' && (
           <DraftsScreen
