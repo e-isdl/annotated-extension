@@ -1574,3 +1574,17 @@ webapp/src/styles/globals.css, this changelog.
   under the source line, on the same stage videos get, instead of the small
   side thumbnail. Click expands it as before. Normal mode untouched.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Video mode means See-tweet, zero-shift thumbs
+
+Files touched: webapp/src/components/ClipCard.jsx,
+webapp/src/styles/globals.css, this changelog.
+
+- Hide-transcripts on an X post is now exactly See-tweet-clicked: the
+  expanded screenshot renders by default and the See/Hide toggle hides
+  itself in this mode. Removed the separate full-width branch.
+- Video posts in video mode show a full-width 16:9 thumbnail, the exact
+  geometry of the player that replaces it, so tapping play no longer moves
+  the feed. Quote text hides only when an image will actually render.
+- Local commit only - NOT pushed. Webapp NOT deployed.

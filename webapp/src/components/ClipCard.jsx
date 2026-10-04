@@ -58,7 +58,8 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
     if (!isVideoPost) return;
     setPlaying(true);
   };
-  const hideQuote = hideTranscript && (clip.source_type === 'youtube' || clip.source_type === 'social');
+  const hideQuote = hideTranscript && (clip.source_type === 'youtube' || clip.source_type === 'social') && Boolean(sourceImage) && !imageFailed;
+  const tweetExpanded = mediaExpanded || (hideTranscript && isXPost);
 
   const closePlayer = () => {
     dismissedRef.current = true;
@@ -242,28 +243,21 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
             )}
           </div>
         </div>
-        ) : mediaExpanded && canExpand && !isVideoPost ? (
+        ) : tweetExpanded && canExpand && !isVideoPost ? (
         <div className="source-preview source-preview-expanded">
           <div className="source-preview-media" role="button" tabIndex={0} aria-label="Collapse preview" onClick={toggleMedia} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleMedia(event); }}>
             <img src={sourceImage} alt={clip.title || 'Source preview'} className={`source-preview-image-expanded${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />
           </div>
         </div>
-        ) : hideTranscript && isXPost && sourceImage && !imageFailed ? (
-        <div className="source-preview source-preview-fullimage">
-          <div className="source-preview-copy">
-            <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>
-            {posterHandle && <p className="source-quote-poster">@{posterHandle}</p>}
-          </div>
-          <button
-            type="button"
-            className="source-preview-thumbbtn-full"
-            onClick={toggleMedia}
-            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleMedia(event); }}
-            aria-label="Expand screenshot"
-          >
-            <img src={sourceImage} alt="" loading="lazy" onError={() => setImageFailed(true)} />
-          </button>
-        </div>
+        ) : hideTranscript && isVideoPost && sourceImage && !imageFailed ? (
+        <button
+          type="button"
+          className="source-preview-videothumb"
+          onClick={playInline}
+          aria-label={`Play clip from ${formatTime(clip.start_sec)}`}
+        >
+          <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />
+        </button>
         ) : (
         <div className="source-preview">
           <div className="source-preview-copy">
@@ -340,7 +334,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
         <button type="button" onClick={handleSave} className={`post-action ${isXPost && canExpand ? '' : 'post-action-last '}${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
         </button>
-        {isXPost && canExpand && (
+        {isXPost && canExpand && !hideTranscript && (
           <button type="button" onClick={toggleMedia} className="post-action post-action-last" aria-expanded={mediaExpanded}>
             <SourceIcon type="social" /> {mediaExpanded ? 'Hide tweet' : 'See tweet'}
           </button>
