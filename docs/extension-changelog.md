@@ -1552,3 +1552,14 @@ webapp/src/components/ClipPlayer.jsx, this changelog.
   evicted. Muted resume never steals playback; tap-for-sound still does.
 - Removed a dead posterSrc prop left over from the rollback.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Find bar always on
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css,
+this changelog.
+
+- The find bar (input, counts, up/down) is now permanently under the header,
+  like Continue. Removed the magnifier toggle, the close button and all
+  show/hide state. Ctrl/Cmd+F still focuses the input, Esc clears it.
+- Local commit only - NOT pushed.
