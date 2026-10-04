@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { getPlaybackPosition, savePlaybackPosition, unregisterMounted } from '../lib/feedPlayback';
 
 function formatClock(s) {
   const total = Math.max(0, Math.floor(Number(s) || 0));
@@ -7,14 +8,16 @@ function formatClock(s) {
   return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
-export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutoplay = false }) {
+export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutoplay = false, positionKey }) {
   const wrapRef = useRef(null);
   const videoRef = useRef(null);
   const seekRef = useRef(null);
   const autoMutedRef = useRef(false);
   const mutedAutoplayRef = useRef(mutedAutoplay);
+  const userPausedRef = useRef(getPlaybackPosition(positionKey)?.userPaused ?? false);
+  const pendingSeekRef = useRef(null);
   const [playing, setPlaying] = useState(false);
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(() => getPlaybackPosition(positionKey)?.pos ?? 0);
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
   const [muted, setMuted] = useState(false);
@@ -32,10 +35,27 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
       mutedAutoplayRef.current = true;
       setMuted(true);
       setPlaying(false);
-      try {
-        const p = v.play();
-        if (p && typeof p.catch === 'function') p.catch(() => {});
-      } catch {}
+      const savedPos = getPlaybackPosition(positionKey)?.pos ?? 0;
+      if (savedPos > 0) {
+        if (Number.isFinite(v.duration) && v.duration > 0) {
+          try { v.currentTime = Math.min(savedPos, v.duration); } catch {}
+        } else {
+          pendingSeekRef.current = savedPos;
+        }
+      }
+      if (!userPausedRef.current) {
+        let inView = true;
+        try {
+          const r = wrapRef.current?.getBoundingClientRect();
+          if (r) inView = r.bottom > 0 && r.top < window.innerHeight;
+        } catch {}
+        if (inView) {
+          try {
+            const p = v.play();
+            if (p && typeof p.catch === 'function') p.catch(() => {});
+          } catch {}
+        }
+      }
       return undefined;
     }
     v.muted = false;
@@ -74,16 +94,29 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
       try { v.muted = false; } catch {}
       autoMutedRef.current = false;
       setMuted(false);
+      userPausedRef.current = false;
       if (v.paused) v.play().catch(() => {});
       return;
     }
-    if (v.paused) v.play().catch(() => {});
-    else v.pause();
+    if (v.paused) {
+      userPausedRef.current = false;
+      v.play().catch(() => {});
+    } else {
+      userPausedRef.current = true;
+      savePlaybackPosition(positionKey, v.currentTime, true);
+      v.pause();
+    }
   }, []);
 
   const readDuration = (video) => {
     const d = video?.duration;
-    if (Number.isFinite(d) && d > 0) setDuration(d);
+    if (Number.isFinite(d) && d > 0) {
+      setDuration(d);
+      if (pendingSeekRef.current != null) {
+        try { video.currentTime = Math.min(pendingSeekRef.current, d); } catch {}
+        pendingSeekRef.current = null;
+      }
+    }
   };
 
   const fallbackTotal = Number.isFinite(Number(fallbackDuration)) && Number(fallbackDuration) > 0
@@ -103,6 +136,7 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
     if (!v || !Number.isFinite(v.duration) || v.duration <= 0) return;
     v.currentTime = ratio * v.duration;
     setCurrent(v.currentTime);
+    savePlaybackPosition(positionKey, v.currentTime, userPausedRef.current);
   };
 
   const onSeekDown = (e) => {
@@ -155,9 +189,19 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
     if (!root || typeof IntersectionObserver === 'undefined') return undefined;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting && playingRef.current) {
-          try { videoRef.current?.pause(); } catch {}
-          setPlaying(false);
+        if (!entry.isIntersecting) {
+          if (playingRef.current) {
+            try { videoRef.current?.pause(); } catch {}
+            setPlaying(false);
+          }
+        } else if (mutedAutoplay && !userPausedRef.current) {
+          const v = videoRef.current;
+          if (v && v.paused) {
+            try {
+              const p = v.play();
+              if (p && typeof p.catch === 'function') p.catch(() => {});
+            } catch {}
+          }
         }
       },
       { threshold: 0.2 },
@@ -173,6 +217,7 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
     return () => {
       observer.disconnect();
       document.removeEventListener('visibilitychange', onVis);
+      unregisterMounted(positionKey);
     };
   }, [src]);
 
@@ -197,7 +242,12 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
         onClick={toggle}
         onPlay={() => { setPlaying(true); setWaiting(false); }}
         onPause={() => setPlaying(false)}
-        onTimeUpdate={(e) => { if (!scrubbing) setCurrent(e.currentTarget.currentTime); }}
+        onTimeUpdate={(e) => {
+          if (!scrubbing) {
+            setCurrent(e.currentTarget.currentTime);
+            savePlaybackPosition(positionKey, e.currentTarget.currentTime, userPausedRef.current);
+          }
+        }}
         onLoadedMetadata={(e) => readDuration(e.currentTarget)}
         onDurationChange={(e) => readDuration(e.currentTarget)}
         onProgress={(e) => {

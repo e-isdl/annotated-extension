@@ -11,6 +11,7 @@ import { useToast } from './ToastProvider';
 import CommunityAvatar from './CommunityAvatar';
 import Avatar from './Avatar';
 import { postHref } from '../lib/links';
+import { registerMounted, touchMounted, unregisterMounted } from '../lib/feedPlayback';
 import { hasMoment } from '../lib/moment';
 import { isXPostUrl, matchStatusUrl } from '../lib/social';
 import { cleanTranscript, stripWrappingQuotes } from '../lib/text';
@@ -43,6 +44,9 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
   const [videoFailed, setVideoFailed] = useState(false);
   const cardRef = useRef(null);
   const [cardVisible, setCardVisible] = useState(false);
+  const [cardNear, setCardNear] = useState(false);
+  const evictedRef = useRef(false);
+  const dismissedRef = useRef(false);
   const uploadStale = clip.video_status === 'uploading' && clip.created_at && (Date.now() - new Date(clip.created_at).getTime() > 20 * 60 * 1000);
   const isUploadingVideo = clip.video_status === 'uploading' && !uploadStale;
   const playableRecording = Boolean(clip.video_url) && !isUploadingVideo && !videoFailed;
@@ -56,10 +60,31 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
   };
   const hideQuote = hideTranscript && (clip.source_type === 'youtube' || clip.source_type === 'social');
 
+  const closePlayer = () => {
+    dismissedRef.current = true;
+    setPlaying(false);
+  };
+
   useEffect(() => {
-    if (autoPlayVideo && isVideoPost && cardVisible) setPlaying(true);
-    else if (!autoPlayVideo) setPlaying(false);
-  }, [autoPlayVideo, cardVisible]);
+    if (!cardNear) evictedRef.current = false;
+  }, [cardNear]);
+
+  useEffect(() => {
+    if (autoPlayVideo && isVideoPost && cardNear && !evictedRef.current && !dismissedRef.current) {
+      setPlaying(true);
+      registerMounted(clip.id, () => {
+        evictedRef.current = true;
+        setPlaying(false);
+      });
+    } else {
+      if (!autoPlayVideo) {
+        evictedRef.current = false;
+        dismissedRef.current = false;
+      }
+      setPlaying(false);
+    }
+    return () => { unregisterMounted(clip.id); };
+  }, [autoPlayVideo, cardNear]);
 
   useEffect(() => {
     const el = cardRef.current;
@@ -68,8 +93,22 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
       return undefined;
     }
     const observer = new IntersectionObserver(
-      ([entry]) => setCardVisible(entry.isIntersecting),
+      ([entry]) => {
+        setCardVisible(entry.isIntersecting);
+        touchMounted(clip.id, entry.isIntersecting);
+      },
       { threshold: 0.15 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => setCardNear(entry.isIntersecting),
+      { rootMargin: '800px 0px', threshold: 0 },
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -114,7 +153,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
 
   useEffect(() => {
     if (!mediaExpanded && !playing) return undefined;
-    const onKey = (event) => { if (event.key === 'Escape') { setMediaExpanded(false); setPlaying(false); } };
+    const onKey = (event) => { if (event.key === 'Escape') { setMediaExpanded(false); dismissedRef.current = true; setPlaying(false); } };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [mediaExpanded, playing]);
@@ -197,9 +236,9 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
         <div className="source-preview source-preview-playing">
           <div className="source-preview-player" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
             {playableRecording ? (
-              <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} mutedAutoplay={autoPlayVideo} />
+              <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} mutedAutoplay={autoPlayVideo} positionKey={clip.id} />
             ) : (
-              <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay onClose={() => setPlaying(false)} posterSrc={sourceImage} startMuted={autoPlayVideo} />
+              <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay onClose={closePlayer} startMuted={autoPlayVideo} positionKey={clip.id} />
             )}
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { youtubeEmbedUrl } from '../lib/youtubeEmbedUrl';
+import { getPlaybackPosition, savePlaybackPosition, unregisterMounted } from '../lib/feedPlayback';
 
 const YT_STATE_ENDED = 0;
 const YT_STATE_PLAYING = 1;
@@ -68,7 +69,7 @@ function formatClipTime(s) {
 // The iframe itself is never touchable: pointer events are off, it is out of
 // the tab order, and a click shield sits above it. Self-hosted recordings
 // keep their own player.
-export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay = false, onClose, startMuted = false }) {
+export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay = false, onClose, startMuted = false, positionKey }) {
   const frameRef = useRef(null);
   const hostRef = useRef(null);
   const playerRef = useRef(null);
@@ -80,8 +81,9 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(startMuted);
   const mutedRef = useRef(startMuted);
-  const [pos, setPos] = useState(0);
+  const [pos, setPos] = useState(() => getPlaybackPosition(positionKey)?.pos ?? 0);
   const [apiFailed, setApiFailed] = useState(false);
+  const userPausedRef = useRef(getPlaybackPosition(positionKey)?.userPaused ?? false);
   const playingRef = useRef(false);
   playingRef.current = playing;
 
@@ -117,6 +119,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
       if (cancelled) return;
       if (!YT) { setApiFailed(true); return; }
       const bs = boundsRef.current.start;
+      const be = boundsRef.current.end;
       player = new YT.Player(mount, {
         videoId,
         playerVars: {
@@ -146,8 +149,14 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
             }
             if (autoplay) {
               if (!startMuted) claimPlayback(stop);
-              try { event.target.seekTo(bs, true); } catch {}
-              try { event.target.playVideo(); } catch {}
+              const savedPos = getPlaybackPosition(positionKey)?.pos;
+              const seekAt = savedPos != null && savedPos > 0
+                ? Math.min(bs + savedPos, be > bs ? be : bs + savedPos)
+                : bs;
+              try { event.target.seekTo(seekAt, true); } catch {}
+              if (frameVisible()) {
+                try { event.target.playVideo(); } catch {}
+              }
             }
           },
           onStateChange: (event) => {
@@ -175,7 +184,9 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
           resetToStart(p);
           return;
         }
-        setPos(Math.min(Math.max(0, cur - bStart), Math.max(0, bEnd - bStart)));
+        const next = Math.min(Math.max(0, cur - bStart), Math.max(0, bEnd - bStart));
+        setPos(next);
+        savePlaybackPosition(positionKey, next, userPausedRef.current);
       }, 100);
     });
 
@@ -183,6 +194,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
       cancelled = true;
       if (pollTimer) clearInterval(pollTimer);
       releasePlayback(stop);
+      unregisterMounted(positionKey);
       try { player?.destroy(); } catch {}
       playerRef.current = null;
       try { mount.remove(); } catch {}
@@ -195,9 +207,16 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
     if (!root || typeof IntersectionObserver === 'undefined') return undefined;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting && playingRef.current) {
-          try { playerRef.current?.pauseVideo(); } catch {}
-          setPlaying(false);
+        if (!entry.isIntersecting) {
+          if (playingRef.current) {
+            try { playerRef.current?.pauseVideo(); } catch {}
+            setPlaying(false);
+          }
+        } else if (startMuted && !userPausedRef.current) {
+          const p = playerRef.current;
+          if (p?.playVideo) {
+            try { p.playVideo(); } catch {}
+          }
         }
       },
       { threshold: 0.2 },
@@ -224,10 +243,17 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
     try { frameRef.current?.focus({ preventScroll: true }); } catch {}
   };
 
+  const frameVisible = () => {
+    try {
+      const r = frameRef.current?.getBoundingClientRect();
+      if (!r) return true;
+      return r.bottom > 0 && r.top < window.innerHeight;
+    } catch { return true; }
+  };
+
   const play = () => {
     const p = playerRef.current;
     if (!p?.playVideo) return;
-    claimPlayback(stopRef.current);
     claimPlayback(stopRef.current);
     const { start: bs, end: be } = boundsRef.current;
     let cur = bs;
@@ -247,6 +273,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const unmuteAndPlay = () => {
     const p = playerRef.current;
     mutedRef.current = false;
+    userPausedRef.current = false;
     setMuted(false);
     if (!p) return;
     claimPlayback(stopRef.current);
@@ -256,8 +283,14 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
 
   const toggle = () => {
     if (muted) { unmuteAndPlay(); refocus(); return; }
-    if (playing) pause();
-    else play();
+    if (playing) {
+      userPausedRef.current = true;
+      savePlaybackPosition(positionKey, pos, true);
+      pause();
+    } else {
+      userPausedRef.current = false;
+      play();
+    }
     refocus();
   };
 
@@ -272,6 +305,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
     const { start: bs, end: be } = boundsRef.current;
     const clamped = Math.min(Math.max(0, Number(v) || 0), Math.max(0, be - bs));
     setPos(clamped);
+    savePlaybackPosition(positionKey, clamped, userPausedRef.current);
     try { playerRef.current?.seekTo(bs + clamped, true); } catch {}
   };
 

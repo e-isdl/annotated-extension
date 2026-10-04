@@ -1536,3 +1536,19 @@ this changelog.
   video mode no longer spins up dozens of players at once. Scroll-pause
   still parks off-screen ones without auto-resume.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Twitter-style feed playback
+
+Files touched: webapp/src/lib/feedPlayback.js (new),
+webapp/src/components/ClipCard.jsx, webapp/src/components/YouTubeClipPlayer.jsx,
+webapp/src/components/ClipPlayer.jsx, this changelog.
+
+- Videos preload paused within one screen of the viewport and unpause the
+  instant they scroll into view. Scrolling away pauses; scrolling back
+  resumes from the exact spot. Explicit pauses stick.
+- Positions survive unmounts in shared memory, so evicted players remount
+  where they left off. Mount pool capped at 10 with visible players never
+  evicted. Muted resume never steals playback; tap-for-sound still does.
+- Removed a dead posterSrc prop left over from the rollback.
+- Local commit only - NOT pushed. Webapp NOT deployed.
