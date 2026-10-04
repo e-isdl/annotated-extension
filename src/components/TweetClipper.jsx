@@ -341,7 +341,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
         article_text: title || null,
         thumbnail: posterUrl,
         media_url: mediaUrl,
-        media_kind: 'clip',
+        media_kind: 'loop',
         media_w: clip.w || null,
         media_h: clip.h || null,
         media_duration_ms: Math.round(clip.durationMs) || null,
@@ -363,7 +363,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
     : phase === 'recording'
       ? `Recording the whole tweet… ${recT.toFixed(1)}s of ${Math.ceil(recTarget)}s. Keep the tab open.`
       : phase === 'preview' && !useShot
-        ? 'Tweet recorded with its video and text. It will play as a normal video on Annotated.'
+        ? 'Tweet recorded with its video and text. It will loop silently on Annotated, like a GIF.'
         : phase === 'preview' && useShot
           ? 'Using the screenshot instead of the recording.'
           : phase === 'shot-working'
@@ -389,6 +389,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
         <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
           <video
             src={clip.url}
+            loop
             muted
             playsInline
             autoPlay

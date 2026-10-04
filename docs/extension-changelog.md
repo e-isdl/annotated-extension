@@ -1699,3 +1699,15 @@ supabase/migrations/20261004000400_tweet_recorded_clips.sql, this changelog.
 - DB (applied): media_kind now allows loop or clip, duration cap raised
   to 65s.
 - Local commit only - NOT pushed.
+---
+
+## Tweet recordings loop again, full length
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- Tweet recordings publish as media_kind loop and the panel preview
+  loops, so feed and detail repeat them silently like a GIF.
+- Length is the video full duration up to 60s - no 5s cap remains. If a
+  recording still stops at 5s, the old build is loaded: reload the
+  extension on chrome://extensions and refresh the X tab, then retry.
+- Local commit only - NOT pushed.
