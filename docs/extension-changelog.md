@@ -1776,3 +1776,16 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
 - While recording, the status now reads Recording… Ns with whole
   seconds and nothing else.
 - Local commit only - push and release follow on user order.
+---
+
+## Screenshots only for no-video X posts
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- Rule enforced: a post with video always records - the screenshot
+  toggle, the screenshot-instead fallback, and every useShot branch are
+  gone. Recording failure offers only Try recording again.
+- Screenshots now run solely on the no-video path, with phase handling
+  no longer reading a stale clip value, and the unread recTarget state
+  removed.
+- Local commit only - NOT pushed.

@@ -130,12 +130,10 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const statusId = data.statusId || null;
   const [phase, setPhase] = useState('probing'); // probing | recording | preview | shot-working | none | failed
   const [recT, setRecT] = useState(0);
-  const [recTarget, setRecTarget] = useState(0);
   const [clip, setClip] = useState(null); // { blob, mime, url, w, h, durationMs, poster }
   const [recError, setRecError] = useState(null);
   const [thumbnail, setThumbnail] = useState(null);
   const [shotState, setShotState] = useState('idle'); // idle | working | ready | text | none | failed
-  const [useShot, setUseShot] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState(null);
   const recCtlRef = useRef(null);
@@ -180,7 +178,6 @@ export default function TweetClipper({ pageInfo, onReady }) {
         throw new Error('Could not read this post.');
       }
       const targetMs = Math.max(2000, Math.min(prep.durationMs || 15000, MAX_RECORD_MS));
-      setRecTarget(targetMs / 1000);
 
       const rs = Math.min(2, 1100 / prep.bounds.w);
       const canvas = document.createElement('canvas');
@@ -324,11 +321,11 @@ export default function TweetClipper({ pageInfo, onReady }) {
       if (!result?.ok || !result.dataUrl) {
         if (result?.reason === 'too-tall') { setShotState('text'); setPhase('none'); }
         else if (result?.hasPhotos === false) { setShotState('none'); setPhase('none'); }
-        else { setShotState('failed'); setPhase((p) => (clip ? p : 'failed')); if (!clip) setRecError('Screenshot unavailable.'); }
+        else { setShotState('failed'); setPhase('failed'); setRecError('Screenshot unavailable.'); }
         return;
       }
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setShotState('failed'); setPhase((p) => (clip ? p : 'failed')); return; }
+      if (!user) { setShotState('failed'); setPhase('failed'); return; }
       const filename = `clips/thumbs/${user.id}/${Date.now()}-tweet.jpg`;
       const { error } = await supabase.storage.from('clips').upload(
         filename,
@@ -338,24 +335,24 @@ export default function TweetClipper({ pageInfo, onReady }) {
       if (error) {
         console.error('thumbnail upload failed:', error.message);
         setShotState('failed');
-        setPhase((p) => (clip ? p : 'failed'));
+        setPhase('failed');
         return;
       }
       const { data: { publicUrl } } = supabase.storage.from('clips').getPublicUrl(filename);
       setThumbnail(publicUrl);
       setShotState('ready');
-      setPhase((p) => (p === 'shot-working' ? 'none' : p));
+      setPhase('none');
     } catch (err) {
       console.error('tweet screenshot failed:', err?.message || err);
       setShotState('failed');
-      setPhase((p) => (clip ? p : 'failed'));
+      setPhase('failed');
     }
   };
 
   const handleContinue = async () => {
     if (publishing) return;
     setPublishError(null);
-    if (useShot || !clip) {
+    if (!clip) {
       onReady({
         source_url: url,
         source_type: 'social',
@@ -416,16 +413,14 @@ export default function TweetClipper({ pageInfo, onReady }) {
   };
 
   const busy = phase === 'probing' || phase === 'recording' || phase === 'shot-working';
-  const canContinue = phase === 'preview' || phase === 'none' || (phase === 'failed' && (useShot || shotState === 'ready' || shotState === 'text' || shotState === 'none'));
+  const canContinue = phase === 'preview' || phase === 'none';
 
   const statusText = phase === 'probing'
     ? 'Checking this post for video…'
     : phase === 'recording'
       ? `Recording… ${Math.floor(recT)}s`
-      : phase === 'preview' && !useShot
+      : phase === 'preview'
         ? 'Tweet recorded with its video and text. It will loop silently on Annotated, like a GIF.'
-        : phase === 'preview' && useShot
-          ? 'Using the screenshot instead of the recording.'
           : phase === 'shot-working'
             ? 'No video in this post — preparing a high-quality screenshot…'
             : phase === 'none'
@@ -442,7 +437,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
         <p className="text-xs text-text-muted truncate">{url}</p>
       </div>
 
-      {phase === 'preview' && clip && !useShot && (
+      {phase === 'preview' && clip && (
         <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
           <video
             src={clip.url}
@@ -467,19 +462,6 @@ export default function TweetClipper({ pageInfo, onReady }) {
         </div>
       )}
 
-      {phase === 'preview' && clip && shotState !== 'working' && shotState !== 'idle' && (
-        <button
-          type="button"
-          onClick={() => {
-            if (!useShot && shotState !== 'ready') runScreenshotFlow();
-            setUseShot((v) => !v);
-          }}
-          className="text-xs font-semibold text-text-muted hover:text-text-primary text-left"
-        >
-          {useShot ? '← Use the recording instead' : 'Use a screenshot instead'}
-        </button>
-      )}
-
       {statusText && (
         <div className="annotation-mark bg-bg-surface rounded-r-lg p-3">
           <p className="text-xs text-text-muted">{statusText}</p>
@@ -492,7 +474,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
               Cancel recording
             </button>
           )}
-          {phase === 'failed' && !useShot && (
+          {phase === 'failed' && (
             <div className="mt-2 flex flex-col gap-1">
               <button
                 type="button"
@@ -501,18 +483,6 @@ export default function TweetClipper({ pageInfo, onReady }) {
               >
                 Try recording again
               </button>
-              {(shotState === 'ready' || shotState === 'idle' || shotState === 'failed') && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (shotState !== 'ready' && shotState !== 'working') runScreenshotFlow();
-                    setUseShot(true);
-                  }}
-                  className="text-xs font-semibold text-accent hover:underline text-left"
-                >
-                  Continue with a screenshot instead
-                </button>
-              )}
             </div>
           )}
         </div>
