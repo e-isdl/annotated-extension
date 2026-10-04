@@ -109,6 +109,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .feed-page, .section-page, .create-page, .detail-page { width: 100%; }
 .feed-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 5px 0 17px; }
 .feed-heading h1, .section-title { margin: 0; color: var(--text-primary); font-size: clamp(21px, 2.5vw, 26px); font-weight: 650; letter-spacing: -.025em; }
+.feed-transcript-toggle { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 10px; flex-shrink: 0; }
 .feed-heading p, .section-subtitle { margin: 6px 0 0; color: var(--text-muted); font-size: 13px; line-height: 1.55; }
 .section-title { margin: 10px 0 8px; }
 .section-subtitle { max-width: 580px; font-size: 14px; }
@@ -596,6 +597,7 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .ytclip-fallback { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .ytclip-shield { position: absolute; inset: 0; z-index: 1; cursor: pointer; }
 .ytclip-close { position: absolute; top: 8px; right: 8px; z-index: 2; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 0 2px; }
+.ytclip-unmute { position: absolute; left: 8px; bottom: 8px; z-index: 2; border: none; border-radius: 999px; background: rgba(0,0,0,0.65); color: #fff; font-size: 12px; font-weight: 600; padding: 7px 12px; cursor: pointer; }
 .ytclip-bar { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 2px 0; }
 .ytclip-play { width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border-soft); background: var(--surface-2); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .ytclip-play:hover { border-color: var(--accent); color: var(--accent-text); }

@@ -1399,3 +1399,20 @@ Removed: stash buttons/handlers/screens/routes and the clip_drafts objects.
   passage; Save, Publish, Delete with undo), Create composes with the same
   autosave rules, publish cleans up. Mobile stacking, skeletons, retry.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Feed video mode: hide transcripts, muted autoplay
+
+Files touched: webapp/src/pages/Feed.jsx, webapp/src/components/ClipCard.jsx,
+webapp/src/components/ClipPlayer.jsx,
+webapp/src/components/YouTubeClipPlayer.jsx, webapp/src/styles/globals.css,
+this changelog.
+
+- Feed header has a Hide transcripts toggle (persisted). On: transcript
+  excerpts hide and every video post autoplays muted, Twitter-style. Off:
+  everything back to thumbnails.
+- Both players take a muted-autoplay mode: start muted, first tap on the
+  video unmutes and keeps playing, later taps toggle play. Manual mute is
+  respected and never auto-reverses. Tap-for-sound pill on both while muted.
+  Detail-page behavior unchanged.
+- Local commit only - NOT pushed. Webapp NOT deployed.

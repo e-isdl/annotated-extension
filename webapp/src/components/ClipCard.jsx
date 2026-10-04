@@ -17,7 +17,7 @@ import { cleanTranscript, stripWrappingQuotes } from '../lib/text';
 
 const SOURCE_LABELS = { youtube: 'YouTube', social: 'X post', article: 'Article', text: 'Text', podcast: 'Podcast' };
 
-export default function ClipCard({ clip }) {
+export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo = false }) {
   const navigate = useNavigate();
   const { push } = useToast();
   const annotation = clip.annotations?.[0];
@@ -52,6 +52,11 @@ export default function ClipCard({ clip }) {
     if (!isVideoPost) return;
     setPlaying(true);
   };
+
+  useEffect(() => {
+    if (autoPlayVideo && isVideoPost) setPlaying(true);
+    else if (!autoPlayVideo) setPlaying(false);
+  }, [autoPlayVideo]);
   const cardAriaLabel = `Open post: ${String(commentary || clip.title || 'post').slice(0, 140)}`;
   const onCardLinkClick = (event) => {
     const target = event.target;
@@ -175,9 +180,9 @@ export default function ClipCard({ clip }) {
         <div className="source-preview source-preview-playing">
           <div className="source-preview-player" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
             {playableRecording ? (
-              <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} />
+              <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} mutedAutoplay={autoPlayVideo} />
             ) : (
-              <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay onClose={() => setPlaying(false)} />
+              <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay onClose={() => setPlaying(false)} posterSrc={sourceImage} startMuted={autoPlayVideo} />
             )}
           </div>
         </div>
@@ -192,14 +197,14 @@ export default function ClipCard({ clip }) {
           <div className="source-preview-copy">
             {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
             {posterHandle && <p className="source-quote-poster">@{posterHandle}</p>}
-            {clip.source_preview_text ? (
+            {!hideTranscript && clip.source_preview_text ? (
               <p ref={quoteRef} className={quoteClassName}>{clip.source_preview_text}</p>
-            ) : clip.article_text || clip.source_excerpt || clip.transcript ? (
+            ) : !hideTranscript && (clip.article_text || clip.source_excerpt || clip.transcript) ? (
               <p ref={quoteRef} className={quoteClassName}>“{stripWrappingQuotes(clip.source_type === 'youtube' ? cleanTranscript(clip.article_text || clip.source_excerpt || clip.transcript) : (clip.article_text || clip.source_excerpt || clip.transcript))}”</p>
-            ) : (
+            ) : !hideTranscript && (
               <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
             )}
-            {!quoteExpanded && quoteOverflowing && (
+            {!hideTranscript && !quoteExpanded && quoteOverflowing && (
               <div className="read-more-wrap">
                 <button type="button" className="read-more-toggle" aria-expanded="false" onClick={expandQuote}>Show more</button>
               </div>

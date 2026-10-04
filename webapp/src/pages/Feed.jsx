@@ -18,6 +18,9 @@ export default function Feed({ sortOverride = null }) {
   const [clips, setClips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [usingDemo, setUsingDemo] = useState(false);
+  const [hideTranscripts, setHideTranscripts] = useState(() => {
+    try { return localStorage.getItem('annotated-hide-transcripts') === '1'; } catch { return false; }
+  });
   const sort = SORT_OPTIONS.some((option) => option.value === requestedSort) ? requestedSort : 'best';
   const activeSort = SORT_OPTIONS.find((option) => option.value === sort) || SORT_OPTIONS[0];
 
@@ -68,6 +71,13 @@ export default function Feed({ sortOverride = null }) {
     return () => { cancelled = true; };
   }, [sort]);
 
+  const toggleTranscripts = () => {
+    setHideTranscripts((value) => {
+      try { localStorage.setItem('annotated-hide-transcripts', value ? '0' : '1'); } catch {}
+      return !value;
+    });
+  };
+
   return (
     <div className="feed-page">
       <section className="feed-heading modern-feed-heading">
@@ -77,6 +87,14 @@ export default function Feed({ sortOverride = null }) {
             {usingDemo && <span className="demo-badge">DEMO FEED</span>}
           </div>
         </div>
+        <button
+          type="button"
+          onClick={toggleTranscripts}
+          className="btn-ghost feed-transcript-toggle"
+          aria-pressed={hideTranscripts}
+        >
+          {hideTranscripts ? 'Show transcripts' : 'Hide transcripts'}
+        </button>
       </section>
 
       <div className="feed-tabs" role="tablist" aria-label="Feed sort">
@@ -99,7 +117,7 @@ export default function Feed({ sortOverride = null }) {
 
       {loading ? <LoadingSkeleton /> : (
         <div className="feed-list">
-          {clips.map((clip) => <ClipCard key={clip.id} clip={clip} />)}
+          {clips.map((clip) => <ClipCard key={clip.id} clip={clip} hideTranscript={hideTranscripts} autoPlayVideo={hideTranscripts} />)}
         </div>
       )}
 

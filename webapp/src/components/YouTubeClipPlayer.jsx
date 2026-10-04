@@ -68,7 +68,7 @@ function formatClipTime(s) {
 // The iframe itself is never touchable: pointer events are off, it is out of
 // the tab order, and a click shield sits above it. Self-hosted recordings
 // keep their own player.
-export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay = false, onClose }) {
+export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay = false, onClose, startMuted = false }) {
   const frameRef = useRef(null);
   const hostRef = useRef(null);
   const playerRef = useRef(null);
@@ -78,6 +78,8 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   onCloseRef.current = onClose;
   const stopRef = useRef(null);
   const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(startMuted);
+  const mutedRef = useRef(startMuted);
   const [pos, setPos] = useState(0);
   const [apiFailed, setApiFailed] = useState(false);
 
@@ -135,7 +137,11 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
               frame.tabIndex = -1;
               frame.setAttribute('tabindex', '-1');
             } catch {}
-            try { event.target.unMute(); event.target.setVolume(100); } catch {}
+            if (startMuted) {
+              try { event.target.mute(); } catch {}
+            } else {
+              try { event.target.unMute(); event.target.setVolume(100); } catch {}
+            }
             if (autoplay) {
               claimPlayback(stop);
               try { event.target.seekTo(bs, true); } catch {}
@@ -145,8 +151,12 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
           onStateChange: (event) => {
             if (cancelled) return;
             const st = event.data;
-            if (st === YT_STATE_PLAYING || st === YT_STATE_BUFFERING) setPlaying(true);
+            if (st === YT_STATE_PLAYING) {
+              setPlaying(true);
+              if (!mutedRef.current) { try { event.target.unMute(); event.target.setVolume(100); } catch {} }
+            }
             else if (st === YT_STATE_PAUSED) setPlaying(false);
+            else if (st === YT_STATE_BUFFERING) setPlaying(true);
             else if (st === YT_STATE_ENDED) resetToStart(event.target);
           },
         },
@@ -205,7 +215,17 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
     try { playerRef.current?.pauseVideo(); } catch {}
   };
 
+  const unmuteAndPlay = () => {
+    const p = playerRef.current;
+    mutedRef.current = false;
+    setMuted(false);
+    if (!p) return;
+    try { p.unMute(); p.setVolume(100); } catch {}
+    try { p.playVideo(); } catch {}
+  };
+
   const toggle = () => {
+    if (muted) { unmuteAndPlay(); refocus(); return; }
     if (playing) pause();
     else play();
     refocus();
@@ -258,6 +278,15 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
         )}
         {!apiFailed && (
           <div className="ytclip-shield" onClick={toggle} aria-hidden="true" />
+        )}
+        {muted && !apiFailed && (
+          <button
+            type="button"
+            className="ytclip-unmute"
+            onClick={(e) => { e.stopPropagation(); unmuteAndPlay(); refocus(); }}
+          >
+            Tap for sound
+          </button>
         )}
         {onClose && !apiFailed && (
           <button

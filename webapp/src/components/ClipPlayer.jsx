@@ -7,11 +7,12 @@ function formatClock(s) {
   return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
-export default function ClipPlayer({ src, onError, fallbackDuration }) {
+export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutoplay = false }) {
   const wrapRef = useRef(null);
   const videoRef = useRef(null);
   const seekRef = useRef(null);
   const autoMutedRef = useRef(false);
+  const mutedAutoplayRef = useRef(mutedAutoplay);
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -23,8 +24,21 @@ export default function ClipPlayer({ src, onError, fallbackDuration }) {
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return undefined;
+    if (mutedAutoplay) {
+      try { v.muted = true; } catch {}
+      autoMutedRef.current = false;
+      mutedAutoplayRef.current = true;
+      setMuted(true);
+      setPlaying(false);
+      try {
+        const p = v.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch {}
+      return undefined;
+    }
     v.muted = false;
     autoMutedRef.current = false;
+    mutedAutoplayRef.current = false;
     setMuted(false);
     setPlaying(false);
     const attempt = () => {
@@ -54,6 +68,13 @@ export default function ClipPlayer({ src, onError, fallbackDuration }) {
   const toggle = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
+    if (v.muted && (autoMutedRef.current || mutedAutoplayRef.current)) {
+      try { v.muted = false; } catch {}
+      autoMutedRef.current = false;
+      setMuted(false);
+      if (v.paused) v.play().catch(() => {});
+      return;
+    }
     if (v.paused) v.play().catch(() => {});
     else v.pause();
   }, []);
@@ -100,6 +121,7 @@ export default function ClipPlayer({ src, onError, fallbackDuration }) {
     if (!v) return;
     v.muted = !v.muted;
     autoMutedRef.current = false;
+    mutedAutoplayRef.current = false;
     setMuted(v.muted);
   };
 
@@ -108,10 +130,12 @@ export default function ClipPlayer({ src, onError, fallbackDuration }) {
     if (!v) return;
     try { v.muted = false; } catch {}
     autoMutedRef.current = false;
+    mutedAutoplayRef.current = false;
     setMuted(false);
   }, []);
 
   useEffect(() => {
+    if (mutedAutoplay) return undefined;
     const unmute = () => {
       const v = videoRef.current;
       if (v && autoMutedRef.current && v.muted) unmuteNow();
@@ -122,7 +146,7 @@ export default function ClipPlayer({ src, onError, fallbackDuration }) {
       window.removeEventListener('pointerdown', unmute);
       window.removeEventListener('keydown', unmute);
     };
-  }, [src, unmuteNow]);
+  }, [src, unmuteNow, mutedAutoplay]);
 
   const toggleFull = () => {
     try {
