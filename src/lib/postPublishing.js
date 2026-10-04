@@ -21,6 +21,12 @@ export async function createExtensionPost(client, payload) {
     p_annotation_audio_url: payload.annotation_audio_url ?? null,
     p_video_url: payload.video_url ?? null,
     p_video_status: payload.video_status ?? null,
+    p_media_url: payload.media_url ?? null,
+    p_media_kind: payload.media_kind ?? null,
+    p_media_w: payload.media_w ?? null,
+    p_media_h: payload.media_h ?? null,
+    p_media_duration_ms: payload.media_duration_ms ?? null,
+    p_poster_url: payload.poster_url ?? null,
   });
   if (error) throw error;
   return data;

@@ -344,6 +344,12 @@ export default function ClipCreator({ pageInfo, session }) {
       annotation_audio_url: annotationData.audio_url,
       video_url: null,
       video_status: recorded?.blob ? 'uploading' : 'ready',
+      media_url: clipData.media_url || null,
+      media_kind: clipData.media_kind || null,
+      media_w: clipData.media_w ?? null,
+      media_h: clipData.media_h ?? null,
+      media_duration_ms: clipData.media_duration_ms ?? null,
+      poster_url: clipData.poster_url || null,
     });
 
     if (recorded?.blob) {

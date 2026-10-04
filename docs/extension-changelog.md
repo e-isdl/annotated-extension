@@ -1652,3 +1652,27 @@ this changelog.
 - Sticky header sealed with higher stacking, paint isolation and a stronger
   shadow so transcript can never bleed through in either theme.
 - Local commit only - NOT pushed.
+---
+
+## X video/GIF recorder (silent looping clips)
+
+Files touched: content.js, src/components/TweetClipper.jsx,
+src/components/ClipCreator.jsx, src/lib/postPublishing.js,
+webapp/src/components/LoopPlayer.jsx (new),
+webapp/src/components/ClipCard.jsx, webapp/src/pages/ClipPage.jsx,
+webapp/src/styles/globals.css,
+supabase/migrations/20261004000300_tweet_loop_media.sql, this changelog.
+
+- TweetClipper now probes for video/GIF on open and auto-records a silent
+  loop of at most 5 seconds, with progress, cancel, preview, and Retake.
+- Capture keeps source resolution (1280px cap only) at 5 Mbps so text in
+  the video stays readable; protected players fall back to a fetched file
+  rebuilt as a same-origin blob video. Pure-photo posts keep the old
+  screenshot flow, and a screenshot-instead toggle covers mixed posts.
+- DB (applied): clips gains media_url, media_kind (loop), media_w,
+  media_h, media_duration_ms, poster_url; create_extension_post stores them
+  (social-only, duration capped at 6s); clips_with_scores exposes them.
+- Feed renders loops full-width above the quote via LoopPlayer (muted
+  ambient autoplay, pauses offscreen, poster + tap-to-play for
+  reduced-motion); detail page plays the loop large. See tweet stays.
+- Local commit only - NOT pushed.

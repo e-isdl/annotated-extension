@@ -6,6 +6,7 @@ import Avatar from '../components/Avatar';
 import CommunityAvatar from '../components/CommunityAvatar';
 import YouTubeClipPlayer from '../components/YouTubeClipPlayer';
 import ClipPlayer from '../components/ClipPlayer';
+import LoopPlayer from '../components/LoopPlayer';
 import AudioPlayer from '../components/AudioPlayer';
 import FileClaimButton from '../components/FileClaimButton';
 import ReportButton from '../components/ReportButton';
@@ -367,6 +368,11 @@ export default function ClipPage() {
         {clip.video_url && !stillUploading && !videoFailed && !showEmbed && (
           <div className="source-media">
             <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} />
+          </div>
+        )}
+        {clip.media_kind === 'loop' && clip.media_url && (
+          <div className="source-media">
+            <LoopPlayer src={clip.media_url} poster={clip.poster_url || clip.thumbnail} label="Recorded loop, silent" />
           </div>
         )}
         {(!clip.video_url || videoFailed || showEmbed) && !stillUploading && clip.source_type === 'youtube' && (
