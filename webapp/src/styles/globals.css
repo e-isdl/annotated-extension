@@ -548,17 +548,20 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 /* Clip-scoped YouTube player: the embed plus a bar that only knows the clip.
    Track, readout and seeks live in [start_sec, end_sec]; absolute video time
    never appears. */
-.ytclip { width: 100%; min-width: 0; }
-.ytclip-frame { position: relative; aspect-ratio: 16 / 9; background: var(--bg); border-radius: 12px; overflow: hidden; }
+.ytclip { width: 100%; min-width: 0; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+.ytclip-frame { position: relative; aspect-ratio: 16 / 9; background: var(--bg); border-radius: 12px; overflow: hidden; outline: none; cursor: pointer; }
 .ytclip-host { position: absolute; inset: 0; }
-.ytclip-host iframe { width: 100%; height: 100%; border: 0; }
+.ytclip-host iframe { width: 100%; height: 100%; border: 0; pointer-events: none; }
 .ytclip-fallback { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.ytclip-shield { position: absolute; inset: 0; cursor: pointer; }
+.ytclip-cover { position: absolute; inset: 0; z-index: 1; transition: opacity 120ms ease; }
+.ytclip-cover.is-hidden { opacity: 0; pointer-events: none; }
+.ytclip-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ytclip-cover-play { position: absolute; inset: 0; margin: auto; width: 64px; height: 64px; border-radius: 50%; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; color: #fff; }
 .ytclip-close { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 0 2px; }
 .ytclip-bar { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 2px 0; }
 .ytclip-play { width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border-soft); background: var(--surface-2); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .ytclip-play:hover { border-color: var(--accent); color: var(--accent-text); }
-.ytclip-track { flex: 1; min-width: 0; height: 24px; background: transparent; cursor: pointer; -webkit-appearance: none; appearance: none; --p: 0%; }
+.ytclip-track { flex: 1; min-width: 0; height: 24px; background: transparent; cursor: pointer; touch-action: none; -webkit-appearance: none; appearance: none; --p: 0%; }
 .ytclip-track::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: linear-gradient(to right, var(--accent) 0 var(--p), var(--surface-3) var(--p) 100%); }
 .ytclip-track::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; margin-top: -4.5px; border: none; border-radius: 50%; background: var(--accent); opacity: 0; transition: opacity 0.15s ease; }
 .ytclip-track:hover::-webkit-slider-thumb, .ytclip-track:active::-webkit-slider-thumb, .ytclip-track:focus-visible::-webkit-slider-thumb { opacity: 1; }
@@ -567,6 +570,18 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .ytclip-track::-moz-range-thumb { width: 12px; height: 12px; border: none; border-radius: 50%; background: var(--accent); opacity: 0; }
 .ytclip-track:hover::-moz-range-thumb, .ytclip-track:active::-moz-range-thumb, .ytclip-track:focus-visible::-moz-range-thumb { opacity: 1; }
 .ytclip-time { color: var(--text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+
+/* Audio commentary player (moved out of the component so no per-card <style>
+   tag can leak CSS text into native drag previews). */
+.ap-btn { transition: transform .12s ease, filter .12s ease; }
+.ap-btn:hover { filter: brightness(1.12); }
+.ap-btn:active { transform: scale(.94); }
+.ap-btn:focus-visible, .ap-wave:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.ap-wave span { transition: background-color .12s ease; }
+.ap-wave:hover span { filter: brightness(1.15); }
+@media (prefers-reduced-motion: reduce) {
+  .ap-btn, .ap-wave span { transition: none; }
+}
 
 
 /* Empty comment states sit centered with breathing room. */

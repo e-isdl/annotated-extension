@@ -46,15 +46,6 @@ async function realPeaks(src: string, n: number): Promise<number[]> {
 }
 
 
-const CSS = `
-.ap-btn{transition:transform .12s ease,filter .12s ease}
-.ap-btn:hover{filter:brightness(1.12)}
-.ap-btn:active{transform:scale(.94)}
-.ap-btn:focus-visible,.ap-wave:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
-.ap-wave span{transition:background-color .12s ease}
-.ap-wave:hover span{filter:brightness(1.15)}
-@media (prefers-reduced-motion:reduce){.ap-btn,.ap-wave span{transition:none}}
-`;
 
 
 /**
@@ -143,7 +134,6 @@ export function AudioPlayer({ src, compact = false }: { src: string; compact?: b
         padding: compact ? "8px 16px 8px 8px" : "10px 18px 10px 10px",
       }}
     >
-      <style>{CSS}</style>
       <audio
         ref={audio}
         src={src}

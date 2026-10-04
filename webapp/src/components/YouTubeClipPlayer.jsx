@@ -56,8 +56,11 @@ function formatClipTime(s) {
 
 // A YouTube embed locked to one clip. The track, readout and seeks only ever
 // know about [startSec, endSec]: clip time, never absolute video time.
-// Self-hosted recordings keep their own player; this one is embeds only.
-export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay = false, onClose }) {
+// The iframe itself is never touchable: pointer events are off, it is out of
+// the tab order, and a cover hides every pixel of YouTube chrome until the
+// player reports PLAYING. Self-hosted recordings keep their own player.
+export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay = false, onClose, posterSrc }) {
+  const frameRef = useRef(null);
   const hostRef = useRef(null);
   const playerRef = useRef(null);
   const boundsRef = useRef({ start: 0, end: 0 });
@@ -68,6 +71,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const [playing, setPlaying] = useState(false);
   const [pos, setPos] = useState(0);
   const [apiFailed, setApiFailed] = useState(false);
+  const [posterFailed, setPosterFailed] = useState(false);
 
   const start = Math.max(0, Number(startSec) || 0);
   const rawEnd = Number(endSec) || 0;
@@ -75,6 +79,10 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const clipLen = Math.max(0, end - start);
   const rangeMax = Math.max(0.1, clipLen);
   boundsRef.current = { start, end };
+
+  useEffect(() => {
+    setPosterFailed(false);
+  }, [videoId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,6 +125,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
           onReady: (event) => {
             if (cancelled) return;
             try { event.target.getIframe().title = 'Source video'; } catch {}
+            try { event.target.getIframe().setAttribute('tabindex', '-1'); } catch {}
             try { event.target.unMute(); event.target.setVolume(100); } catch {}
             if (autoplay) {
               claimPlayback(stop);
@@ -160,6 +169,14 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
     };
   }, [videoId, startSec, endSec, autoplay]);
 
+  const refocus = () => {
+    try {
+      const active = document.activeElement;
+      if (active && active !== frameRef.current && hostRef.current?.contains(active)) active.blur();
+    } catch {}
+    try { frameRef.current?.focus({ preventScroll: true }); } catch {}
+  };
+
   const play = () => {
     const p = playerRef.current;
     if (!p?.playVideo) return;
@@ -171,7 +188,6 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
       try { p.seekTo(bs, true); } catch {}
       setPos(0);
     }
-    setPlaying(true);
     try { p.playVideo(); } catch {}
   };
 
@@ -183,6 +199,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const toggle = () => {
     if (playing) pause();
     else play();
+    refocus();
   };
 
   const seekToClipPos = (v) => {
@@ -194,23 +211,40 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
 
   const shownPos = Math.min(pos, rangeMax);
   const fillPct = rangeMax > 0 ? (shownPos / rangeMax) * 100 : 0;
+  const poster = posterSrc
+    || (posterFailed
+      ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+      : `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`);
 
   return (
-    <div className="ytclip">
-      <div className="ytclip-frame">
+    <div className="ytclip" onDragStart={(e) => e.preventDefault()}>
+      <div
+        ref={frameRef}
+        className="ytclip-frame"
+        tabIndex={-1}
+        onClick={toggle}
+      >
         {apiFailed ? (
           <iframe
             src={youtubeEmbedUrl(videoId, { startSec: start, endSec: end, autoplay })}
             className="ytclip-fallback"
+            tabIndex="-1"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             title="Source video"
           />
         ) : (
-          <>
-            <div ref={hostRef} className="ytclip-host" />
-            <div className="ytclip-shield" onClick={toggle} aria-hidden="true" />
-          </>
+          <div ref={hostRef} className="ytclip-host" />
+        )}
+        {!apiFailed && (
+          <div className={`ytclip-cover${playing ? ' is-hidden' : ''}`} aria-hidden={playing ? 'true' : 'false'}>
+            <img src={poster} alt="" draggable={false} onError={() => setPosterFailed(true)} />
+            <span className="ytclip-cover-play" aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5v14l11-7z" fill="currentColor" />
+              </svg>
+            </span>
+          </div>
         )}
         {onClose && !apiFailed && (
           <button
@@ -248,10 +282,17 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
             max={rangeMax}
             step={0.1}
             value={shownPos}
+            draggable={false}
             onChange={(e) => seekToClipPos(e.target.value)}
-            onPointerDown={() => { draggingRef.current = true; }}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              draggingRef.current = true;
+              try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+            }}
             onPointerUp={() => { draggingRef.current = false; }}
             onPointerCancel={() => { draggingRef.current = false; }}
+            onLostPointerCapture={() => { draggingRef.current = false; }}
             style={{ '--p': `${fillPct}%` }}
             aria-label="Seek within clip"
             aria-valuetext={`${formatClipTime(shownPos)} of ${formatClipTime(rangeMax)}`}

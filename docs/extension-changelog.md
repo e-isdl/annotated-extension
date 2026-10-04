@@ -1256,3 +1256,26 @@ old embed on the demo page untouched.
 - Styling: theme vars only, red fill and thumb, 24px touch target, tabular
   time, hover/drag thumb reveal, mobile-safe flex.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## YouTube iframe lockdown, cover screen, ghost-drag kill
+
+Files touched: webapp/src/components/YouTubeClipPlayer.jsx,
+webapp/src/components/ClipCard.jsx, webapp/src/pages/ClipPage.jsx,
+webapp/src/components/AudioPlayer.tsx, webapp/src/styles/globals.css,
+this changelog. Self-hosted player and demo embed untouched.
+
+- The iframe is now untouchable: pointer-events none, out of the tab order,
+  click handling on the frame wrapper. YouTube hover chrome (title, share,
+  More videos) can never render or intercept.
+- Cover screen over the iframe in every non-playing, non-buffering state:
+  post thumbnail else maxres with hq fallback, big round play button, 120ms
+  fade. Pause shows it synchronously so no YouTube overlay flashes. Cover
+  hides only on PLAYING; play state never set optimistically.
+- Ghost drag: found the per-card <style> tag in AudioPlayer leaking CSS text
+  into native drag previews. Its rules moved to the global stylesheet.
+  Player root kills dragstart, range is non-draggable with pointer capture,
+  touch-action none and lostpointercapture handling, card link marked
+  non-draggable, focus fenced to the wrapper with iframe blur backup.
+- Feed passes its thumbnail as the poster; detail passes its thumbnail.
+- Local commit only - NOT pushed. Webapp NOT deployed.

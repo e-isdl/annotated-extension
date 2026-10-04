@@ -139,7 +139,7 @@ export default function ClipCard({ clip }) {
         <span className={`badge badge-${clip.source_type}`}><SourceIcon type={clip.source_type} />{sourceLabel}</span>
       </div>
 
-      <Link to={href} className="block no-underline group">
+      <Link to={href} className="block no-underline group" draggable={false}>
         {commentary && (
           <>
             <h2 ref={commentaryRef} className={`post-annotation-preview${commentaryExpanded ? '' : ' post-annotation-preview-clamped'}`}>{commentary}</h2>
@@ -166,7 +166,7 @@ export default function ClipCard({ clip }) {
             {playableRecording ? (
               <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} />
             ) : (
-              <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay onClose={() => setPlaying(false)} />
+              <YouTubeClipPlayer videoId={clip.youtube_id} startSec={clip.start_sec} endSec={clip.end_sec} autoplay onClose={() => setPlaying(false)} posterSrc={sourceImage} />
             )}
           </div>
         </div>
