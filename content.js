@@ -733,7 +733,17 @@ if (!window.__annotatedContentLoaded) {
     selectionTimer = setTimeout(updateSelectionHighlight, 200);
   });
 
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  void 0;
+}
+
+// The message handler registers on every injection (old one removed first)
+// so a re-injected script always answers with fresh handlers. DOM listeners
+// above stay load-once guarded.
+{
+  if (window.__annotatedMessageHandler) {
+    try { chrome.runtime.onMessage.removeListener(window.__annotatedMessageHandler); } catch (e) {}
+  }
+  window.__annotatedMessageHandler = (message, sender, sendResponse) => {
     if (message.type === 'GET_PAGE_INFO') {
       sendResponse(detectPageInfo());
       return true;
@@ -919,8 +929,12 @@ if (!window.__annotatedContentLoaded) {
       sendResponse({ ok: true });
       return true;
     }
-  });
+  };
+  chrome.runtime.onMessage.addListener(window.__annotatedMessageHandler);
+}
 
+if (!window.__annotatedDomReady) {
+  window.__annotatedDomReady = true;
   const pushPageInfo = () => {
     chrome.runtime.sendMessage({ type: 'PAGE_INFO', data: detectPageInfo() }).catch(() => {});
   };

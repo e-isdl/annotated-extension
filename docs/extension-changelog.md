@@ -1736,3 +1736,14 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
   stage died with the raw error, so the next failure pinpoints the cause
   instead of a bare Working stall.
 - Local commit only - NOT pushed.
+---
+
+## Re-injected tab script actually answers now
+
+Files touched: content.js, this changelog.
+
+- Root cause of No-reply: a re-injected script hit the load-once guard,
+  so the fresh probe handler never registered. The message handler now
+  registers on every injection (previous one removed first) while DOM
+  listeners stay load-once guarded behind a second flag.
+- Local commit only - NOT pushed.
