@@ -175,14 +175,30 @@ export default function ClipCreator({ pageInfo, session }) {
     setStep('annotate');
   };
 
+  const applyPendingResume = (pending) => {
+    if (pending.toClip) {
+      setCurrentDraftId(pending.draftId);
+      draftSessionSet(pending.draftId);
+      setResumeRange(pending.range);
+      setPassageFallback(false);
+      setClipData(pending.clipPayload);
+      setCurrentTranscript(null);
+      if (pending.communityId) setCommunityId(pending.communityId);
+      setStep('clip');
+      return;
+    }
+    enterAnnotate(pending);
+    restoreArticleHighlight(pending.passage);
+  };
+
   useEffect(() => {
     const pending = pendingResumeRef.current;
     if (pending && pageInfo && pageInfo.url === pending.sourceUrl) {
       pendingResumeRef.current = null;
-      enterAnnotate(pending);
-      restoreArticleHighlight(pending.passage);
+      applyPendingResume(pending);
       return;
     }
+    pendingResumeRef.current = null;
     setStep('clip');
     setClipData(null);
     setPublishedClip(null);
@@ -259,34 +275,20 @@ export default function ClipCreator({ pageInfo, session }) {
         annotationType: p.kind || 'Reaction',
         audioUrl: p.audioUrl || null,
       },
+      toClip: sourceType === 'youtube' && p.mode === 'record',
+      range: p.startSec != null && p.endSec != null ? { start_sec: p.startSec, end_sec: p.endSec } : null,
     };
-    if (sourceType === 'youtube' && p.mode === 'record') {
-      setCurrentDraftId(draft.id);
-      draftSessionSet(draft.id);
-      setResumeRange(
-        p.startSec != null && p.endSec != null ? { start_sec: p.startSec, end_sec: p.endSec } : null,
-      );
-      setPassageFallback(false);
-      setClipData(clipPayload);
-      setCurrentTranscript(null);
-      if (draft.community_id) setCommunityId(draft.community_id);
-      setStep('clip');
-      return;
-    }
-    if (sourceType === 'article') {
-      try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id && tab.url !== draft.source_url) {
-          pendingResumeRef.current = pending;
-          await chrome.tabs.update(tab.id, { url: draft.source_url });
-          return;
-        }
-      } catch {
-        // fall through to in-place resume
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id && tab.url !== draft.source_url) {
+        pendingResumeRef.current = pending;
+        await chrome.tabs.update(tab.id, { url: draft.source_url });
+        return;
       }
+    } catch {
+      // fall through to in-place resume
     }
-    enterAnnotate(pending);
-    if (sourceType === 'article') restoreArticleHighlight(pending.passage);
+    applyPendingResume(pending);
   };
 
   const deleteDraftConfirmed = async (id) => {

@@ -1474,3 +1474,19 @@ webapp/src/components/YouTubeClipPlayer.jsx, this changelog.
   player or the clipper shell. Declarations reordered so state always comes
   first. Pattern-swept both codebases, no other instances.
 - Local commit only - NOT pushed. Webapp NOT deployed.
+---
+
+## Drafts go manual and resume through the tab
+
+Files touched: src/components/AnnotationForm.jsx,
+src/components/ClipCreator.jsx, this changelog.
+
+- Autosave deleted. Draft rows are created or updated only on an explicit
+  Save draft click, and Draft saved confirms only that click. Save draft and
+  View drafts are the only draft actions on the annotate screen.
+- Continue on any draft now opens its source URL in the active tab (unless
+  already there) and resumes on arrival: record-mode drafts land on the clip
+  screen with the saved range, everything else lands on the annotate form
+  with saved fields, articles re-highlight with the form fallback. Stale
+  pending resumes are dropped instead of hijacking later navigation.
+- Local commit only - NOT pushed.

@@ -133,7 +133,6 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
   const [draftStatus, setDraftStatus] = useState('');
   const draftIdRef = useRef(draftId || null);
   draftIdRef.current = draftId || draftIdRef.current;
-  const saveTimer = useRef(null);
 
   const hasDraftContent = Boolean(
     text.trim() || audioUrl
@@ -174,23 +173,6 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
     }
     return id;
   };
-
-  useEffect(() => {
-    if (!canAutosave || !hasDraftContent) return undefined;
-    setDraftStatus('Saving…');
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
-      try {
-        await persistDraft();
-        setDraftStatus('Draft saved');
-      } catch {
-        setDraftStatus('');
-      }
-    }, 800);
-    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [text, annotationType, audioUrl, communityId, clipData, canAutosave]);
-
-  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
 
   const saveDraftNow = async () => {
     if (!canAutosave) return;
