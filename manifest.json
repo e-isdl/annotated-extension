@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Annotated",
-  "version": "2.3.9",
+  "version": "2.3.10",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7WsJ9fD0bQe9B4sCmWydDPpaOSI2myrKyhHVklUXEy+FGtU5PvQGe6LSOyhG6RMYZOS+Cd6SDZjP6/AAl2DV33Mk0nUA/dZYSXaD7WrAXCY5NbiitPdMCoAlQ9IEe0ynlXHqU1xfoFAnRtBO9VCvpkiM2msA4pFV9LUSOK3+jpxDt7dLK6YS2W+Dy2rVv/7q2sxpNIT/lx5dRD2SO4K/EAGlxK06hSiSNW2UoQKMBQa04wyEPVI26ovHCU2Kpp8Lz+bfIOg5k6n1Ew0Qou9d5fbL07IRHUiALTktuyQyVBqqo1SCVovBzi7GG6mqtmz2Cfn5VOSRM2FztVN73+hvjwIDAQAB",
   "description": "Clip and annotate any content from the web.",
   "permissions": [
