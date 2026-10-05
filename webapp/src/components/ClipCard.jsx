@@ -150,6 +150,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
     if (canExpand) setMediaExpanded((open) => !open);
   };
   const hideQuote = hideTranscript && (clip.source_type === 'youtube' || clip.source_type === 'social') && Boolean(sourceImage) && !imageFailed;
+  const showQuote = !hideQuote && !hasMedia;
   const tweetExpanded = !hasMedia && (mediaExpanded || (hideTranscript && isXPost));
 
   useEffect(() => {
@@ -279,14 +280,14 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
           <div className="source-preview-copy">
             {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
             {posterHandle && <p className="source-quote-poster">@{posterHandle}</p>}
-            {!hideQuote && clip.source_preview_text ? (
+            {showQuote && clip.source_preview_text ? (
               <p ref={quoteRef} className={quoteClassName}>{clip.source_preview_text}</p>
-            ) : !hideQuote && (clip.article_text || clip.source_excerpt || clip.transcript) ? (
+            ) : showQuote && (clip.article_text || clip.source_excerpt || clip.transcript) ? (
               <p ref={quoteRef} className={quoteClassName}>“{stripWrappingQuotes(clip.source_type === 'youtube' ? cleanTranscript(clip.article_text || clip.source_excerpt || clip.transcript) : (clip.article_text || clip.source_excerpt || clip.transcript))}”</p>
-            ) : !hideQuote && (
+            ) : showQuote && (
               <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
             )}
-            {!hideQuote && !quoteExpanded && quoteOverflowing && (
+            {showQuote && !quoteExpanded && quoteOverflowing && (
               <div className="read-more-wrap">
                 <button type="button" className="read-more-toggle" aria-expanded="false" onClick={expandQuote}>Show more</button>
               </div>
