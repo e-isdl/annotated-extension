@@ -132,6 +132,13 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
     return () => observer.disconnect();
   }, []);
   const cardAriaLabel = `Open post: ${String(commentary || clip.title || 'post').slice(0, 140)}`;
+  const onCardClick = (event) => {
+    const target = event.target;
+    if (target && target.closest && target.closest('.post-card-link, [data-no-nav], button, a, input, img, video, audio, [role="button"]')) return;
+    if (typeof window !== 'undefined' && window.getSelection && window.getSelection().toString()) return;
+    if (isCardNavSuppressed()) return;
+    navigate(href);
+  };
   const onCardLinkClick = (event) => {
     const target = event.target;
     if (target && target.closest && target.closest('[data-no-nav]')) {
@@ -212,7 +219,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   };
 
   return (
-    <article ref={cardRef} className="post-card post-card-linked">
+    <article ref={cardRef} className="post-card post-card-linked" onClick={onCardClick}>
       <div className="post-meta">
         {clip.community_slug && clip.community_name ? (
           <>
