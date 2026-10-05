@@ -151,7 +151,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
     event.stopPropagation();
     if (canExpand) setMediaExpanded((open) => !open);
   };
-  const hideQuote = hideTranscript && clip.source_type === 'youtube' && Boolean(sourceImage) && !imageFailed;
+  const hideQuote = hideTranscript && clip.source_type === 'youtube' && !playableRecording && Boolean(sourceImage) && !imageFailed;
   const socialVisual = clip.source_type === 'social' && (hasMedia || (sourceImage && !imageFailed));
   const showQuote = !hideQuote && !socialVisual;
   const tweetExpanded = mediaExpanded;
