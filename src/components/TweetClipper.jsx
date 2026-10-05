@@ -28,6 +28,11 @@ function withTimeout(promise, ms) {
 // it; the card around it gives the recording bounds.
 async function tweetPrepFunc() {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  try {
+    const hint = document.querySelector('article[data-testid="tweet"]');
+    if (hint) hint.scrollIntoView({ block: 'center', behavior: 'instant' });
+  } catch (e) {}
+  await sleep(400);
   const visibleVideos = () => Array.from(document.querySelectorAll('video')).filter((v) => {
     try {
       const r = v.getBoundingClientRect();
@@ -67,13 +72,18 @@ async function tweetPrepFunc() {
       if (pr && pr.catch) pr.catch(() => {});
     }
   } catch (e) {}
+  let box = null;
   if (card) {
-    try { card.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
+    try {
+      const top = card.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: Math.max(0, top - 64), behavior: 'instant' });
+    } catch (e) {}
+    await sleep(400);
+    box = tweetCardBounds(card);
   } else {
     try { video.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
+    await sleep(400);
   }
-  await sleep(400);
-  const box = card ? tweetCardBounds(card) : null;
   const vr = video.getBoundingClientRect();
   const bounds = box || { x: vr.left, y: vr.top, w: vr.width, h: vr.height };
   let durationMs = 0;
@@ -263,7 +273,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
       }
       const ZOOM_STEPS = [1.0, 0.9, 0.8, 0.75, 0.67];
       let zi = 0;
-      while (prep.bounds.h > prep.vh - 8 && zi < ZOOM_STEPS.length) {
+      while (prep.bounds.y + prep.bounds.h > prep.vh - 8 && zi < ZOOM_STEPS.length) {
         try { await chrome.tabs.setZoom(tab.id, ZOOM_STEPS[zi]); } catch {}
         zi += 1;
         await new Promise((resolve) => setTimeout(resolve, 350));

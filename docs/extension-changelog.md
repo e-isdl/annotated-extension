@@ -1839,3 +1839,15 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
   screenshot screens instead of being overwritten, so a failed
   recording reports exactly where it died.
 - Local commit only - NOT pushed.
+---
+
+## Fit check scrolls card top into view, lazy players woken first
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- The fit check now scrolls the card top under the X header and looks
+  for the likes row at the bottom instead of center-scrolling and
+  comparing heights, matching the record framing exactly.
+- The prep nudges the first tweet into view before hunting the video so
+  lazy-mounted players exist to be found.
+- Local commit only - release follows.
