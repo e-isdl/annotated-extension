@@ -72,6 +72,8 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
     event.preventDefault();
     event.stopPropagation();
     if (!isVideoPost) return;
+    evictedRef.current = false;
+    dismissedRef.current = false;
     setPlaying(true);
   };
 
