@@ -206,6 +206,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const stageRef = useRef('');
   const [fitting, setFitting] = useState(false);
   const [shotFallback, setShotFallback] = useState(false);
+  const [probeInfo, setProbeInfo] = useState(null);
 
   const restoreVideo = async (tabId) => {
     const id = tabId || tabIdRef.current;
@@ -246,6 +247,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
     setRecError(null);
     recordErrRef.current = null;
     stageRef.current = '';
+    setProbeInfo(null);
     setFitting(false);
     setShotFallback(false);
     setClip(null);
@@ -589,6 +591,9 @@ export default function TweetClipper({ pageInfo, onReady }) {
       {statusText && (
         <div className="annotation-mark bg-bg-surface rounded-r-lg p-3">
           <p className="text-xs text-text-muted">{statusText}</p>
+          {probeInfo && phase !== 'preview' && (
+            <p className="text-xs text-text-muted mt-1">probe: {probeInfo}</p>
+          )}
           {phase === 'recording' && (
             <button
               type="button"
