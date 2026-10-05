@@ -177,6 +177,9 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .xmedia-clipped { max-height: 560px; }
 .xmedia-toggle { cursor: pointer; }
 .xmedia-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; background: linear-gradient(to bottom, transparent, #000); }
+.xmedia-source { position: absolute; top: 10px; left: 10px; z-index: 3; display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 999px; background: rgba(0,0,0,0.6); color: #fff; font-size: 11px; font-weight: 600; text-decoration: none; }
+.xmedia-source:hover { background: rgba(0,0,0,0.8); color: #fff; }
+.source-preview-expanded { position: relative; }
 .source-preview-thumbbtn, .source-preview-thumbwrap { position: relative; display: block; width: 190px; height: 142px; flex: 0 0 190px; align-self: center; margin: 7px; border-radius: 9px; overflow: hidden; background: var(--card); }
 .source-preview-thumbbtn { border: none; padding: 0; cursor: pointer; }
 .source-preview-thumbimg { display: block; width: 100%; height: 100%; object-fit: cover; }

@@ -160,6 +160,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   const socialVisual = clip.source_type === 'social' && (hasMedia || (sourceImage && !imageFailed));
   const showQuote = !hideQuote && !socialVisual;
   const xShotFull = isXPost && !hasMedia && canExpand && !isVideoPost;
+  const xOverlay = isXPost && (hasMedia || xShotFull);
   const tweetExpanded = mediaExpanded;
 
   useEffect(() => {
@@ -271,11 +272,18 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
         </div>
         ) : (tweetExpanded || xShotFull) && canExpand && !isVideoPost ? (
         <div className="source-preview source-preview-expanded">
-          {isXPost && (
-            <div className="source-preview-copy">
-              <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>
-              {posterHandle && <p className="source-quote-poster">@{posterHandle}</p>}
-            </div>
+          {xOverlay && (
+            <a
+              href={clip.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-no-nav
+              onClick={(event) => event.stopPropagation()}
+              className="xmedia-source"
+              aria-label="Open source post on X"
+            >
+              <span aria-hidden="true">↗</span> X post
+            </a>
           )}
           <div className="source-preview-media" role="button" tabIndex={0} aria-label="Collapse preview" onClick={toggleMedia} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleMedia(event); }}>
             <img src={sourceImage} alt={clip.title || 'Source preview'} className={`source-preview-image-expanded${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />
@@ -295,6 +303,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
         </button>
         ) : (
         <div className={`source-preview${hasMedia ? ' source-preview-loop' : ''}`}>
+          {!xOverlay && (
           <div className="source-preview-copy">
             {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
             {posterHandle && <p className="source-quote-poster">@{posterHandle}</p>}
@@ -312,6 +321,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
             )}
             {sourceTitle && sourceTitle !== commentary && <p className="source-title">{sourceTitle}</p>}
           </div>
+          )}
           {(hasMedia || (sourceImage && !imageFailed)) && (
             hasMedia ? (
               <div
@@ -331,6 +341,19 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
                   },
                 } : {})}
               >
+                {xOverlay && (
+                  <a
+                    href={clip.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-no-nav
+                    onClick={(event) => event.stopPropagation()}
+                    className="xmedia-source"
+                    aria-label="Open source post on X"
+                  >
+                    <span aria-hidden="true">↗</span> X post
+                  </a>
+                )}
                 <LoopPlayer
                   src={clip.media_url}
                   poster={clip.poster_url || sourceImage}
