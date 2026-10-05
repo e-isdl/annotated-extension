@@ -23,32 +23,55 @@ function withTimeout(promise, ms) {
 }
 
 // Self-contained page functions: they run via chrome.scripting and depend on
-// nothing in the tab (no content script needed at all).
-async function tweetPrepFunc(args) {
-  const statusId = args?.statusId || null;
+// nothing in the tab (no content script needed at all). The video is found
+// page-wide (largest visible player) so a wrong article guess can never hide
+// it; the card around it gives the recording bounds.
+async function tweetPrepFunc() {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const articles = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
-  let article = articles[0] || null;
-  if (statusId) {
-    const exact = articles.find((a) => a.querySelector(`a[href*="/status/${statusId}"]`));
-    if (exact) article = exact;
-  }
-  if (!article) return { ok: false, code: 'no-article' };
-  try { article.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
-  await sleep(500);
+  const visibleVideos = () => Array.from(document.querySelectorAll('video')).filter((v) => {
+    try {
+      const r = v.getBoundingClientRect();
+      return r.width > 120 && r.height > 120 && r.bottom > 0 && r.top < window.innerHeight;
+    } catch (e) { return false; }
+  });
+  const largest = (list) => {
+    const sorted = list.slice().sort((a, b) => {
+      const ra = a.getBoundingClientRect();
+      const rb = b.getBoundingClientRect();
+      return (rb.width * rb.height) - (ra.width * ra.height);
+    });
+    return sorted[0] || null;
+  };
   let video = null;
-  for (let i = 0; i < 20; i += 1) {
-    video = article.querySelector('video');
-    if (video && video.readyState >= 2) break;
+  for (let i = 0; i < 25; i += 1) {
+    const cands = visibleVideos();
+    if (cands.length) {
+      const best = largest(cands);
+      video = best;
+      try {
+        if (best.readyState >= 2 || best.currentTime > 0 || !best.paused) break;
+      } catch (e) { break; }
+    }
     await sleep(200);
   }
-  if (!video) return { ok: false, code: 'no-media' };
-  const box = tweetCardBounds(article);
-  if (!box) return { ok: false, code: 'no-media' };
+  if (!video) {
+    const articles = document.querySelectorAll('article[data-testid="tweet"]').length;
+    return { ok: false, code: 'no-media', articles, videos: 0 };
+  }
+  const card = video.closest('article[data-testid="tweet"]') || document.querySelector('article[data-testid="tweet"]');
+  if (card) {
+    try { card.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
+  } else {
+    try { video.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
+  }
+  await sleep(400);
+  const box = card ? tweetCardBounds(card) : null;
+  const vr = video.getBoundingClientRect();
+  const bounds = box || { x: vr.left, y: vr.top, w: vr.width, h: vr.height };
   let durationMs = 0;
   const d = Number(video.duration);
   if (Number.isFinite(d) && d > 0) durationMs = Math.floor(d * 1000);
-  return { ok: true, durationMs, bounds: box, vw: window.innerWidth, vh: window.innerHeight };
+  return { ok: true, durationMs, bounds, vw: window.innerWidth, vh: window.innerHeight };
 
   function tweetCardBounds(root) {
     const parts = [
@@ -82,15 +105,25 @@ async function tweetPrepFunc(args) {
   }
 }
 
-function tweetBoundsFunc(args) {
-  const statusId = args?.statusId || null;
-  const articles = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
-  let article = articles[0] || null;
-  if (statusId) {
-    const exact = articles.find((a) => a.querySelector(`a[href*="/status/${statusId}"]`));
-    if (exact) article = exact;
+function tweetBoundsFunc() {
+  const cands = Array.from(document.querySelectorAll('video')).filter((v) => {
+    try {
+      const r = v.getBoundingClientRect();
+      return r.width > 120 && r.height > 120 && r.bottom > 0 && r.top < window.innerHeight;
+    } catch (e) { return false; }
+  });
+  if (!cands.length) return { ok: false };
+  cands.sort((a, b) => {
+    const ra = a.getBoundingClientRect();
+    const rb = b.getBoundingClientRect();
+    return (rb.width * rb.height) - (ra.width * ra.height);
+  });
+  const video = cands[0];
+  const card = video.closest('article[data-testid="tweet"]');
+  if (!card) {
+    const vr = video.getBoundingClientRect();
+    return { ok: true, bounds: { x: vr.left, y: vr.top, w: vr.width, h: vr.height }, vw: window.innerWidth, vh: window.innerHeight };
   }
-  if (!article) return { ok: false };
   const parts = [
     '[data-testid="User-Name"]',
     '[data-testid="tweetText"]',
@@ -105,7 +138,7 @@ function tweetBoundsFunc(args) {
   let maxY = -Infinity;
   let found = false;
   parts.forEach((selector) => {
-    article.querySelectorAll(selector).forEach((el) => {
+    card.querySelectorAll(selector).forEach((el) => {
       const r = el.getBoundingClientRect();
       if (r.width < 2 || r.height < 2) return;
       found = true;
@@ -127,7 +160,6 @@ function tweetBoundsFunc(args) {
 export default function TweetClipper({ pageInfo, onReady }) {
   const { data, url } = pageInfo;
   const title = String(data.title || '').trim();
-  const statusId = data.statusId || null;
   const [phase, setPhase] = useState('probing'); // probing | recording | preview | shot-working | none | failed
   const [recT, setRecT] = useState(0);
   const [clip, setClip] = useState(null); // { blob, mime, url, w, h, durationMs, poster }
@@ -168,13 +200,12 @@ export default function TweetClipper({ pageInfo, onReady }) {
         chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: tweetPrepFunc,
-          args: [{ statusId }],
         }).catch(() => null),
         CAPTURE_TIMEOUT_MS,
       );
       const prep = prepRes?.[0]?.result;
       if (!prep?.ok) {
-        if (prep?.code === 'no-media' || prep?.code === 'no-article') { runScreenshotFlow(); return; }
+        if (prep?.code === 'no-media') { runScreenshotFlow(); return; }
         throw new Error('Could not read this post.');
       }
       const targetMs = Math.max(2000, Math.min(prep.durationMs || 15000, MAX_RECORD_MS));
@@ -266,7 +297,6 @@ export default function TweetClipper({ pageInfo, onReady }) {
             const bRes = await chrome.scripting.executeScript({
               target: { tabId: tab.id },
               func: tweetBoundsFunc,
-              args: [{ statusId }],
             }).catch(() => null);
             const b = bRes?.[0]?.result;
             if (b?.ok) { crop = b.bounds; cropVw = b.vw; }

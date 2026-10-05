@@ -1789,3 +1789,15 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
   no longer reading a stale clip value, and the unread recTarget state
   removed.
 - Local commit only - NOT pushed.
+---
+
+## Tweet video found page-wide, no article guessing
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- A video tweet wrongly fell through to no-video because the prep
+  searched one guessed article. It now takes the largest visible page
+  video and measures its enclosing card, so quote-tweet players and
+  off-guess articles can no longer hide it. Empty pages still report
+  no-media with article and video counts and keep the screenshot path.
+- Local commit only - NOT pushed.
