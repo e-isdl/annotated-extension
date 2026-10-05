@@ -283,7 +283,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
           </div>
           {(hasMedia || (sourceImage && !imageFailed)) && (
             hasMedia ? (
-              <LoopPlayer src={clip.media_url} poster={clip.poster_url || sourceImage} autoPlay loop={hasLoop} />
+              <LoopPlayer src={clip.media_url} poster={clip.poster_url || sourceImage} autoPlay loop={hasLoop} w={clip.media_w} h={clip.media_h} />
             ) : isUploadingVideo ? (
               <span className="source-preview-thumbwrap">
                 <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />

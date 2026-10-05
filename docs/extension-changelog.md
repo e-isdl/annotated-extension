@@ -1875,3 +1875,22 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
 - The take is always a 5 second loop. The duration-based target up to
   60s is gone, replaced by a single RECORD_MS constant.
 - Local commit only - release follows.
+---
+
+## Hybrid tweet takes: crisp card plus full-rate video, honest feed sizing
+
+Files touched: src/components/TweetClipper.jsx,
+webapp/src/components/LoopPlayer.jsx,
+webapp/src/components/ClipCard.jsx, webapp/src/pages/ClipPage.jsx,
+webapp/src/styles/globals.css, this changelog.
+
+- Takes are now hybrid: one crisp card shot as the backdrop with the
+  real video file composited over it at 30fps in the page, so text is
+  sharp and motion is smooth. The shot loop stays as the fallback when
+  the file cannot be fetched, plus the screenshot last resort.
+- The page-video unpause dance is gone: nothing on the page is touched,
+  so there is nothing to restore. Zoom fit and restore stay.
+- Feed and detail size each loop by its own recorded aspect ratio with
+  no height cap and no distortion, so portrait cards render full width
+  instead of a crushed strip.
+- Local commit only - release follows.

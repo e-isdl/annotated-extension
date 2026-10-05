@@ -334,6 +334,8 @@ export default function ClipPage() {
               label={clip.media_kind === 'loop' ? 'Recorded loop, silent' : 'Recorded video, silent'}
               loop={clip.media_kind === 'loop'}
               controls={clip.media_kind === 'clip'}
+              w={clip.media_w}
+              h={clip.media_h}
             />
             <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
               ↗ view original on x

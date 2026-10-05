@@ -64,15 +64,9 @@ async function tweetPrepFunc() {
     return { ok: false, code: 'no-media', articles, videos: 0 };
   }
   const card = video.closest('article[data-testid="tweet"]') || document.querySelector('article[data-testid="tweet"]');
-  try {
-    if (video.paused) {
-      video.dataset.annotatedPrev = 'paused|' + (video.muted ? 'muted' : 'sound');
-      video.muted = true;
-      const pr = video.play();
-      if (pr && pr.catch) pr.catch(() => {});
-    }
-  } catch (e) {}
+  const videoSrc = video.currentSrc || video.src || '';
   let box = null;
+  let vrect = null;
   if (card) {
     try {
       const top = card.getBoundingClientRect().top + window.scrollY;
@@ -85,11 +79,19 @@ async function tweetPrepFunc() {
     await sleep(400);
   }
   const vr = video.getBoundingClientRect();
+  if (box) {
+    vrect = {
+      x: Math.max(0, vr.left - box.x),
+      y: Math.max(0, vr.top - box.y),
+      w: Math.min(box.w, vr.width),
+      h: Math.min(box.h, vr.height),
+    };
+  }
   const bounds = box || { x: vr.left, y: vr.top, w: vr.width, h: vr.height };
   let durationMs = 0;
   const d = Number(video.duration);
   if (Number.isFinite(d) && d > 0) durationMs = Math.floor(d * 1000);
-  return { ok: true, durationMs, bounds, vw: window.innerWidth, vh: window.innerHeight };
+  return { ok: true, durationMs, bounds, vrect, videoSrc, vw: window.innerWidth, vh: window.innerHeight };
 
   function tweetCardBounds(root) {
     const parts = [
@@ -123,16 +125,103 @@ async function tweetPrepFunc() {
   }
 }
 
-function tweetRestoreFunc() {
-  document.querySelectorAll('video[data-annotated-prev]').forEach((v) => {
+async function tweetHybridFunc(a) {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const cleanupOf = (v, url) => {
+    try { v.pause(); } catch (e) {}
+    try { v.removeAttribute('src'); } catch (e) {}
+    try { v.parentNode && v.parentNode.removeChild(v); } catch (e) {}
+    try { url && URL.revokeObjectURL(url); } catch (e) {}
+  };
+  try {
+    if (!a || !a.src || (!/^blob:/.test(a.src) && !/^https?:/.test(a.src))) return { ok: false, reason: 'no-src' };
+    if (/\.m3u8(\?|$)/i.test(a.src)) return { ok: false, reason: 'stream' };
+    let res = null;
     try {
-      const parts = String(v.dataset.annotatedPrev || '').split('|');
-      if (parts[0] === 'paused') v.pause();
-      v.muted = parts[1] === 'muted';
-    } catch (e) {}
-    try { delete v.dataset.annotatedPrev; } catch (e) {}
-  });
-  return { ok: true };
+      const ctl = new AbortController();
+      const to = setTimeout(() => { try { ctl.abort(); } catch (e) {} }, 25000);
+      res = await fetch(a.src, { signal: ctl.signal });
+      clearTimeout(to);
+    } catch (e) { return { ok: false, reason: 'fetch' }; }
+    if (!res || !res.ok) return { ok: false, reason: 'fetch' };
+    const ct = String(res.headers.get('content-type') || '').toLowerCase();
+    if (ct.includes('mpegurl') || ct.includes('m3u8')) return { ok: false, reason: 'stream' };
+    const file = await res.blob().catch(() => null);
+    if (!file || !file.size) return { ok: false, reason: 'fetch' };
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = 'auto';
+    v.style.cssText = 'position:fixed;width:4px;height:4px;opacity:0;pointer-events:none;left:0;top:0;';
+    document.documentElement.appendChild(v);
+    try {
+      v.src = url;
+      await new Promise((resolve, reject) => {
+        const to = setTimeout(() => reject(new Error('timeout')), 10000);
+        v.addEventListener('loadeddata', () => { clearTimeout(to); resolve(); }, { once: true });
+        v.addEventListener('error', () => { clearTimeout(to); reject(new Error('error')); }, { once: true });
+      });
+      try { await v.play(); } catch (e) {}
+      const bg = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('bg'));
+        img.src = a.bg;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = a.cw;
+      canvas.height = a.ch;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { cleanupOf(v, url); return { ok: false, reason: 'canvas' }; }
+      const stream = canvas.captureStream(30);
+      const mimeTypes = ['video/mp4;codecs=avc1.42E01E', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8'];
+      let mimeType = null;
+      for (const t of mimeTypes) {
+        try { if (MediaRecorder.isTypeSupported(t)) { mimeType = t; break; } } catch (e) {}
+      }
+      const rec = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), videoBitsPerSecond: 3000000 });
+      const chunks = [];
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      const stopped = new Promise((resolve) => { rec.onstop = () => resolve(); });
+      try { ctx.drawImage(bg, 0, 0, a.cw, a.ch); ctx.drawImage(v, a.vx, a.vy, a.vw, a.vh); } catch (e) {}
+      rec.start(250);
+      const t0 = Date.now();
+      let poster = null;
+      await new Promise((resolve) => {
+        const frame = () => {
+          try {
+            ctx.drawImage(bg, 0, 0, a.cw, a.ch);
+            ctx.drawImage(v, a.vx, a.vy, a.vw, a.vh);
+          } catch (e) {}
+          if (!poster && Date.now() - t0 > 600) {
+            try { poster = canvas.toDataURL('image/jpeg', 0.85); } catch (e) {}
+          }
+          if (Date.now() - t0 < a.ms) requestAnimationFrame(frame);
+          else resolve();
+        };
+        requestAnimationFrame(frame);
+      });
+      try { if (rec.state !== 'inactive') rec.stop(); } catch (e) {}
+      await stopped;
+      cleanupOf(v, url);
+      try { stream.getTracks().forEach((t) => { try { t.stop(); } catch (e2) {} }); } catch (e) {}
+      const out = new Blob(chunks, { type: rec.mimeType || mimeType || 'video/webm' });
+      if (!out.size) return { ok: false, reason: 'empty' };
+      const buf = await out.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 32768) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768));
+      }
+      return { ok: true, b64: btoa(bin), mime: out.type || 'video/webm', poster, w: a.cw, h: a.ch };
+    } catch (e) {
+      cleanupOf(v, url);
+      return { ok: false, reason: 'record' };
+    }
+  } catch (e) {
+    return { ok: false, reason: 'fatal' };
+  }
 }
 
 function tweetBoundsFunc() {
@@ -208,14 +297,6 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const [shotFallback, setShotFallback] = useState(false);
   const [probeInfo, setProbeInfo] = useState(null);
 
-  const restoreVideo = async (tabId) => {
-    const id = tabId || tabIdRef.current;
-    if (!id) return;
-    try {
-      await chrome.scripting.executeScript({ target: { tabId: id }, func: tweetRestoreFunc });
-    } catch {}
-  };
-
   const restoreZoom = async (tabId) => {
     const z = savedZoomRef.current;
     const id = tabId || tabIdRef.current;
@@ -237,7 +318,6 @@ export default function TweetClipper({ pageInfo, onReady }) {
 
   useEffect(() => () => {
     teardownRecording();
-    restoreVideo();
     restoreZoom();
     setClip((c) => { if (c?.url) URL.revokeObjectURL(c.url); return c; });
   }, []);
@@ -292,6 +372,87 @@ export default function TweetClipper({ pageInfo, onReady }) {
       canvas.height = Math.max(2, Math.round(prep.bounds.h * rs));
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Recording stopped.');
+
+      const loadImg = (src) => new Promise((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = () => reject(new Error('bg'));
+        im.src = src;
+      });
+
+      // Hybrid take: one crisp card shot as the backdrop, the real video
+      // file composited over it at full frame rate in the page. Falls
+      // through to the shot loop below when the file cannot be fetched.
+      if (prep.videoSrc && prep.vrect) {
+        const hybridCtl = { stopped: false };
+        recCtlRef.current = hybridCtl;
+        const hybridTick = setInterval(() => {
+          setRecT((t) => Math.min(t + 0.2, (RECORD_MS - 100) / 1000));
+        }, 200);
+        try {
+          stageRef.current = 'fetching video';
+          const bgShot = await chrome.runtime.sendMessage({ type: 'TWEET_RECORD_SHOT' }).catch(() => null);
+          if (!bgShot?.ok || !bgShot.dataUrl) throw new Error('bg-shot');
+          const bgImg = await loadImg(bgShot.dataUrl);
+          const bs = bgImg.naturalWidth / prep.vw;
+          const bgCanvas = document.createElement('canvas');
+          bgCanvas.width = canvas.width;
+          bgCanvas.height = canvas.height;
+          const bctx = bgCanvas.getContext('2d');
+          if (!bctx) throw new Error('bg-canvas');
+          bctx.drawImage(
+            bgImg,
+            Math.max(0, prep.bounds.x * bs), Math.max(0, prep.bounds.y * bs),
+            Math.min(bgImg.naturalWidth, prep.bounds.w * bs), Math.min(bgImg.naturalHeight, prep.bounds.h * bs),
+            0, 0, canvas.width, canvas.height,
+          );
+          const bgDataUrl = bgCanvas.toDataURL('image/jpeg', 0.9);
+          const hRes = await withTimeout(
+            chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: tweetHybridFunc,
+              args: [{
+                bg: bgDataUrl,
+                src: prep.videoSrc,
+                vx: Math.round(prep.vrect.x * rs),
+                vy: Math.round(prep.vrect.y * rs),
+                vw: Math.round(prep.vrect.w * rs),
+                vh: Math.round(prep.vrect.h * rs),
+                cw: canvas.width,
+                ch: canvas.height,
+                ms: RECORD_MS,
+              }],
+            }).catch(() => null),
+            60000,
+          );
+          const hybrid = hRes?.[0]?.result || null;
+          clearInterval(hybridTick);
+          if (hybridCtl.stopped || recCtlRef.current !== hybridCtl) return;
+          if (hybrid?.ok && hybrid.b64) {
+            const bin = atob(hybrid.b64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+            const blob = new Blob([bytes], { type: hybrid.mime || 'video/webm' });
+            if (blob.size > 0) {
+              setClip({
+                blob,
+                mime: hybrid.mime || 'video/webm',
+                url: URL.createObjectURL(blob),
+                w: hybrid.w || canvas.width,
+                h: hybrid.h || canvas.height,
+                durationMs: RECORD_MS,
+                poster: hybrid.poster || null,
+              });
+              restoreZoom(tab.id);
+              setPhase('preview');
+              return;
+            }
+          }
+        } catch {}
+        clearInterval(hybridTick);
+        if (recCtlRef.current === hybridCtl) recCtlRef.current = null;
+        setRecT(0);
+      }
 
       const mimeTypes = ['video/mp4;codecs=avc1.42E01E', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8'];
       const mimeType = mimeTypes.find((t) => {
@@ -402,20 +563,17 @@ export default function TweetClipper({ pageInfo, onReady }) {
         if (recCtlRef.current === ctl) recCtlRef.current = null;
         try { captureStream.getTracks().forEach((t) => { try { t.stop(); } catch {} }); } catch {}
         try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
-        restoreVideo(tab.id);
         restoreZoom(tab.id);
         setRecError('Recording stopped — keep the X tab open while recording.');
         setPhase('failed');
         return;
       }
-      restoreVideo(tab.id);
       restoreZoom(tab.id);
       stageRef.current = 'finishing';
       try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
     } catch (err) {
       console.error('[tweet-record] failed:', err?.name || '', err?.message || err);
       teardownRecording();
-      restoreVideo();
       restoreZoom();
       const raw = err?.name && err.name !== 'Error' ? ` (${err.name})` : '';
       const reason = `Recording failed at ${stageRef.current || 'starting'}: ${err?.message || 'could not record'}${raw}`;
@@ -430,7 +588,6 @@ export default function TweetClipper({ pageInfo, onReady }) {
     const ctl = recCtlRef.current;
     if (ctl) ctl.stopped = true;
     teardownRecording();
-    restoreVideo();
     restoreZoom();
     setRecError('Recording cancelled.');
     setPhase('failed');
