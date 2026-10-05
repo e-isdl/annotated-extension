@@ -1894,3 +1894,14 @@ webapp/src/styles/globals.css, this changelog.
   no height cap and no distortion, so portrait cards render full width
   instead of a crushed strip.
 - Local commit only - release follows.
+---
+
+## Recordings take the media block, not the essay
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- The recording bounds are now the author header through the video and
+  actions row. Body text stays out of the file because it already ships
+  in the post quote - tall tweets produce a compact clip instead of a
+  three-scroll tower. Screenshot posts are untouched.
+- Local commit only - release follows.
