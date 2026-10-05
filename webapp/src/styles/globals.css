@@ -170,6 +170,15 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .source-preview-loop .source-loop-video { order: -1; }
 .source-loop-video { display: block; width: 100%; max-height: 380px; border-radius: 12px; background: #000; object-fit: contain; }
 .source-media .source-loop-video { max-height: 70vh; }
+/* Feed X media: width from the sizing formula, height from the image.
+   Tall clips collapse with a fade and expand on demand. */
+.xmedia-wrap { position: relative; background: #000; border-radius: 12px; overflow: hidden; }
+.xmedia-wrap .source-loop-video { max-height: none; }
+.xmedia-clipped { max-height: 560px; }
+.xmedia-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px; background: linear-gradient(to bottom, transparent, #000); }
+.xmedia-fade .read-more-toggle { color: #fff; }
+.xmedia-fade .read-more-toggle:hover { color: #fff; text-decoration: underline; }
+.xmedia-collapse { padding: 6px 2px 0; }
 .source-preview-thumbbtn, .source-preview-thumbwrap { position: relative; display: block; width: 190px; height: 142px; flex: 0 0 190px; align-self: center; margin: 7px; border-radius: 9px; overflow: hidden; background: var(--card); }
 .source-preview-thumbbtn { border: none; padding: 0; cursor: pointer; }
 .source-preview-thumbimg { display: block; width: 100%; height: 100%; object-fit: cover; }

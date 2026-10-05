@@ -19,6 +19,10 @@ import { cleanTranscript, stripWrappingQuotes } from '../lib/text';
 
 const SOURCE_LABELS = { youtube: 'YouTube', social: 'X post', article: 'Article', text: 'Text', podcast: 'Podcast' };
 
+const H_TARGET = 400; // preferred X media height
+const W_MIN = 360; // minimum readable width, px
+const H_MAX = 560; // collapse height, px
+
 export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo = false }) {
   const navigate = useNavigate();
   const { push } = useToast();
@@ -43,6 +47,8 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
   const [imageFailed, setImageFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
+  const [mediaNatural, setMediaNatural] = useState(null);
+  const [mediaOpen, setMediaOpen] = useState(false);
   const cardRef = useRef(null);
   const [cardVisible, setCardVisible] = useState(false);
   const [cardNear, setCardNear] = useState(false);
@@ -55,6 +61,12 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
   const hasLoop = clip.media_kind === 'loop' && Boolean(clip.media_url);
   const hasClipMedia = clip.media_kind === 'clip' && Boolean(clip.media_url);
   const hasMedia = hasLoop || hasClipMedia;
+  const natW = Number(clip.media_w) || mediaNatural?.w || 0;
+  const natH = Number(clip.media_h) || mediaNatural?.h || 0;
+  const mediaRatio = natW > 0 && natH > 0 ? natW / natH : 0;
+  const mediaWr = mediaRatio > 0 ? Math.min(Math.max(H_TARGET * mediaRatio, W_MIN), natW) : 0;
+  const mediaHr = mediaRatio > 0 ? mediaWr / mediaRatio : 0;
+  const mediaClipped = mediaHr > H_MAX;
   const isVideoPost = playableRecording || playableEmbed;
   const playInline = (event) => {
     event.preventDefault();
@@ -283,7 +295,41 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
           </div>
           {(hasMedia || (sourceImage && !imageFailed)) && (
             hasMedia ? (
-              <LoopPlayer src={clip.media_url} poster={clip.poster_url || sourceImage} autoPlay loop={hasLoop} />
+              <div className={`xmedia-wrap${mediaClipped && !mediaOpen ? ' xmedia-clipped' : ''}`}>
+                <LoopPlayer
+                  src={clip.media_url}
+                  poster={clip.poster_url || sourceImage}
+                  autoPlay
+                  loop={hasLoop}
+                  videoStyle={mediaWr > 0 ? { width: `min(100%, ${Math.round(mediaWr)}px)`, height: 'auto', margin: '0 auto' } : undefined}
+                  videoWidth={mediaWr > 0 ? Math.round(mediaWr) : undefined}
+                  videoHeight={mediaHr > 0 ? Math.round(mediaHr) : undefined}
+                  onMetadata={(event) => {
+                    const v = event.currentTarget;
+                    if (v.videoWidth && v.videoHeight) setMediaNatural({ w: v.videoWidth, h: v.videoHeight });
+                  }}
+                />
+                {mediaClipped && !mediaOpen && (
+                  <div className="xmedia-fade">
+                    <button
+                      type="button"
+                      className="read-more-toggle"
+                      onClick={(event) => { event.preventDefault(); event.stopPropagation(); setMediaOpen(true); }}
+                    >
+                      Show full tweet
+                    </button>
+                  </div>
+                )}
+                {mediaClipped && mediaOpen && (
+                  <button
+                    type="button"
+                    className="read-more-toggle xmedia-collapse"
+                    onClick={(event) => { event.preventDefault(); event.stopPropagation(); setMediaOpen(false); }}
+                  >
+                    Show less
+                  </button>
+                )}
+              </div>
             ) : isUploadingVideo ? (
               <span className="source-preview-thumbwrap">
                 <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />
