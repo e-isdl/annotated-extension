@@ -233,8 +233,6 @@ export default function ClipPage() {
 
   const isX = isXPostUrl(clip.source_url);
   const hasMedia = (clip.media_kind === 'loop' || clip.media_kind === 'clip') && Boolean(clip.media_url);
-  const tallMedia = Number(clip.media_w) > 0 && Number(clip.media_h) > Number(clip.media_w);
-  const [loopOpen, setLoopOpen] = useState(false);
   const posterHandle = isX ? (matchStatusUrl(clip.source_url)?.handle || String(clip.author || '').replace(/^@/, '')) : '';
   const hasSourceImage = !isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && Boolean(clip.source_image_url || clip.thumbnail);
   const uploadStale = Boolean(clip.video_status === 'uploading' && clip.created_at && (Date.now() - new Date(clip.created_at).getTime() > 20 * 60 * 1000));
@@ -336,20 +334,7 @@ export default function ClipPage() {
               label={clip.media_kind === 'loop' ? 'Recorded loop, silent' : 'Recorded video, silent'}
               loop={clip.media_kind === 'loop'}
               controls={clip.media_kind === 'clip'}
-              w={clip.media_w}
-              h={clip.media_h}
-              capped={!loopOpen && tallMedia}
             />
-            {tallMedia && (
-              <button
-                type="button"
-                className="read-more-toggle source-loop-toggle"
-                onClick={() => setLoopOpen((open) => !open)}
-                aria-expanded={loopOpen}
-              >
-                {loopOpen ? 'Show less' : 'Show full recording'}
-              </button>
-            )}
             <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
               ↗ view original on x
             </a>

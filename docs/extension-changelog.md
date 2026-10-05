@@ -1920,3 +1920,11 @@ webapp/src/styles/globals.css, this changelog.
   video and actions, with a Show full recording toggle for the rest.
   Landscape and square clips render whole as before. Same on detail.
 - Local commit only - release follows.
+---
+
+## Webapp loop presentation reverted to pre-hybrid state
+
+Reverted webapp/src/components/LoopPlayer.jsx,
+webapp/src/components/ClipCard.jsx, webapp/src/pages/ClipPage.jsx and
+the loop rules in webapp/src/styles/globals.css to their 9ce87fb state.
+The recorder is untouched. Mute-button styles stay.
