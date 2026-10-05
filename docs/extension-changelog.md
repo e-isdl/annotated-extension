@@ -1801,3 +1801,17 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
   off-guess articles can no longer hide it. Empty pages still report
   no-media with article and video counts and keep the screenshot path.
 - Local commit only - NOT pushed.
+---
+
+## Paused videos play for the recording, screenshot on failure
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- The prep unpauses the tweet video (muted) so the recording captures
+  motion, and restores the previous paused and muted state when the
+  recording ends, is cancelled, or fails.
+- Recording failure now falls back to the screenshot flow instead of a
+  dead end, with its own status line. Screenshots therefore cover
+  no-video posts plus failed recordings; tab-away and user-cancel stay
+  hard stops.
+- Local commit only - NOT pushed.

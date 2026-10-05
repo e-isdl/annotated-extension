@@ -59,6 +59,14 @@ async function tweetPrepFunc() {
     return { ok: false, code: 'no-media', articles, videos: 0 };
   }
   const card = video.closest('article[data-testid="tweet"]') || document.querySelector('article[data-testid="tweet"]');
+  try {
+    if (video.paused) {
+      video.dataset.annotatedPrev = 'paused|' + (video.muted ? 'muted' : 'sound');
+      video.muted = true;
+      const pr = video.play();
+      if (pr && pr.catch) pr.catch(() => {});
+    }
+  } catch (e) {}
   if (card) {
     try { card.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
   } else {
@@ -103,6 +111,18 @@ async function tweetPrepFunc() {
     if (!found) return null;
     return { x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
   }
+}
+
+function tweetRestoreFunc() {
+  document.querySelectorAll('video[data-annotated-prev]').forEach((v) => {
+    try {
+      const parts = String(v.dataset.annotatedPrev || '').split('|');
+      if (parts[0] === 'paused') v.pause();
+      v.muted = parts[1] === 'muted';
+    } catch (e) {}
+    try { delete v.dataset.annotatedPrev; } catch (e) {}
+  });
+  return { ok: true };
 }
 
 function tweetBoundsFunc() {
@@ -170,6 +190,16 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const [publishError, setPublishError] = useState(null);
   const recCtlRef = useRef(null);
   const startedRef = useRef(false);
+  const tabIdRef = useRef(null);
+  const [shotFallback, setShotFallback] = useState(false);
+
+  const restoreVideo = async (tabId) => {
+    const id = tabId || tabIdRef.current;
+    if (!id) return;
+    try {
+      await chrome.scripting.executeScript({ target: { tabId: id }, func: tweetRestoreFunc });
+    } catch {}
+  };
 
   const teardownRecording = () => {
     const ctl = recCtlRef.current;
@@ -184,18 +214,21 @@ export default function TweetClipper({ pageInfo, onReady }) {
 
   useEffect(() => () => {
     teardownRecording();
+    restoreVideo();
     setClip((c) => { if (c?.url) URL.revokeObjectURL(c.url); return c; });
   }, []);
 
   const startRecording = async () => {
     teardownRecording();
     setRecError(null);
+    setShotFallback(false);
     setClip(null);
     setPhase('recording');
     setRecT(0);
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) throw new Error('No active tab.');
+      tabIdRef.current = tab.id;
       const prepRes = await withTimeout(
         chrome.scripting.executeScript({
           target: { tabId: tab.id },
@@ -240,8 +273,8 @@ export default function TweetClipper({ pageInfo, onReady }) {
         if (cancelled || ctl.tabGone) return;
         const blob = new Blob(ctl.chunks, { type: recorder.mimeType || mimeType || 'video/webm' });
         if (frames === 0 || blob.size === 0) {
-          setRecError('Recording captured no video. Try again.');
-          setPhase('failed');
+          setShotFallback(true);
+          runScreenshotFlow();
           return;
         }
         let poster = ctl.poster;
@@ -312,16 +345,19 @@ export default function TweetClipper({ pageInfo, onReady }) {
         if (recCtlRef.current === ctl) recCtlRef.current = null;
         try { captureStream.getTracks().forEach((t) => { try { t.stop(); } catch {} }); } catch {}
         try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
+        restoreVideo(tab.id);
         setRecError('Recording stopped — keep the X tab open while recording.');
         setPhase('failed');
         return;
       }
+      restoreVideo(tab.id);
       try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
     } catch (err) {
       console.error('[tweet-record] failed:', err?.name || '', err?.message || err);
       teardownRecording();
-      setRecError(err?.message || 'Could not record this post.');
-      setPhase('failed');
+      restoreVideo();
+      setShotFallback(true);
+      runScreenshotFlow();
     }
   };
 
@@ -329,6 +365,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
     const ctl = recCtlRef.current;
     if (ctl) ctl.stopped = true;
     teardownRecording();
+    restoreVideo();
     setRecError('Recording cancelled.');
     setPhase('failed');
   };
@@ -453,8 +490,10 @@ export default function TweetClipper({ pageInfo, onReady }) {
         ? 'Tweet recorded with its video and text. It will loop silently on Annotated, like a GIF.'
           : phase === 'shot-working'
             ? 'No video in this post — preparing a high-quality screenshot…'
-            : phase === 'none'
-              ? 'No video in this post, so its text will be shown instead.'
+              : phase === 'none'
+                ? (shotFallback
+                  ? 'Recording failed, so a screenshot will be used instead.'
+                  : 'No video in this post, so its text will be shown instead.')
               : phase === 'failed'
                 ? (recError || 'Recording unavailable.')
                 : null;
