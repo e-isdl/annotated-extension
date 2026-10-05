@@ -34,6 +34,29 @@ function detectPageInfo() {
     return info;
   }
 
+  // Spotify serves audio through encrypted MSE with no plain <audio src>,
+  // so its pages need an explicit branch (the generic audio check below
+  // never fires there and they fell through to the article clipper).
+  // Shows (/show) list episodes; episodes (/episode) are a single one.
+  const spotifyMatch = String(url || '').match(/open\.spotify\.com\/(episode|show)\/([A-Za-z0-9]+)/);
+  if (spotifyMatch) {
+    let title = '';
+    try { title = document.querySelector('meta[property="og:title"]')?.content || ''; } catch (e) {}
+    if (!title) {
+      try { title = document.querySelector('meta[name="twitter:title"]')?.content || ''; } catch (e) {}
+    }
+    if (!title) title = String(document.title || '').replace(/\s*-\s*Spotify\s*$/, '').trim();
+    info.type = 'podcast';
+    info.data = {
+      episodeId: spotifyMatch[1] === 'episode' ? spotifyMatch[2] : null,
+      showId: spotifyMatch[1] === 'show' ? spotifyMatch[2] : null,
+      title: title || 'Spotify podcast',
+      duration: 0,
+      provider: 'spotify',
+    };
+    return info;
+  }
+
   const audioEl = document.querySelector('audio[src], audio source[src]');
   if (audioEl) {
     const audioSrc = audioEl.src || audioEl.querySelector('source')?.src;
@@ -45,6 +68,22 @@ function detectPageInfo() {
     };
     return info;
   }
+
+  // Players that stream without a plain src attribute (Spotify-style MSE).
+  // Gated to podcast hosts so music/video pages never misroute here.
+  try {
+    const audioAny = document.querySelector('audio');
+    if (audioAny && /open\.spotify\.com|overcast\.fm|podcasts\.apple\.com|pocketcasts\.com|podcasts\.google\.com|music\.amazon\.com|deezer\.com|tunein\.com|stitcher\.com|podbean\.com|buzzsprout\.com|libsyn\.com|soundcloud\.com|player\.fm|castro\.fm|radiopublic\.com/.test(url)) {
+      let hostTitle = '';
+      try { hostTitle = document.querySelector('meta[property="og:title"]')?.content || ''; } catch (e) {}
+      info.type = 'podcast';
+      info.data = {
+        title: hostTitle || document.title,
+        duration: Number(audioAny.duration) || 0,
+      };
+      return info;
+    }
+  } catch (e) {}
 
   const bodyText = document.body.innerText.length;
   if (bodyText > 500) {
@@ -531,9 +570,12 @@ let fallbackMarks = [];
 let clipMonitor = null;
 let clipMonitorOnPause = null;
 let clipEnd = 0;
+let clipRaf = 0;
+let lastSeekSeq = 0;
 
 function stopClipPlaybackMonitor() {
   if (clipMonitor) { clearInterval(clipMonitor); clipMonitor = null; }
+  if (clipRaf) { cancelAnimationFrame(clipRaf); clipRaf = 0; }
   if (clipMonitorOnPause) {
     try {
       const v = document.querySelector('video.html5-main-video') || document.querySelector('#movie_player video');
@@ -708,69 +750,129 @@ function ytChapterSeconds(text) {
   return (Number(m[1] || 0) * 3600) + (Number(m[2]) * 60) + Number(m[3]);
 }
 
-function ytChaptersValid(list) {
-  if (!Array.isArray(list) || list.length < 3) return false;
-  if (list[0].t !== 0) return false;
-  for (let i = 1; i < list.length; i += 1) {
-    if (!(list[i].t > list[i - 1].t)) return false;
-  }
-  return true;
+// Lossy chapter cleanup: one malformed line (duplicate time, out-of-order
+// sponsor timestamp, over-duration entry) must not kill the whole list.
+function ytCleanChapters(items, maxT) {
+  if (!Array.isArray(items) || !items.length) return null;
+  const seen = new Set();
+  const good = [];
+  items.forEach((item) => {
+    const t = Math.round(Number(item && item.t));
+    const title = String((item && item.title) || '').trim().slice(0, 140);
+    if (!Number.isFinite(t) || t < 0 || !title || seen.has(t)) return;
+    if (Number.isFinite(maxT) && maxT > 0 && t >= maxT) return;
+    seen.add(t);
+    good.push({ t, title });
+  });
+  good.sort((a, b) => a.t - b.t);
+  if (good.length < 3) return null;
+  return good;
 }
 
-function ytDedupeChapters(items) {
-  const out = [];
-  items.forEach((item) => {
-    if (!out.length || out[out.length - 1].t !== item.t) out.push(item);
+function ytParseChapterLines(text) {
+  const parsed = [];
+  String(text || '').split('\n').forEach((rawLine) => {
+    const line = String(rawLine || '').trim();
+    const m = line.match(/^((?:\d+:)?[0-5]?\d:[0-5]\d)\s+(.+?)\s*$/);
+    if (!m) return;
+    const t = ytChapterSeconds(m[1]);
+    const title = String(m[2] || '').trim().replace(/^[-–—•·|>]+/, '').trim().slice(0, 140);
+    if (t === null || !title) return;
+    parsed.push({ t, title });
   });
-  return out;
+  return parsed;
+}
+
+function ytDomChapters() {
+  const items = [];
+  document.querySelectorAll('ytd-macro-markers-list-item-renderer').forEach((el) => {
+    const lines = String(el.innerText || '').split('\n').map((s) => s.trim()).filter(Boolean);
+    if (!lines.length) return;
+    let t = null;
+    let ti = -1;
+    for (let i = 0; i < lines.length; i += 1) {
+      const s = ytChapterSeconds(lines[i]);
+      if (s !== null) { t = s; ti = i; break; }
+    }
+    if (t === null) return;
+    const title = lines.slice(ti + 1).filter((line) => ytChapterSeconds(line) === null).join(' ').trim().slice(0, 140)
+      || lines.slice(0, ti).join(' ').trim().slice(0, 140);
+    if (!title) return;
+    items.push({ t, title });
+  });
+  return items;
+}
+
+function ytPageTextChapters() {
+  // NOTE: window.ytInitialPlayerResponse / player getPlayerResponse() are page
+  // JS and invisible from this isolated world, so read rendered DOM text only.
+  const texts = [];
+  try { texts.push(document.querySelector('meta[name="description"]')?.content || ''); } catch (e) {}
+  try {
+    document.querySelectorAll('#description-inline-expander, #description yt-formatted-string, #description').forEach((el) => {
+      try { if (el.innerText) texts.push(el.innerText); } catch (e) {}
+    });
+  } catch (e) {}
+  return ytParseChapterLines(texts.join('\n'));
 }
 
 function getYouTubeChapters() {
+  let maxT = 0;
   try {
-    const items = [];
-    document.querySelectorAll('ytd-macro-markers-list-item-renderer').forEach((el) => {
-      const lines = String(el.innerText || '').split('\n').map((s) => s.trim()).filter(Boolean);
-      if (!lines.length) return;
-      let t = null;
-      let ti = -1;
-      for (let i = 0; i < lines.length; i += 1) {
-        const s = ytChapterSeconds(lines[i]);
-        if (s !== null) { t = s; ti = i; break; }
-      }
-      if (t === null) return;
-      const title = lines.slice(ti + 1).filter((line) => ytChapterSeconds(line) === null).join(' ').trim().slice(0, 140)
-        || lines.slice(0, ti).join(' ').trim().slice(0, 140);
-      if (!title) return;
-      items.push({ t, title });
-    });
-    const deduped = ytDedupeChapters(items);
-    if (ytChaptersValid(deduped)) return deduped.slice(0, 200);
+    const d = Number(document.querySelector('video.html5-main-video, #movie_player video, video')?.duration);
+    if (Number.isFinite(d) && d > 0) maxT = d;
   } catch (e) {}
   try {
-    let desc = '';
-    try {
-      const live = document.querySelector('#movie_player')?.getPlayerResponse?.();
-      desc = String(live?.videoDetails?.shortDescription || '');
-    } catch (e) {}
-    if (!desc) {
-      try { desc = String(window.ytInitialPlayerResponse?.videoDetails?.shortDescription || ''); } catch (e) {}
-    }
-    if (desc) {
-      const parsed = [];
-      desc.split('\n').forEach((rawLine) => {
-        const line = String(rawLine || '').trim();
-        const m = line.match(/^((?:\d+:)?[0-5]?\d:[0-5]\d)\s+(.+?)\s*$/);
-        if (!m) return;
-        const t = ytChapterSeconds(m[1]);
-        const title = String(m[2] || '').trim().slice(0, 140);
-        if (t === null || !title) return;
-        parsed.push({ t, title });
-      });
-      const deduped = ytDedupeChapters(parsed);
-      if (ytChaptersValid(deduped)) return deduped.slice(0, 200);
-    }
+    const cleaned = ytCleanChapters(ytDomChapters(), maxT);
+    if (cleaned) return cleaned.slice(0, 200);
+  } catch (e) {}
+  try {
+    const cleaned = ytCleanChapters(ytPageTextChapters(), maxT);
+    if (cleaned) return cleaned.slice(0, 200);
   } catch (e) {}
   return [];
+}
+
+// Marker rows only render once the description is expanded. Expand it,
+// re-read, then collapse it again so the page is left as found.
+async function getYouTubeChaptersExpanded() {
+  let expandedHere = false;
+  try {
+    if (ytDomChapters().length >= 3) return null;
+    const more = [...document.querySelectorAll('tp-yt-paper-button#expand, #description-inline-expander tp-yt-paper-button, button#expand')]
+      .find((el) => {
+        try {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        } catch (e) { return false; }
+      });
+    if (!more) return null;
+    try { more.click(); } catch (e) { return null; }
+    expandedHere = true;
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    let maxT = 0;
+    try {
+      const d = Number(document.querySelector('video.html5-main-video, #movie_player video, video')?.duration);
+      if (Number.isFinite(d) && d > 0) maxT = d;
+    } catch (e) {}
+    const cleaned = ytCleanChapters(ytDomChapters().concat(ytPageTextChapters()), maxT);
+    return cleaned ? cleaned.slice(0, 200) : null;
+  } catch (e) {
+    return null;
+  } finally {
+    if (expandedHere) {
+      try {
+        const collapse = [...document.querySelectorAll('tp-yt-paper-button#collapse, button#collapse')]
+          .find((el) => {
+            try {
+              const r = el.getBoundingClientRect();
+              return r.width > 0 && r.height > 0;
+            } catch (e2) { return false; }
+          });
+        if (collapse) collapse.click();
+      } catch (e) {}
+    }
+  }
 }
 
 // The message handler registers on every injection (old one removed first)
@@ -915,13 +1017,23 @@ function getYouTubeChapters() {
           video.play().catch(() => {});
           clipEnd = end;
           if (end > 0) {
-            clipMonitor = setInterval(() => {
+            const check = () => {
+              clipRaf = 0;
+              let done = false;
               try {
-                if (!video.paused && video.currentTime >= clipEnd) {
-                  video.pause();
+                if (!video.paused && video.currentTime >= clipEnd - 0.05) {
+                  try { video.pause(); } catch (e2) {}
+                  try { video.currentTime = clipEnd; } catch (e2) {}
+                  done = true;
                 }
               } catch (e) {}
-            }, 200);
+              if (done) {
+                stopClipPlaybackMonitor();
+                return;
+              }
+              clipRaf = requestAnimationFrame(check);
+            };
+            clipRaf = requestAnimationFrame(check);
             clipMonitorOnPause = () => stopClipPlaybackMonitor();
             video.addEventListener('pause', clipMonitorOnPause, { once: true });
           }
@@ -953,12 +1065,25 @@ function getYouTubeChapters() {
       if (video) {
         if (clipMonitor && Number(message.end) > 0) clipEnd = Number(message.end);
         const dur = Number(video.duration);
+        let vid = '';
+        try {
+          const u = new URL(location.href);
+          vid = u.searchParams.get('v') || (u.pathname.match(/^\/shorts\/([^/?]+)/) || [])[1] || '';
+        } catch (e) {}
+        let rate = 1;
+        try { rate = Number(video.playbackRate) || 1; } catch (e) {}
         sendResponse({ ok: true, time: video.currentTime || 0,
           duration: Number.isFinite(dur) && dur > 0 ? dur : 0,
-          paused: !!video.paused, ad: isAdPlaying() });
+          live: !Number.isFinite(dur),
+          paused: !!video.paused, rate, ad: isAdPlaying(), videoId: vid, seq: lastSeekSeq });
       } else {
         sendResponse({ ok: false });
       }
+      return true;
+    }
+    if (message.type === 'YT_PREVIEW_CANCEL') {
+      stopClipPlaybackMonitor();
+      sendResponse({ ok: true });
       return true;
     }
     if (message.type === 'YT_SEEK') {
@@ -974,7 +1099,8 @@ function getYouTubeChapters() {
         return true;
       }
       try { video.currentTime = Math.max(0, Number(message.time) || 0); } catch (e) {}
-      sendResponse({ ok: true, time: video.currentTime || 0, paused: !!video.paused });
+      if (Number.isFinite(Number(message.seq))) lastSeekSeq = Number(message.seq);
+      sendResponse({ ok: true, time: video.currentTime || 0, paused: !!video.paused, seq: lastSeekSeq });
       return true;
     }
     if (message.type === 'YT_PAUSE') {
@@ -991,7 +1117,17 @@ function getYouTubeChapters() {
       return true;
     }
     if (message.type === 'YT_CHAPTERS') {
-      sendResponse({ ok: true, chapters: getYouTubeChapters() });
+      (async () => {
+        try {
+          let chapters = getYouTubeChapters();
+          if (!chapters.length) {
+            chapters = (await getYouTubeChaptersExpanded()) || [];
+          }
+          sendResponse({ ok: true, chapters });
+        } catch (e) {
+          try { sendResponse({ ok: true, chapters: [] }); } catch (e2) {}
+        }
+      })();
       return true;
     }
     if (message.type === 'CLEAR_HIGHLIGHT') {

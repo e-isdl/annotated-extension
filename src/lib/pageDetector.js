@@ -2,7 +2,7 @@ export function detectPageType(url) {
   if (url.includes('youtube.com/watch')) return 'youtube';
   if (url.includes('youtube.com/shorts')) return 'youtube';
   if (/(?:twitter\.com|x\.com)\/[^/?#]+\/status\/\d+/.test(url)) return 'x';
-  if (url.includes('podcast') || url.includes('spotify.com/episode') || url.includes('overcast.fm')) return 'podcast';
+  if (url.includes('podcast') || /open\.spotify\.com\/(episode|show)/.test(url) || url.includes('overcast.fm')) return 'podcast';
   return 'article';
 }
 

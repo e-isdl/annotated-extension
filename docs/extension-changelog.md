@@ -125,27 +125,27 @@ leftover mistake â€” "leave the text as it is". No code changed.
 
 ---
 
-## T4 — Progress rail + source strip — REJECTED, REVERTED (master's order)
+## T4 ï¿½ Progress rail + source strip ï¿½ REJECTED, REVERTED (master's order)
 
 **Files touched:** commit `45f9eef`, reverted by `2e59a56`.
 
 - Master's complaints: repetition (title shown twice), text too big, forced scrolling
   to type, visual mistakes. The whole T4 commit was reverted: FlowHeader deleted,
   old numbered step indicator restored, button spec restored (`disabled:opacity-40`).
-- T5 reintroduces rail + strip + heading in a compact form (14–18px text, no repeated
+- T5 reintroduces rail + strip + heading in a compact form (14ï¿½18px text, no repeated
   titles) per the master's feedback.
 
 ---
 
-## Future work (master's order) — Recorded YouTube clips at 240p, hosted on server
+## Future work (master's order) ï¿½ Recorded YouTube clips at 240p, hosted on server
 
-- The clips recorded from YouTube (T7/T8 flow) must be **downgraded to 240p — or
-  recorded at 240p — and then hosted on the server**. Small files, cheap storage.
+- The clips recorded from YouTube (T7/T8 flow) must be **downgraded to 240p ï¿½ or
+  recorded at 240p ï¿½ and then hosted on the server**. Small files, cheap storage.
 - Not implemented yet; applies when T8 (record) / T10 (post the clip) are built.
 
 ---
 
-## T5 — Redesign the clip screen (compact header, thumbnail, scrub, time cards)
+## T5 ï¿½ Redesign the clip screen (compact header, thumbnail, scrub, time cards)
 
 **Files touched:** `src/components/YouTubeClipper.jsx` (rewrite), `src/components/FlowHeader.jsx`
 (recreated, compact), `src/components/ClipCreator.jsx`, `src/styles/panel.css`,
@@ -154,7 +154,7 @@ leftover mistake â€” "leave the text as it is". No code changed.
 
 - **Compact flow header** (fixes T4's complaints): rail labels 14px/600, dots 12px,
   strip title 15px clamp-2 with 14px platform row, heading **18px** (was 26px),
-  tight margins (12px), 16px side padding — no more oversized text or scroll push.
+  tight margins (12px), 16px side padding ï¿½ no more oversized text or scroll push.
 - **No repeated titles:** badge/title rows removed from ArticleClipper,
   PodcastClipper, TweetClipper (strip owns platform + title now).
 - **Thumbnail:** clean 16:9, bottom-left Preview/Stop chip (white on `--bg` 80%),
@@ -175,14 +175,14 @@ leftover mistake â€” "leave the text as it is". No code changed.
 
 ---
 
-## T5 fix (master's order) — Clip handles are bars, not dots
+## T5 fix (master's order) ï¿½ Clip handles are bars, not dots
 
 - `.scrub-handle`: 12x32px vertical bars (`| |`), white with red ring, radius 5,
   hit area 44x48 via `::after`. Round 28px dots removed.
 
 ---
 
-## T6 — Set start here / Set end here
+## T6 ï¿½ Set start here / Set end here
 
 **Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`, this changelog.
 
@@ -190,10 +190,10 @@ leftover mistake â€” "leave the text as it is". No code changed.
   "Set start here" / "Set end here".
 - Pressing one reads the page video's `currentTime` and puts it in that card's
   field; slider fill updates. Reuses the existing `chrome.scripting.executeScript`
-  video-probing pattern already in this file (duration lookup) — no duplicate code
+  video-probing pattern already in this file (duration lookup) ï¿½ no duplicate code
   path, no content-script message added (the doc's fallback: extend the existing
   page-video access).
-- Set buttons allow an invalid range (start > end) instead of clamping silently —
+- Set buttons allow an invalid range (start > end) instead of clamping silently ï¿½
   then the line "End needs to come after the start." shows under the cards
   (14px red, `.clip-error`) and Continue stays disabled. Slider fill clamps to 0 width.
 - No video on the page -> "No video found on this page." error.
@@ -201,11 +201,11 @@ leftover mistake â€” "leave the text as it is". No code changed.
 
 ---
 
-## T6 redesign (master's order) — Set start / Set end arm one handle at a time
+## T6 redesign (master's order) ï¿½ Set start / Set end arm one handle at a time
 
 - Labels changed: "Set start here"/"Set end here" -> **"Set start" / "Set end"**.
 - New interaction: clicking **Set start** captures the page video's currentTime
-  (if a video exists), then **arms the start handle** — the Set end button ghosts
+  (if a video exists), then **arms the start handle** ï¿½ the Set end button ghosts
   (40% opacity, still clickable) and only the start `|` may be dragged/typed via
   arrows; clicking **Set end** switches it (Set start ghosts, end `|` free).
 - Clicking the armed button again disarms (both normal, nearest-handle drag back).
@@ -214,7 +214,7 @@ leftover mistake â€” "leave the text as it is". No code changed.
 
 ---
 
-## T6 REMOVED entirely (master's order) — "those two buttons suck"
+## T6 REMOVED entirely (master's order) ï¿½ "those two buttons suck"
 
 - Set start / Set end buttons, the arming/ghosting state, `getPageVideoTime`
   currentTime probe, handle refs, and `.btn-set` CSS all deleted.
@@ -224,7 +224,7 @@ leftover mistake â€” "leave the text as it is". No code changed.
 
 ---
 
-## Clip screen de-clutter (master''s order) — remove Open source + Preview, strip dead UI
+## Clip screen de-clutter (master''s order) ï¿½ remove Open source + Preview, strip dead UI
 
 **Files touched:** `src/components/FlowHeader.jsx`, `src/components/YouTubeClipper.jsx`,
 `src/styles/panel.css`, this changelog.
@@ -237,7 +237,7 @@ leftover mistake â€” "leave the text as it is". No code changed.
   `.thumb-preview` CSS. Continue keeps silent guards; its disabled state + over-limit
   label already communicate validation.
 - Kept: duration chip, heading, rail, Start/End cards, nudges, length row, Continue.
-- **Local commit only — NOT pushed** (master''s order).
+- **Local commit only ï¿½ NOT pushed** (master''s order).
 
 ---
 
@@ -252,14 +252,14 @@ leftover mistake â€” "leave the text as it is". No code changed.
   centered platform eyebrow ("YouTube" etc.) + centered heading.
 - Heading "Which part matters?" centered and bumped 18px -> 20px.
 - Continue ("Continue to Annotate") now ghosts when disabled: `.btn-primary:disabled`
-  = 40% opacity + not-allowed cursor — so it ghosts whenever the clip is over 90s
+  = 40% opacity + not-allowed cursor ï¿½ so it ghosts whenever the clip is over 90s
   (label already reads "Xs (max 90s to annotate)").
 - Dead CSS removed: rail/strip rules, `.thumb iframe`.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
-## T7 — Two ways to play: Embed or Record (choice UI)
+## T7 ï¿½ Two ways to play: Embed or Record (choice UI)
 
 **Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`, this changelog.
 
@@ -269,19 +269,19 @@ leftover mistake â€” "leave the text as it is". No code changed.
 - Selected card: --red border (inset 1px shadow = 2px without layout shift),
   --red-soft fill, filled radio dot; **Embed clip selected by default**.
 - Embed help: "Plays from YouTube. Posts right away."
-- Record help: "Saves a video with sound. Takes {length}." — live-updates with the
+- Record help: "Saves a video with sound. Takes {length}." ï¿½ live-updates with the
   range (`formatLength`).
-- Primary button: Embed -> **"Continue"** (goes to Take, nothing recorded — T10
+- Primary button: Embed -> **"Continue"** (goes to Take, nothing recorded ï¿½ T10
   posts with start/end and no file); Record -> **"Record clip"**.
   Range validity/disabled/ghost rules unchanged.
-- **Note:** the Record button is not wired yet — recording lands in T8 (content-script
+- **Note:** the Record button is not wired yet ï¿½ recording lands in T8 (content-script
   `captureStream` + MediaRecorder). Switching is always free in T7 (locking needs a
   recording, which is T9).
-- **Local commit only — NOT pushed** (master''s last push order still stands).
+- **Local commit only ï¿½ NOT pushed** (master''s last push order still stands).
 
 ---
 
-## T8 — Record the clip (browser recording, no downloader)
+## T8 ï¿½ Record the clip (browser recording, no downloader)
 
 **Files touched:** `content.js`, `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`,
 this changelog.
@@ -317,11 +317,11 @@ this changelog.
 - **Known limits (per spec):** recording runs in real time (1 min clip = 1 min);
   the YouTube tab must stay open and in front; ads and DRM videos can''t be
   recorded; quality follows the player, capped by the bitrate above.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
-## Clip screen compacting (master''s order) — everything fits without scrolling
+## Clip screen compacting (master''s order) ï¿½ everything fits without scrolling
 
 **Files touched:** `src/styles/panel.css`, this changelog.
 
@@ -334,12 +334,12 @@ this changelog.
   - Play section/options gap 10 -> 8; option cards min-height 72 -> **64**,
     padding 12/14 -> 10/12, inner gap 12 -> 10.
   - Recording card padding 14 -> 10/12, gap 10 -> 8.
-- Nothing removed, everything smaller — Continue should now be on screen with no scroll.
-- **Local commit only — NOT pushed.**
+- Nothing removed, everything smaller ï¿½ Continue should now be on screen with no scroll.
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
-## Clip screen sizing rebalanced (master''s order) — compaction was too aggressive
+## Clip screen sizing rebalanced (master''s order) ï¿½ compaction was too aggressive
 
 **Files touched:** `src/styles/panel.css`, this changelog.
 
@@ -348,11 +348,11 @@ this changelog.
   card padding 12/14, nudge/scrub padding, gaps 12, recording card padding 14.
 - Kept the modest trims: heading **18px** (was 20), thumbnail capped at
   **140px** (uncapped 16:9 is ~180), clip-body gap 12 (was 14), paddings slightly lean.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
-## Thumbnail resize + captions auto-off + T9 — Show the recorded clip
+## Thumbnail resize + captions auto-off + T9 ï¿½ Show the recorded clip
 
 **Files touched:** `src/styles/panel.css`, `content.js`, `src/components/YouTubeClipper.jsx`,
 `src/components/ClipCreator.jsx`, this changelog.
@@ -363,12 +363,12 @@ this changelog.
   aria-pressed state (falls back to caption-window visibility) and clicks it only
   when captions are ON, so burned-in-style overlays never end up in the file.
 
-### T9 — recorded clip preview
+### T9 ï¿½ recorded clip preview
 - On `done`, the thumbnail area becomes `<video controls>` playing the recorded
   Blob via `URL.createObjectURL` (16:9, radius 16, object-fit contain on black).
 - Under it: "**1 min 24 s, 9.8 MB**" line (14px, --text-2; `formatLength` + `formatBytes`).
-- Buttons under that: **Re-record** (secondary — discards, revokes the object URL,
-  unlocks everything, playMode stays Record) and **Use embed instead** (ghost —
+- Buttons under that: **Re-record** (secondary ï¿½ discards, revokes the object URL,
+  unlocks everything, playMode stays Record) and **Use embed instead** (ghost ï¿½
   discards and switches to Embed). Primary button reads **Continue**.
 - While a recording exists (done), slider, Start/End cards and option cards are
   **locked** (45% dim, pointer-events off) so the range can''t drift from the file.
@@ -376,11 +376,11 @@ this changelog.
   (`published` prop from ClipCreator''s success step) the recording is discarded,
   so a fresh Take always starts clean. Back-from-Take keeps the recording
   (component stays mounted).
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
-## T10 — Post the clip, remove the downloader
+## T10 ï¿½ Post the clip, remove the downloader
 
 **Files touched:** `src/components/ClipCreator.jsx`, `src/components/AnnotationForm.jsx`,
 `src/components/YouTubeClipper.jsx`, `src/lib/postPublishing.js`,
@@ -395,25 +395,25 @@ this changelog.
   branch is skipped when `video_url` is present. Feed cards/thumbnails and
   transcripts untouched.
 
-### DB (migration ready, NOT yet applied — production push reported first per AGENTS)
+### DB (migration ready, NOT yet applied ï¿½ production push reported first per AGENTS)
 - `clips.video_url text` column (nullable, commented) + `create_extension_post`
   gains `p_video_url` (https-only, youtube-only, same gating style as audio).
 - **Repo migrations were behind production** (live function already had
-  `p_duration`, social/X posts, `is_x_status_url`, current annotation types) —
+  `p_duration`, social/X posts, `is_x_status_url`, current annotation types) ï¿½
   so the function body in the new migration is synced from the LIVE
   `pg_get_functiondef`, then `p_video_url` added; old 19-arg signature dropped
   to avoid a PostgREST overload.
 
 ### Embed path (option 1)
-- Unchanged, exactly as today: `start_sec`/`end_sec`, no file, no upload —
+- Unchanged, exactly as today: `start_sec`/`end_sec`, no file, no upload ï¿½
   posts instantly and plays via the YouTube embed.
 
 ### Record path (option 2)
 - On **Publish** with a recorded Blob: pre-check size against
   **15 MB** (`MAX_CLIP_BYTES`, matches the doc''s 15 MB figure; the `clips`
-  bucket has `file_size_limit = null` — verified live), then upload to bucket
+  bucket has `file_size_limit = null` ï¿½ verified live), then upload to bucket
   `clips` at `clips/recordings/{userId}/{ts}.{mp4|webm}`
-  (same 3-segment pattern the storage insert policy requires — its 3rd path
+  (same 3-segment pattern the storage insert policy requires ï¿½ its 3rd path
   segment must be the uid) with the recorder''s real mime/content type;
   `getPublicUrl` ? `video_url` ? RPC with the same `start_sec`/`end_sec`.
 - Publish button: spinner + **"Uploading"** during upload (`onStage` callback
@@ -425,24 +425,24 @@ this changelog.
   YouTubeClipper switches to Embed and discards the recording.
 
 ### T10.4 / misc
-- Downloader removal: still **nothing to delete** — re-verified greps for
+- Downloader removal: still **nothing to delete** ï¿½ re-verified greps for
   `apify|yt-dlp|ytdlp|downloader|build.?clip|clip.?job` across
   `src/`, `content.js`, `background.js`, root, `manifest.json`, `.env.example`
   return zero matches (T1 + re-check 2026-10-03).
 - Articles/podcasts/X never record -> unaffected; `.env.example` unchanged.
 - Checks: `npm ci && npm run build` (root) and `npm ci && npm run build`
   (webapp) both pass.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
-## C1 — Article screen + page highlighter (T11 + T12 combined)
+## C1 ï¿½ Article screen + page highlighter (T11 + T12 combined)
 
 **Files touched:** `highlight.css` (new), `manifest.json`, `vite.config.js`, `background.js`,
 `content.js`, `src/App.jsx`, `src/components/ClipCreator.jsx`,
 `src/components/ArticleClipper.jsx`, `src/styles/panel.css`, this changelog.
 
-### T11 — yellow page highlighter
+### T11 ï¿½ yellow page highlighter
 - `highlight.css` (root): `::highlight(annotated-selection)` + `.annotated-mark` fallback,
   fixed `#FFE14D` / `#111114` (page can be light or dark). Injected via manifest
   `content_scripts.css` (no new permission) and copied to `dist/` by the vite
@@ -461,7 +461,7 @@ this changelog.
   cleanup sends `CLEAR_HIGHLIGHT`); post success (`ClipCreator.handlePublish` after
   `setStep('success')` sends `CLEAR_HIGHLIGHT`).
 
-### T12 — article screen redesign
+### T12 ï¿½ article screen redesign
 - Slim source strip (title + host, 14px) above the card.
 - Empty state: dashed `--border-strong` card, 32px yellow marker SVG, 18px line with
   "Select text" on `.hl-full`, 16px helper with the real 200-word cap, "Grab
@@ -474,7 +474,7 @@ this changelog.
   label, classes and disabled logic; `onReady` payload unchanged.
 - `.annotation-mark` CSS rule kept (still used by TweetClipper).
 
-Checks: `npm run build` passes. **Local commit only — NOT pushed.**
+Checks: `npm run build` passes. **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -487,7 +487,7 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 - Clicking it sends `PLAY_FROM { start }` to the tab; `content.js` seeks
   `video.html5-main-video` to the clip start and plays, so the person previews the exact
   range they are about to clip. Disabled while recording/recorded (locked).
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -500,7 +500,7 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   clip end, so the preview plays exactly the selected range and stops.
 - A `pause` listener stops the monitor: if the person pauses (or seeks) manually, the
   auto-pause never fires later. Monitor is also replaced on the next Play clip press.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -513,15 +513,15 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 - The decision uses the video''s real state in `content.js` (not panel state), and the
   response reports the new state so the button flips between play / pause icons and
   "Play clip" / "Pause" labels.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
-## C2 — Take screen + transcript (T13 + T14 + T15 combined)
+## C2 ï¿½ Take screen + transcript (T13 + T14 + T15 combined)
 
 **Files touched:** `src/components/AnnotationForm.jsx`, `src/styles/panel.css`, this changelog.
 
-### T13 — take screen reorder + redesign
+### T13 ï¿½ take screen reorder + redesign
 - Order is now: source strip -> **take box first** -> transcript toggle -> Community ->
   Post type -> Post annotation. The commentary is the first thing under the heading.
 - Take box: `--surface`, 1px `--border`, radius 16, min-height 160px growing textarea,
@@ -537,9 +537,9 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   14px `--text-2` line "Everyone can see this. It links to the original." under it.
 - All existing validation, loading, error behavior (incl. T10 upload errors, Try again,
   Use embed instead, Uploading/Publishing stages) unchanged. The back button stays
-  (the plan''s rail was removed by the master earlier — conflict logged, code kept).
+  (the plan''s rail was removed by the master earlier ï¿½ conflict logged, code kept).
 
-### T14 — transcript behind a toggle (videos only)
+### T14 ï¿½ transcript behind a toggle (videos only)
 - One 52px full-width real button: chevron + "Transcript" + Show/Hide, collapsed by
   default, `aria-expanded`. Articles never render it.
 - Open state: "Clip" / "Full" tabs replace the two red links; scroll area max-height
@@ -548,14 +548,14 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   (clip edit with -5/+5 words tools, full edit), loading/error/no-transcript states kept,
   transcriptCache + onTranscriptChange wiring untouched.
 
-### T15 — cleaned transcript text
+### T15 ï¿½ cleaned transcript text
 - Verified `src/lib/text.js` `cleanTranscript` already implements the spec (strips
   [music]/[laughter]/[applause]/[clears throat]/[inaudible] tags, um/uh/erm fillers,
   stutter repeats, collapses spaces) and is already applied at BOTH display sites
   (clip view + full view). Display-only; stored text never changes. No code change
-  needed — logged as verified.
+  needed ï¿½ logged as verified.
 
-Checks: `npm run build` passes. **Local commit only — NOT pushed.**
+Checks: `npm run build` passes. **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -571,7 +571,7 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   page media; the clip monitor stops via its pause listener).
 - `PLAY_FROM` now takes `action: 'start' | 'replay'` and falls back to any `video`
   element if the YouTube selectors miss. All three disabled while recording/recorded.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -585,7 +585,7 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 - `PLAY_FROM` with `action: 'toggle'` pauses when the video is playing and seeks to the
   clip start + plays (auto-pause at end) when paused; `action: 'replay'` always
   restarts. Video lookup falls back to any `video` element.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -594,7 +594,7 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 **Files touched:** `src/components/YouTubeClipper.jsx`, `content.js`, `src/styles/panel.css`, this changelog.
 
 - **Play resumes**: `PLAY_FROM` with `action: 'toggle'` no longer seeks when the video
-  is paused — it just calls `play()`, so pressing Play continues from where the video
+  is paused ï¿½ it just calls `play()`, so pressing Play continues from where the video
   was paused. Only **Replay** (`action: 'replay'`) seeks back to the clip start. The
   auto-pause-at-clip-end monitor (and its pause-listener cleanup) is (re)armed on
   every play/resume.
@@ -604,7 +604,7 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   pause, monitor auto-pause, or end), the button flips back to Play and polling stops.
 - **Animation**: the play icon gently pulses while the video is playing
   (`play-pulse` keyframes on `.play-clip-main.playing svg`).
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -613,9 +613,9 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 **Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`, this changelog.
 
 - The label right of Replay now shows the current video''s title (truncated with an
-  ellipsis) instead of the clip range / moving time. The `VIDEO_TIME` poll stays —
+  ellipsis) instead of the clip range / moving time. The `VIDEO_TIME` poll stays ï¿½
   it only keeps the Play/Pause icon in sync with the real video state now.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -626,7 +626,7 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 - The YouTube clip screen heading was the static "Which part matters?" (FlowHeader).
   It now shows the current video''s title (from `pageInfo.data.title`, ellipsis on
   overflow), falling back to the old wording only if the title is missing.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -657,7 +657,7 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   `create_extension_post` gains `p_video_status`; new owner-only RPC
   `update_clip_video_url(clip_id, video_url, video_status)`.
 - Posting a recorded clip now creates the post **immediately** with
-  `video_status = 'uploading'` and no file — the person lands on the success screen
+  `video_status = 'uploading'` and no file ï¿½ the person lands on the success screen
   instantly. The blob uploads in the background (`uploadRecordedClip`), then flips the
   post to `ready` with the public URL (or `failed` on error, web app falls back to embed).
 - The 15 MB pre-check still blocks posting with "This clip is too big. Record a
@@ -665,14 +665,14 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
 
 ### Web app
 - `ClipPage`: while `video_status === 'uploading'` the source area shows an
-  **Uploading…** spinner block (16:9, black) instead of the embed; once `ready` with a
+  **Uploadingï¿½** spinner block (16:9, black) instead of the embed; once `ready` with a
   `video_url` it plays the recorded file in the `<video>` player (embed branch skipped).
 - **The web app changes are committed locally but NOT yet deployed to Cloudflare
-  Pages** — production still serves the old build, which is why the owner saw only the
+  Pages** ï¿½ production still serves the old build, which is why the owner saw only the
   embed. Deploying the web app is a production deploy and needs the master''s OK
-  (AGENTS.md) — requested next.
+  (AGENTS.md) ï¿½ requested next.
 
-Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.**
+Checks: `npm run build` (root + webapp) pass. **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -683,7 +683,7 @@ Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.*
 - The label right of Replay is the moving current time again (`formatShort(currentTime)`,
   250 ms `VIDEO_TIME` poll while playing, updated from the toggle response too). The video
   title stays only in the clip heading (FlowHeader).
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -692,7 +692,7 @@ Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.*
 **Files touched:** `webapp/src/components/YouTubeEmbed.jsx`, `webapp/src/styles/globals.css`,
 `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`, this changelog.
 
-### Webapp — Continue button after the clip ends
+### Webapp ï¿½ Continue button after the clip ends
 - When the embed reaches the clip end, the overlay now offers **Replay clip** AND
   **Continue** side by side. Continue seeks just past the clip end and plays on (sets a
   `continuedRef` flag so the 500 ms end-enforcement poll never pauses again); the flag
@@ -712,7 +712,7 @@ Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.*
   no-transcript-in-range states included. Selected words use the highlight yellow
   (allowed: selected text).
 
-Checks: `npm run build` (root + webapp) pass. **Local commit only — NOT pushed.**
+Checks: `npm run build` (root + webapp) pass. **Local commit only ï¿½ NOT pushed.**
 Webapp changes are NOT yet deployed to Cloudflare Pages (production deploy needs the
 master''s OK per AGENTS.md).
 
@@ -723,10 +723,10 @@ master''s OK per AGENTS.md).
 **Files touched:** `src/components/YouTubeClipper.jsx`, this changelog.
 
 - The word clipper called `fetchYouTubeTranscript(data.youtube_id)`, but the clip
-  screen''s pageInfo carries the id as `data.videoId` — so the fetch ran with
+  screen''s pageInfo carries the id as `data.videoId` ï¿½ so the fetch ran with
   `undefined` and the tab check threw "Return to the selected YouTube video tab to
   load its captions." Now uses `data.videoId`.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -749,7 +749,7 @@ master''s OK per AGENTS.md).
    time->word mapping snap back a word and fight the drag. Word drags now pass exact
    fractional times, and the time<->word sync runs in a `useLayoutEffect` so the
    selection never flickers or jumps. Time scrub and word bars stay in both-way sync.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -761,7 +761,7 @@ master''s OK per AGENTS.md).
   the recorded-clip `<video>` player, the Uploading spinner state, and the Continue
   button after a clip ends.
 - NOTE: the push also published the local-only extension commits (T10, C1, C2, play-clip
-  and word-clipper work) — the standing "local commits only" rule was overridden by the
+  and word-clipper work) ï¿½ the standing "local commits only" rule was overridden by the
   explicit deploy order.
 
 ---
@@ -791,7 +791,7 @@ master''s OK per AGENTS.md).
   the displayed transcript is clean sentences. Word->time mapping is unchanged
   (interpolated per segment), so two-way sync with the time clipper still holds.
 
-Checks: `npm run build` passes. **Local commit only — NOT pushed.**
+Checks: `npm run build` passes. **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -803,15 +803,15 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   one of the ~225 word elements on every pointermove (forced layout each time), and
   every word span re-rendered on each move.
 - Word centers are now cached once per drag (on pointerdown) and moves read the cached
-  array — zero layout reads during the drag.
+  array ï¿½ zero layout reads during the drag.
 - The drag handler is a single stable `useCallback` that reads live state from a ref
   (no stale closures, no re-created handlers), and moves are batched through
   `requestAnimationFrame` (one update per frame).
 - Word spans are `React.memo`-ized: only the words whose selection/handle state
   actually changes re-render (typically 2-4 per move), not all 225.
-- Pointerdown no longer moves the selection — it only caches rects and arms the drag,
+- Pointerdown no longer moves the selection ï¿½ it only caches rects and arms the drag,
   so a plain click does not jump.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -835,7 +835,7 @@ Checks: `npm run build` passes. **Local commit only — NOT pushed.**
   sync effect is paused during drags so nothing fights the pointer, and it re-derives
   once on release. Times are set with sub-second precision instead of full-second
   clamps, so the start bar no longer snaps back.
-- **Local commit only — NOT pushed.**
+- **Local commit only ï¿½ NOT pushed.**
 
 ---
 
@@ -2024,3 +2024,289 @@ this changelog.
   side; Continue is sticky at the panel bottom.
 - Red only on markers, ranges, Continue and the selected play card.
 - Build passes. Local commit only - NOT pushed.
+
+---
+
+## Clip screen v2 (local)
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css,
+this changelog.
+
+- Compile fixes: duplicate `markDirty` declaration removed; `DETAIL_WIN`
+  replaced with `winSpan()` (classic = full duration, advanced = frozen
+  300 s window); old density heuristic (`overW`/`effOverW`/`showDetail`)
+  deleted in favor of `variant === 'advanced'`.
+- Drag repaint: `applyDragValue` and `beginDrag`'s non-jump grab branches
+  now call `setDragVal(...)`, so render helpers (`markerValue`, `playValue`,
+  `renderRange`, `renderMarkers`, `renderBubble`) repaint during drags.
+- Classic variant renders one 56 px bar (`tl-classic`, classicRef) with
+  chapter ticks, 10 s ticks / 30 s labels, range, bracket handles, chips,
+  playhead and bubble - short videos no longer lose their handles.
+- Time-cards block removed entirely (Set start / Set end buttons, inputs,
+  Â±5s nudges and their handlers are gone per the v2 order). Arrow-key
+  nudge on the handles stays wired.
+- rAF smooth loop: one continuous requestAnimationFrame effect extrapolates
+  `lastT + elapsed * rate` while playing, blends `easeRef` jumps with
+  cubicEaseOut, feeds readouts at 10 Hz (`setUiTime`) and owns the
+  playheads' `style.left` directly (React renders a static initial left;
+  poll no longer calls `setUiTime`). Transport readout and chapter
+  detection use `uiTime`.
+- Bracket handles: vertical markers replaced with `[` / `]` grips on the
+  track. Each handle carries a time chip (start chip left, end chip
+  right); tapping the chip selects the handle, tapping again edits the
+  time via `editingChip`/`chipDraft` (Enter commits, Esc cancels).
+  Selected chips turn dark and gain â€¹ â€º arrows with hold-repeat
+  (single step on press, repeat from 400 ms, 90 ms cadence after 1 s).
+- Chapters bottom sheet replaces the inline list: backdrop, drag grip,
+  close button and a search input (`sheetSearch`) filtering rows;
+  180 ms closing animation honours reduced motion; row tap seeks and
+  closes as before.
+- CSS: added missing v2 styles for `.find-tile*`, `.len-meter` (4 px
+  track), `.play-seg*`, `.play-help-line`, `.continue-sticky` kept, plus
+  `.tl-classic`, `.tl-grip*`, `.tl-chip*` and the `.chapter-sheet*` set.
+  Dead time-card / marker-line / inline chapters CSS removed.
+- Build passes. Local commit only - NOT pushed.
+
+---
+
+## Chapters found on videos like the TWiST episode (player pill present, sheet said none)
+
+**Files touched:** `content.js`, `src/components/YouTubeClipper.jsx`, this changelog.
+
+- Root cause, two dead paths: the content-script description fallback called
+  `movie_player.getPlayerResponse()` and read `window.ytInitialPlayerResponse`,
+  both page JS and invisible from the isolated world, so it always yielded
+  nothing; the DOM marker path needs an expanded description, which a fresh
+  video page never has. The MAIN-world scan also missed lazy engagement-panel
+  markers and rejected the whole list when a single entry was out of range.
+- `content.js`: new lossy `ytCleanChapters` (sort, drop dup/out-of-range
+  times, keep >= 3) replaces the all-or-nothing validator; DOM-marker and
+  rendered-text parsing split into helpers; `YT_CHAPTERS` handler now falls
+  back to expanding the description (...more), re-reading markers + full
+  text, and collapsing again, leaving the page as found.
+- MAIN world: scan depth 9 -> 12, two more roots (`ytplayer` config response,
+  live `getPlayerResponse()`), plus direct `shortDescription` harvesting
+  ("0:00 Intro" lines) from every root; over-duration entries are dropped
+  instead of voiding the list.
+- Checks: `npm run build` passes; `npm test` 45/46 (same pre-existing
+  `youtubeTranscript` JSON3 failure, untouched by this change).
+- Local commit only - NOT pushed. Needs a Chrome check on the TWiST video.
+
+---
+
+## Timeline: labeled bars, supreme window, dot seeker, free handles
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`,
+this changelog.
+
+1. Every bar has a function label above it: Overview (move the window),
+   Clip (handles set start/end), Seek (scrub the video).
+2. Window drag is one state flush per animation frame and cancels all
+   competing easings at drag start, so window box, clip handles and seek
+   dot move in the same frame instead of trailing behind.
+3. Seek playhead is a 12px dot on the track; the seek bar cursor is back
+   to default (no crosshair).
+4. Handles drag freely past 90s (drag, nudge, arrows, chip edit); the
+   90s cap now only gates Continue (button disabled + red length row +
+   cap flash), so long drags stay smooth.
+5. Numerals unified to 12px mono tabular (labels, chips, edges, meta row);
+   labels sit in their own 4px-gapped blocks for a symmetric stack.
+- Checks: `npm run build` passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Local commit only - NOT pushed. Needs a Chrome drag check.
+
+---
+
+## Timeline rewritten to the two-bar spec (seek + 2-min clip window)
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`,
+this changelog.
+
+- Two bars, one mapping: seek bar spans 0..duration (`overPct`), clip bar
+  spans winStart..winStart+120s (`detailPct`). The classic/advanced split,
+  the third bar and the 300s window are gone; `WIN_SPAN` is 120.
+- Seek bar: dot dragger at playback time, drag seeks with no snapping,
+  tap anywhere jumps + keeps seeking. Dragging the red window box moves
+  the window with a grab offset (no jump); Up/Down arrows move it too.
+- Window moves never touch X/Y (the auto-centering 30s reform is
+  deleted). Window drags flush once per animation frame with easings
+  killed, so box, handles and dot move in the same frame. Scrubbing or
+  playing past the edges pages the window with a minimal shift.
+- Handles drag free (1s resolution, label + range every frame, nearest
+  handle on tap); the 90s cap gates Continue only. Y stops at the
+  duration without shifting X. Off-window X/Y get edge chips that jump
+  the window back to them.
+- Labels: Seek (whole video) on top, Clip (2-minute window) below;
+  numerals unified 12px mono; dead classic/seek CSS removed.
+- Checks: `npm run build` passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Local commit only - NOT pushed. Verify against the spec acceptance
+  checks in Chrome (50% seek, 30s/120s init, window move keeps X/Y,
+  3-second X drag continuity, Y end-stop, alignment).
+
+---
+
+## Photo redesign + dot/X coupling (no thumbnail block)
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`,
+this changelog.
+
+- Dot/X drive each other: seek-bar drags move X live (Y shifts only to
+  keep the 1s minimum); X drags/nudges/edits already seek the video.
+  Arrow-key scrub and playback never move X.
+- Layout follows the photo while keeping our tokens: `Full Video Timeline
+  (40:10)` label, seek bar with minor ticks + pinned 0:00/duration edge
+  labels, clip work in a `2-Minute Clipping Window` card ending in a
+  centered 17px `Clip X â€“ Y (len)` footer (red past the cap). The window
+  readout and the old length-meter row are gone; their info lives in the
+  footer. The small video preview block from the photo is skipped per
+  order. Chapters/Word tiles gain chevrons (count stays); Continue reads
+  `Continue â†’`.
+- Handles are white pills with a pause-bars glyph, centered on the track;
+  time chips below stay as the edit/nudge surface.
+- Checks: `npm run build` passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Local commit only - NOT pushed. Needs a Chrome look-and-drag check.
+
+---
+
+## Fixed-30s model per the mock (seeker = X, Y = X + 30)
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`,
+this changelog.
+
+- Only three movables: seek dot, X handle, Y handle. Edge chips, window
+  dragging, window glides and the follow effects are deleted (this also
+  removes a live `tweenRef is not defined` crash on window drags).
+- Invariant `Y = X + 30` enforced in every setter: seek-dot drags move X
+  (Y derived), X drags shift the whole clip and seek the video, Y drags
+  shift the whole clip with the seeker following. Chip/nudge/arrow
+  edits route through the same setters. Near the video end Y stops at
+  the duration without shifting X.
+- The window is derived state (`X - 45`, clamped): fixed viewport, moving
+  scale, zero animation code left. Chapters pick moves the clip; the
+  window follows on its own.
+- Mock layout in our tokens: `Full Video Timeline (40:10)` with minor
+  ticks + pinned edge labels; `2-Minute Clipping Window` card with info
+  icon, circular pause-glyph handles, tailed time chips, tick labels
+  under the rail, red bracket under the clip, and a centered link-icon
+  pill `Clip 6:42 â€“ 7:12 (0:30)`. Window readout, length meter and edge
+  chips removed. Tiles gain chevrons; Continue reads `Continue â†’`.
+  No video preview block added per order.
+- Checks: `npm run build` passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Local commit only - NOT pushed. Chrome-verify: seekâ†’Xâ†’Y+30 lockstep,
+  fixed viewport with gliding scale, pill updates, no extra controls.
+
+---
+
+## Locked 180s window, 90s-max free clip, no seek on clamp edits
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`,
+this changelog.
+
+- The red window box is off the seek bar (it sat on top of the dot).
+  The seek bar is now dot + ticks + labels + chapter ticks only.
+- Clip unlocked from 30s: X/Y independent, 0 <= X < Y <= duration, 90s
+  max enforced at Continue (disabled + guard); footer shows the live
+  length. Drags stay free with cap-flash feedback past 90s.
+- Window is 180s, locked on every seek (dot drag/tap, arrows, chapters,
+  init, resume, video change) at X - 30 (30s behind, 150s after). Clip
+  edits (drags, chips, nudges, arrows) never seek the video and never
+  move the window; X is only pulled minimally if it would leave the
+  locked window and hide the handles. Seeking preserves the clip length.
+- Card head reads `3-Minute Clipping Window` (plain `Clipping Window`
+  under 3 minutes).
+- Checks: `npm run build` passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Local commit only - NOT pushed. Chrome-verify on the TWiST video:
+  seek to 7:12, window locks 6:42-9:42, drag clamps without the video
+  or window moving.
+
+---
+
+## Audit fixes, helper copy, Spotify podcast routing
+
+**Files touched:** `src/components/YouTubeClipper.jsx`, `src/styles/panel.css`,
+`content.js`, `src/components/PodcastClipper.jsx`, this changelog.
+
+### Audit (clipper read end to end)
+- Real bug fixed: `anchorClip`, `syncStartToVideoTime` and the draft
+  resume set clip state without updating `viewRef`, so the first handle
+  drag afterwards read a stale opposite endpoint and the clip jumped.
+  All three now sync `viewRef`.
+- Cleared, no change needed: `rec.url` revocation already covers every
+  discard path; Continue gating, publish flooring, snap scope, poll seq
+  guards, drag cleanup, short-video branches and word-clipper interplay
+  all behave.
+- Helper copy above the timeline: "Seek to the moment you want â€” the
+  clip starts there and the window locks around it. Then drag the
+  handles to set its length."
+
+### Spotify podcast
+- Root cause: Spotify streams through encrypted MSE with no plain
+  `<audio src>`, so detection missed it and episodes opened the article
+  clipper. New explicit `open.spotify.com/episode` branch (episode id +
+  `og:title`) plus a host-gated fallback for src-less `<audio>` on
+  podcast hosts.
+- `PodcastClipper` reworked: episode title shown, record â†’ listen-back
+  preview â†’ Re-record / Continue (upload runs on Continue, then
+  annotate). The dead `readyPayload` button now works; object URLs are
+  ref-tracked so unmounts never leak; empty recordings rejected.
+- Checks: `npm run build` passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Local commit only - NOT pushed. Chrome-verify on a Spotify episode:
+  podcast screen appears with the episode title, record â†’ preview â†’
+  Continue reaches the take screen.
+
+---
+
+## Show pages route to podcast, helper copy names the timeline
+
+- `content.js` Spotify branch extended to `/show/` pages (episode id or
+  show id + `og:title`); panel-side `pageDetector` matches both. Show
+  pages previously fell through to the article clipper.
+- Helper copy above the timeline rewritten to name the UI: "Scrub the
+  Full Video Timeline to the moment you want. The clip starts there
+  inside a locked 3-minute window. Drag the handles to set its length,
+  up to 1:30." No em dashes.
+- Checks: `npm run build` passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Local commit only - NOT pushed.
+
+---
+
+## Podcast: real episode audio, silence rejection, slim player
+
+**Files touched:** `src/components/PodcastClipper.jsx`,
+`src/styles/panel.css`, this changelog.
+
+- Why clips came back silent: the recorder only ever used the
+  microphone, so it never captured the episode itself. It now captures
+  real tab audio through the system share picker (no new extension
+  permission needed): pick the Spotify tab and tick audio sharing. The
+  microphone stays as an explicit fallback with a picker when several
+  inputs exist.
+- Silent takes are now impossible to miss: a live input-level meter
+  runs while recording, and every finished take is decoded and
+  RMS-checked. Flat takes are rejected with what to check instead of
+  posting quiet audio.
+- The giant native audio element is replaced with a slim preview
+  player (play/pause, time readout, seek bar).
+- "Recorded 9s â€” listen back" reworded with no em dash.
+- Checks: `npm run build` passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Local commit only - NOT pushed. Chrome-verify on Spotify: Capture
+  episode audio with tab audio shared, watch the meter move, preview
+  with sound, Continue reaches the take screen.
+
+---
+
+## Podcast: tab audio only, mic path removed
+
+- The microphone fallback is gone from the podcast clipper: one button,
+  "Capture episode audio", with copy telling the user to pick the
+  Spotify tab and turn on tab audio. All mic states, errors and the
+  device picker deleted (take-screen voice notes untouched).
+- Recording block restored after an edit collision, with the Spotify
+  tab instruction in the level caption.

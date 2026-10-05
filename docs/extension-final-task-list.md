@@ -10,6 +10,23 @@ Each task has three parts:
 
 The extension has not been touched yet. Build in the order below.
 
+## COMBINED FINAL PHASE — 3 tasks (master's order, replaces T11–T16 as separate units)
+
+Status: **T1–T10 are DONE** (one commit each; changelog in `docs/extension-changelog.md`).
+The remaining work is regrouped into 3 bigger tasks to move faster. Each combined
+task keeps the full original DO/RESULT text of the tasks it swallows, gets built,
+built-checked, changelogged and committed as ONE commit.
+
+| Combined task | Swallows | What the master sees |
+|---|---|---|
+| **C1 — Article screen + page highlighter** | T11 + T12 | Selecting article text glows yellow on the page; the article screen gets the marker design (empty + selected states, Grab selection, Edit text). |
+| **C2 — Take screen + transcript** | T13 + T14 + T15 | Take box on top with Speak it; community/post type below; transcript behind a Show/Hide toggle with Clip/Full tabs; transcript text cleaned of um/[music]/stutters. |
+| **C3 — Final test pass** | T16 | Full checklist run on real pages (embed + record end-to-end, errors, design checks), fixes for anything found, final changelog. |
+
+Rules stay identical (one commit per combined task, no new permissions, yellow only
+for highlight, 14px minimum). The "Do not edit the web app" rule remains lifted for
+the clip-file playback added in T10 (master's explicit override).
+
 ## What changed from v1
 1. The design is now clearly Annotated's own. It no longer follows the reference screens closely.
 2. All on-screen wording is new. No line is reused from the reference.
