@@ -69,10 +69,6 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   const mediaClipped = mediaHr > H_MAX;
   const isVideoPost = playableRecording || playableEmbed;
   const [ytThumbStep, setYtThumbStep] = useState(0);
-  const useYtThumb = isYouTube && playableEmbed && Boolean(clip.youtube_id);
-  const ytThumb = useYtThumb
-    ? `https://img.youtube.com/vi/${clip.youtube_id}/${['maxresdefault', 'sddefault', 'hqdefault'][Math.min(ytThumbStep, 2)]}.jpg`
-    : sourceImage;
   const playInline = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -151,6 +147,10 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   const href = postHref(clip);
   const sourceImage = clip.source_image_url || clip.thumbnail || (clip.youtube_id ? `https://img.youtube.com/vi/${clip.youtube_id}/hqdefault.jpg` : null);
   const canExpand = Boolean(sourceImage) && !imageFailed;
+  const useYtThumb = isYouTube && playableEmbed && Boolean(clip.youtube_id);
+  const ytThumb = useYtThumb
+    ? `https://img.youtube.com/vi/${clip.youtube_id}/${['maxresdefault', 'sddefault', 'hqdefault'][Math.min(ytThumbStep, 2)]}.jpg`
+    : sourceImage;
   const toggleMedia = (event) => {
     event.preventDefault();
     event.stopPropagation();
