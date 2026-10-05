@@ -1959,3 +1959,40 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
 - Shot loop fallback, screenshot last resort, zoom fit, 5s cap, full-card
   bounds and publish path all unchanged.
 - Local commit only - release follows.
+
+---
+
+## Timeline rebuild: modes, two bars, chapters, YT sync (local)
+
+Files touched: content.js, src/components/YouTubeClipper.jsx,
+src/styles/panel.css, this changelog.
+
+- Modes: Seek / Set start / Set end segmented row between the bar and the
+  Start/End cards (Seek default). Set buttons stamp current YT time with
+  the spec rules (auto-extend to 30 s past the stamp when out of range);
+  re-press re-stamps; tapping a time box arms without stamping and seeks
+  the video there. Active button filled red, armed card red outline.
+- Markers: I-shape start, bracket-shape end, 3 px red, 24 px hit areas,
+  range filled red at 20%, min 8 px range, dimmed marker ignores pointer,
+  mono time bubble while dragging, dark playhead line with knob. Markers
+  keep keyboard arrows (1 s, shift 5 s). Old scrub bar and its CSS removed.
+- Two bars: overview (whole video, chapter ticks, pale detail window) plus
+  detail window (default 120 s, chips 10m/2m/30s, 10 s ticks, 30 s labels
+  at 2m and below, 60/120 s at 10m). Detail shows only when D >= 240 s and
+  D/barWidth > 0.5 s/px. Whole-second snapping, click/drag moves the armed
+  marker or playhead, edge pan at W/2 per second, recenter if the active
+  item leaves the middle 60% on release, window clamped to 0..D.
+- Sync: panel polls YT_STATE every 250 ms (time, duration, paused, ad);
+  drags pause, seek at most every 150 ms, exact seek plus resume on
+  release, incoming time ignored mid-drag. Ads disable the timeline with
+  an Ad playing badge; content refuses seeks during ads.
+- Chapters: Chapters button beside Open word clipper (disabled with
+  No chapters tooltip when absent); page macro-markers first, description
+  timestamps second (0:00 first, 3+, ascending). List capped at 45vh with
+  current chapter highlighted; row tap seeks, moves an armed marker with
+  drag clamps, closes and recenters. Current title above the bar.
+- Rules: exact drag/stamp clamp formulas; 90 s cap stops the handle and
+  flashes Max 1:30 red. All boxes, nudges, Play/Replay and length share
+  the same start/end state. Word clipper flag still clears on any time
+  edit. Embed/Record cards, Continue, header and word clipper untouched.
+- Build passes. Local commit only - NOT pushed.

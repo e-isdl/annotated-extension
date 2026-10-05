@@ -62,10 +62,31 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const [endSec, setEndSec] = useState(resumeRange?.end_sec ?? Math.min(30, data.duration || 300));
   const [startInput, setStartInput] = useState(formatTime(resumeRange?.start_sec ?? 0));
   const [endInput, setEndInput] = useState(formatTime(resumeRange?.end_sec ?? Math.min(30, data.duration || 300)));
-  const [dragging, setDragging] = useState(null);
+  const [tlMode, setTlMode] = useState('seek');
+  const [ytTime, setYtTime] = useState(0);
+  const [ytPaused, setYtPaused] = useState(true);
+  const [ytAd, setYtAd] = useState(false);
+  const [winStart, setWinStart] = useState(0);
+  const [zoomW, setZoomW] = useState(120);
+  const [dragView, setDragView] = useState(null);
+  const [dragVal, setDragVal] = useState(0);
+  const [capFlash, setCapFlash] = useState(0);
+  const [chapters, setChapters] = useState([]);
+  const [chaptersOpen, setChaptersOpen] = useState(false);
+  const [overW, setOverW] = useState(0);
+  const [detailW, setDetailW] = useState(0);
   const [playMode, setPlayMode] = useState('embed');
   const [rec, setRec] = useState(IDLE_REC);
-  const trackRef = useRef(null);
+  const overRef = useRef(null);
+  const detailRef = useRef(null);
+  const dragRef = useRef(null);
+  const ytTimeRef = useRef(0);
+  const ytPausedRef = useRef(true);
+  const ytAdRef = useRef(false);
+  const wasPlayingRef = useRef(false);
+  const lastSeekRef = useRef(0);
+  const winStartRef = useRef(0);
+  const zoomWRef = useRef(120);
   const portRef = useRef(null);
   const [wordClipperOpen, setWordClipperOpen] = useState(false);
   const [segments, setSegments] = useState(null);
@@ -251,6 +272,61 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     }
   };
 
+  const loadChapters = async () => {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return;
+      const res = await chrome.tabs.sendMessage(tab.id, { type: 'YT_CHAPTERS' }).catch(() => null);
+      if (res && res.ok && Array.isArray(res.chapters)) setChapters(res.chapters);
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    setChapters([]);
+    setChaptersOpen(false);
+    loadChapters();
+  }, [data.videoId]);
+
+  useEffect(() => {
+    const measure = () => {
+      if (overRef.current) setOverW(overRef.current.clientWidth || 0);
+      if (detailRef.current) setDetailW(detailRef.current.clientWidth || 0);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  useEffect(() => {
+    recenterTo(startSec);
+  }, []);
+
+  useEffect(() => {
+    if (detailRef.current) setDetailW(detailRef.current.clientWidth || 0);
+  }, [duration, overW]);
+
+  const toggleChapters = () => {
+    if (!chapters.length) return;
+    setChaptersOpen((v) => !v);
+  };
+
+  const pickChapter = (ch) => {
+    if (locked || ytAdRef.current) return;
+    const t = Math.round(ch.t);
+    ytSeek(t);
+    if (tlMode === 'start') updateStart(clampStartDrag(t));
+    else if (tlMode === 'end') updateEnd(clampEndDrag(t));
+    setChaptersOpen(false);
+    recenterTo(t);
+  };
+
+  const currentChapter = () => {
+    let cur = null;
+    const pos = playValue() + 0.5;
+    chapters.forEach((c) => { if (c.t <= pos && (!cur || c.t > cur.t)) cur = c; });
+    return cur;
+  };
+
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
 
@@ -258,14 +334,28 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     const id = setInterval(() => {
       chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
         if (!tab?.id) return;
-        chrome.tabs.sendMessage(tab.id, { type: 'VIDEO_TIME', end: endSec }, (res) => {
-          if (res && res.ok) {
+        chrome.tabs.sendMessage(tab.id, { type: 'YT_STATE', end: endSec }, (res) => {
+          if (!res || !res.ok) return;
+          if (!dragRef.current && typeof res.time === 'number') {
+            ytTimeRef.current = res.time;
+            setYtTime(res.time);
             setCurrentTime(res.time);
+          }
+          if (typeof res.paused === 'boolean') {
+            ytPausedRef.current = res.paused;
+            setYtPaused(res.paused);
             setPreviewPlaying(!res.paused);
           }
+          if (typeof res.duration === 'number' && res.duration > 0) {
+            const d = Math.floor(res.duration);
+            setDuration((prev) => (prev !== d ? d : prev));
+          }
+          const ad = !!res.ad;
+          ytAdRef.current = ad;
+          setYtAd((prev) => (prev === ad ? prev : ad));
         }).catch(() => {});
       });
-    }, 500);
+    }, 250);
     return () => clearInterval(id);
   }, [endSec]);
 
@@ -653,53 +743,318 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const canContinue = rec.state === 'done' || playMode === 'embed';
   const locked = rec.state === 'recording' || rec.state === 'done';
 
-  const startPct = (startSec / duration) * 100;
-  const endPct = (endSec / duration) * 100;
+  const tlDuration = () => Math.max(1, duration || 0);
+  const effOverW = overW > 0 ? overW : 360;
+  const showDetail = tlDuration() >= 240 && tlDuration() / effOverW > 0.5;
 
-  const secFromClientX = (clientX) => {
-    const el = trackRef.current;
-    if (!el) return 0;
+  const ytSend = (message) => {
+    try {
+      chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+        if (!tab?.id) return;
+        chrome.tabs.sendMessage(tab.id, message, () => {}).catch(() => {});
+      });
+    } catch (e) {}
+  };
+
+  const ytSeek = (t) => {
+    if (ytAdRef.current) return false;
+    ytSend({ type: 'YT_SEEK', time: Math.max(0, Math.round(t)) });
+    return true;
+  };
+
+  const applyTimes = (s, e) => {
+    const D = tlDuration();
+    const cs = Math.max(0, Math.min(Math.round(s), D));
+    const ce = Math.max(cs + 1, Math.min(Math.round(e), D));
+    if (!(ce > cs)) return null;
+    timesTouchedRef.current = true;
+    wordClipUsedRef.current = false;
+    setStartSec(cs);
+    setStartInput(formatTime(cs));
+    setEndSec(ce);
+    setEndInput(formatTime(ce));
+    return [cs, ce];
+  };
+
+  const clampStartDrag = (t) => {
+    const lo = Math.max(0, endSec - 90);
+    return Math.min(Math.max(Math.round(t), lo), endSec - 1);
+  };
+
+  const clampEndDrag = (t) => {
+    const hi = Math.min(tlDuration(), startSec + 90);
+    return Math.max(Math.min(Math.round(t), hi), startSec + 1);
+  };
+
+  const flashCap = () => setCapFlash((n) => n + 1);
+
+  const stampStart = () => {
+    const t = Math.round(ytTimeRef.current);
+    if (t >= endSec || endSec - t > 90) {
+      const e2 = Math.min(tlDuration(), t + 30);
+      if (!(e2 > t)) return null;
+      return applyTimes(t, e2);
+    }
+    return applyTimes(t, endSec);
+  };
+
+  const stampEnd = () => {
+    const t = Math.round(ytTimeRef.current);
+    if (t <= startSec || t - startSec > 90) {
+      const s2 = Math.max(0, t - 30);
+      if (!(t > s2)) return null;
+      return applyTimes(s2, t);
+    }
+    return applyTimes(startSec, t);
+  };
+
+  const recenterTo = (pos) => {
+    const W = zoomWRef.current;
+    const maxStart = Math.max(0, tlDuration() - W);
+    const ws = Math.max(0, Math.min(Math.round(pos - W / 2), maxStart));
+    winStartRef.current = ws;
+    setWinStart(ws);
+  };
+
+  const anchorForMode = (m) => {
+    const mode = m || tlMode;
+    if (mode === 'start') return startSec;
+    if (mode === 'end') return endSec;
+    return dragView && dragView.kind === 'playhead' ? dragVal : ytTimeRef.current;
+  };
+
+  const pressMode = (m) => {
+    if (locked || ytAdRef.current) return;
+    if (m === 'seek') {
+      setTlMode('seek');
+      recenterTo(anchorForMode('seek'));
+      return;
+    }
+    const applied = m === 'start' ? stampStart() : stampEnd();
+    setTlMode(m);
+    recenterTo(applied ? applied[m === 'start' ? 0 : 1] : (m === 'start' ? startSec : endSec));
+  };
+
+  const setZoom = (w) => {
+    zoomWRef.current = w;
+    setZoomW(w);
+    recenterTo(anchorForMode());
+  };
+
+  const armMarker = (which) => {
+    if (locked) return;
+    setTlMode(which);
+    const t = which === 'start' ? startSec : endSec;
+    ytSeek(t);
+    recenterTo(t);
+  };
+
+  const xToSec = (bar, clientX, rect) => {
+    const w = Math.max(1, rect.width);
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    if (bar === 'over') return Math.round((x / w) * tlDuration());
+    return Math.round(winStartRef.current + (x / w) * zoomWRef.current);
+  };
+
+  const seekThrottled = (t) => {
+    const now = Date.now();
+    if (now - lastSeekRef.current < 150) return;
+    lastSeekRef.current = now;
+    ytSeek(t);
+  };
+
+  const applyDragValue = (kind, t) => {
+    const D = tlDuration();
+    const c = Math.max(0, Math.min(Math.round(t), D));
+    if (kind === 'playhead') {
+      setDragVal(c);
+      seekThrottled(c);
+      return c;
+    }
+    if (kind === 'start') {
+      if (endSec - c > 90) flashCap();
+      const s = clampStartDrag(c);
+      updateStart(s);
+      setDragVal(s);
+      seekThrottled(s);
+      return s;
+    }
+    if (c - startSec > 90) flashCap();
+    const e = clampEndDrag(c);
+    updateEnd(e);
+    setDragVal(e);
+    seekThrottled(e);
+    return e;
+  };
+
+  const beginDrag = (bar, clientX, jump) => {
+    if (ytAdRef.current || locked) return;
+    const el = bar === 'over' ? overRef.current : detailRef.current;
+    if (!el) return;
     const rect = el.getBoundingClientRect();
-    const pct = rect.width > 0 ? (clientX - rect.left) / rect.width : 0;
-    return Math.min(duration, Math.max(0, pct * duration));
+    const wasPlaying = !ytPausedRef.current;
+    if (wasPlaying) ytSend({ type: 'YT_PAUSE' });
+    wasPlayingRef.current = wasPlaying;
+    const kind = tlMode === 'seek' ? 'playhead' : tlMode;
+    dragRef.current = { kind, bar, el, lastX: clientX, panDir: 0, raf: 0, lastFrame: 0, value: 0 };
+    if (jump !== false) {
+      dragRef.current.value = applyDragValue(kind, xToSec(bar, clientX, rect));
+    } else if (kind === 'playhead') {
+      dragRef.current.value = Math.round(ytTimeRef.current);
+      setDragVal(dragRef.current.value);
+    } else {
+      const v = kind === 'start' ? startSec : endSec;
+      dragRef.current.value = v;
+      setDragVal(v);
+    }
+    setDragView({ kind, bar });
+    const onMove = (e) => {
+      const d = dragRef.current;
+      if (!d || !d.el) return;
+      const rect = d.el.getBoundingClientRect();
+      d.lastX = e.clientX;
+      const edge = e.clientX - rect.left;
+      d.panDir = d.bar === 'detail' ? (edge < 20 ? -1 : edge > rect.width - 20 ? 1 : 0) : 0;
+      d.value = applyDragValue(d.kind, xToSec(d.bar, e.clientX, rect));
+    };
+    const step = (now) => {
+      const d = dragRef.current;
+      if (!d || !d.el) return;
+      const dt = Math.min(0.1, Math.max(0, (now - (d.lastFrame || now)) / 1000));
+      d.lastFrame = now;
+      if (d.panDir !== 0 && d.bar === 'detail') {
+        const rect = d.el.getBoundingClientRect();
+        const W = zoomWRef.current;
+        const maxStart = Math.max(0, tlDuration() - W);
+        const ws = Math.max(0, Math.min(Math.round(winStartRef.current + d.panDir * (W / 2) * dt), maxStart));
+        if (ws !== winStartRef.current) {
+          winStartRef.current = ws;
+          setWinStart(ws);
+          d.value = applyDragValue(d.kind, xToSec(d.bar, d.lastX, rect));
+        }
+      }
+      d.raf = requestAnimationFrame(step);
+    };
+    dragRef.current.raf = requestAnimationFrame(step);
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      window.removeEventListener('blur', onUp);
+      const d = dragRef.current;
+      dragRef.current = null;
+      if (d && d.raf) cancelAnimationFrame(d.raf);
+      setDragView(null);
+      setDragVal(0);
+      if (!d) return;
+      if (typeof d.value === 'number') ytSeek(d.value);
+      if (wasPlayingRef.current) {
+        wasPlayingRef.current = false;
+        ytSend({ type: 'YT_RESUME' });
+      }
+      const W = zoomWRef.current;
+      const ws = winStartRef.current;
+      const lo = ws + 0.2 * W;
+      const hi = ws + 0.8 * W;
+      if (d.value < lo || d.value > hi) recenterTo(d.value);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    window.addEventListener('blur', onUp);
   };
 
-  const applyDrag = (which, sec) => {
-    if (which === 'start') updateStart(Math.round(Math.min(sec, endSec - 1)));
-    else updateEnd(Math.round(Math.max(sec, startSec + 1)));
+  const overPct = (t) => Math.max(0, Math.min(100, (t / tlDuration()) * 100));
+
+  const detailPct = (t) => {
+    const W = Math.max(1, zoomW);
+    return Math.max(0, Math.min(100, ((t - winStart) / W) * 100));
   };
 
-  const onTrackPointerDown = (e) => {
-    const sec = secFromClientX(e.clientX);
-    const which = Math.abs(sec - startSec) <= Math.abs(sec - endSec) ? 'start' : 'end';
-    setDragging(which);
-    e.currentTarget.setPointerCapture(e.pointerId);
-    applyDrag(which, sec);
+  const markerValue = (which) => {
+    if (dragView && dragView.kind === which) return dragVal;
+    return which === 'start' ? startSec : endSec;
   };
 
-  const onHandlePointerDown = (which) => (e) => {
-    e.stopPropagation();
-    setDragging(which);
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
+  const playValue = () => (dragView && dragView.kind === 'playhead' ? dragVal : ytTime);
 
-  const onTrackPointerMove = (e) => {
-    if (!dragging) return;
-    applyDrag(dragging, secFromClientX(e.clientX));
-  };
-
-  const onTrackPointerUp = () => setDragging(null);
-
-  const onHandleKeyDown = (which) => (e) => {
+  const markerKeyDown = (which) => (e) => {
+    if (locked || ytAdRef.current) return;
     const step = e.shiftKey ? 5 : 1;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (which === 'start') updateStart(startSec - step); else updateEnd(endSec - step);
-    } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (which === 'start') updateStart(startSec + step); else updateEnd(endSec + step);
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    const dir = (e.key === 'ArrowLeft' || e.key === 'ArrowDown') ? -1 : 1;
+    const cur = which === 'start' ? startSec : endSec;
+    const t = cur + dir * step;
+    if (which === 'start') {
+      if ((endSec - t) > 90) flashCap();
+      updateStart(clampStartDrag(t));
+      ytSeek(startSec);
+    } else {
+      if ((t - startSec) > 90) flashCap();
+      updateEnd(clampEndDrag(t));
+      ytSeek(endSec);
     }
   };
+
+  const renderMarkers = (bar, pctFn) => {
+    const sPos = dragView && dragView.kind === 'start' ? dragVal : startSec;
+    const ePos = dragView && dragView.kind === 'end' ? dragVal : endSec;
+    const mk = (which, pos) => {
+      const dim = (tlMode === 'start' && which === 'end') || (tlMode === 'end' && which === 'start');
+      const noDrag = tlMode === 'seek';
+      return (
+        <div
+          key={which}
+          className={`tl-marker is-${which}${dim ? ' is-dim' : ''}${noDrag ? ' is-static' : ''}`}
+          style={{ left: `${pctFn(pos)}%` }}
+          role="slider"
+          tabIndex={noDrag || dim ? -1 : 0}
+          aria-label={which === 'start' ? 'Start time' : 'End time'}
+          aria-valuemin={0}
+          aria-valuemax={Math.round(tlDuration())}
+          aria-valuenow={Math.round(pos)}
+          aria-valuetext={formatTime(pos)}
+          onPointerDown={(e) => { e.stopPropagation(); beginDrag(bar, e.clientX, false); }}
+          onKeyDown={markerKeyDown(which)}
+        >
+          <span className="tl-marker-line" aria-hidden="true" />
+        </div>
+      );
+    };
+    return <>{mk('start', sPos)}{mk('end', ePos)}</>;
+  };
+
+  const renderRange = (pctFn) => {
+    const s = dragView && dragView.kind === 'start' ? dragVal : startSec;
+    const e = dragView && dragView.kind === 'end' ? dragVal : endSec;
+    const lo = Math.min(s, e);
+    const wPct = Math.abs(pctFn(e) - pctFn(s));
+    return <div className="tl-range" style={{ left: `${pctFn(lo)}%`, width: `max(${wPct}%, 8px)` }} />;
+  };
+
+  const renderPlayhead = (pctFn) => {
+    const p = dragView && dragView.kind === 'playhead' ? dragVal : ytTime;
+    return <div className="tl-play" style={{ left: `${pctFn(p)}%` }} />;
+  };
+
+  const renderBubble = (bar, pctFn) => {
+    if (!dragView || dragView.bar !== bar) return null;
+    const pct = Math.max(4, Math.min(96, pctFn(dragVal)));
+    return <div className="tl-bubble" style={{ left: `${pct}%` }}>{formatShort(dragVal)}</div>;
+  };
+
+  const chapNow = currentChapter();
+  const detailTickStep = zoomW > 300 ? 60 : 10;
+  const detailLabelStep = zoomW > 300 ? 120 : 30;
+  const detailTicks = [];
+  if (showDetail) {
+    const D = tlDuration();
+    const first = Math.ceil(winStart / detailTickStep) * detailTickStep;
+    for (let t = first; t <= Math.min(winStart + zoomW, D); t += detailTickStep) {
+      detailTicks.push({ t, label: t % detailLabelStep === 0 });
+    }
+  }
 
   if (wordClipperOpen) {
     return (
@@ -842,56 +1197,63 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
         </div>
       )}
 
-      <div
-        className={`scrub${locked ? ' rec-lock' : ''}`}
-        ref={trackRef}
-        onPointerDown={onTrackPointerDown}
-        onPointerMove={onTrackPointerMove}
-        onPointerUp={onTrackPointerUp}
-        onPointerCancel={onTrackPointerUp}
-      >
-        <div className="scrub-track">
-          <div
-            className="scrub-fill"
-            style={{ left: `${startPct}%`, width: `${Math.max(0, endPct - startPct)}%` }}
-          />
-          <div
-            className="scrub-handle is-start"
-            role="slider"
-            tabIndex={0}
-            aria-label="Start time"
-            aria-valuemin={0}
-            aria-valuemax={duration}
-            aria-valuenow={startSec}
-            aria-valuetext={formatTime(startSec)}
-            style={{ left: `${startPct}%` }}
-            onPointerDown={onHandlePointerDown('start')}
-            onKeyDown={onHandleKeyDown('start')}
-          />
-          <div
-            className="scrub-handle is-end"
-            role="slider"
-            tabIndex={0}
-            aria-label="End time"
-            aria-valuemin={0}
-            aria-valuemax={duration}
-            aria-valuenow={endSec}
-            aria-valuetext={formatTime(endSec)}
-            style={{ left: `${endPct}%` }}
-            onPointerDown={onHandlePointerDown('end')}
-            onKeyDown={onHandleKeyDown('end')}
-          />
+      <div className={`tl-group${ytAd ? ' is-disabled' : ''}${locked ? ' rec-lock' : ''}`}>
+        {ytAd && <div className="tl-ad" role="status">Ad playing</div>}
+        {chapters.length > 0 && chapNow && (
+          <div className="tl-chapter" title={chapNow.title}>{chapNow.title}</div>
+        )}
+        <div className="tl-modes" role="group" aria-label="Timeline mode">
+          <button type="button" disabled={locked || ytAd} className={`tl-mode${tlMode === 'seek' ? ' is-active' : ''}`} aria-pressed={tlMode === 'seek'} onClick={() => pressMode('seek')}>Seek</button>
+          <button type="button" disabled={locked || ytAd} className={`tl-mode${tlMode === 'start' ? ' is-active' : ''}`} aria-pressed={tlMode === 'start'} onClick={() => pressMode('start')}>Set start</button>
+          <button type="button" disabled={locked || ytAd} className={`tl-mode${tlMode === 'end' ? ' is-active' : ''}`} aria-pressed={tlMode === 'end'} onClick={() => pressMode('end')}>Set end</button>
         </div>
+        <div ref={overRef} className="tl-bar tl-over" onPointerDown={(e) => beginDrag('over', e.clientX)}>
+          <div className="tl-track" />
+          {chapters.map((c, i) => (
+            <div key={`ct${i}`} className="tl-ctick" style={{ left: `${overPct(c.t)}%` }} />
+          ))}
+          {showDetail && (
+            <div className="tl-window" style={{ left: `${overPct(winStart)}%`, width: `${Math.max(0, overPct(winStart + zoomW) - overPct(winStart))}%` }} />
+          )}
+          {renderRange(overPct)}
+          {renderMarkers('over', overPct)}
+          {renderPlayhead(overPct)}
+          {renderBubble('over', overPct)}
+        </div>
+        {showDetail && (
+          <>
+            <div className="tl-zoomrow">
+              <span className="tl-zoomlabel">Window</span>
+              {[{ w: 600, l: '10m' }, { w: 120, l: '2m' }, { w: 30, l: '30s' }].map((chip) => (
+                <button key={chip.l} type="button" disabled={locked || ytAd} className={`tl-chip${zoomW === chip.w ? ' is-active' : ''}`} aria-pressed={zoomW === chip.w} onClick={() => setZoom(chip.w)}>{chip.l}</button>
+              ))}
+            </div>
+            <div ref={detailRef} className="tl-bar tl-detail" onPointerDown={(e) => beginDrag('detail', e.clientX)}>
+              <div className="tl-track" />
+              {detailTicks.map((k) => (
+                <div key={`tk${k.t}`} className="tl-tick" style={{ left: `${detailPct(k.t)}%` }} />
+              ))}
+              {detailTicks.map((k) => k.label && (
+                <div key={`tl${k.t}`} className="tl-ticklabel" style={{ left: `${detailPct(k.t)}%` }}>{formatShort(k.t)}</div>
+              ))}
+              {renderRange(detailPct)}
+              {renderMarkers('detail', detailPct)}
+              {renderPlayhead(detailPct)}
+              {renderBubble('detail', detailPct)}
+            </div>
+          </>
+        )}
       </div>
 
       <div className={`time-cards${locked ? ' rec-lock' : ''}`}>
-        <div className="time-card">
+        <div className={`time-card${tlMode === 'start' ? ' is-armed' : ''}`}>
           <span className="time-card-label">Start</span>
           <input
             type="text"
             className="time-input"
             value={startInput}
             onChange={(e) => handleStartInput(e.target.value)}
+            onFocus={() => armMarker('start')}
             onBlur={() => setStartInput(formatTime(startSec))}
             placeholder="0:00:00"
             aria-label="Start time"
@@ -901,13 +1263,14 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             <button type="button" className="nudge" onClick={() => updateStart(startSec + 5)}>+5s</button>
           </div>
         </div>
-        <div className="time-card">
+        <div className={`time-card${tlMode === 'end' ? ' is-armed' : ''}`}>
           <span className="time-card-label">End</span>
           <input
             type="text"
             className="time-input"
             value={endInput}
             onChange={(e) => handleEndInput(e.target.value)}
+            onFocus={() => armMarker('end')}
             onBlur={() => setEndInput(formatTime(endSec))}
             placeholder="0:00:30"
             aria-label="End time"
@@ -919,16 +1282,42 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
         </div>
       </div>
 
-      <button type="button" className="btn-ghost word-clipper-toggle" onClick={toggleWordClipper}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-        Open word clipper
-      </button>
+      <div className="word-toggle-row">
+        <button type="button" className="btn-ghost word-clipper-toggle" onClick={toggleChapters} disabled={!chapters.length} title={chapters.length ? 'Jump to a chapter' : 'No chapters'}>
+          Chapters{chapters.length ? ` (${chapters.length})` : ''}
+        </button>
+        <button type="button" className="btn-ghost word-clipper-toggle" onClick={toggleWordClipper}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          Open word clipper
+        </button>
+      </div>
+
+      {chaptersOpen && chapters.length > 0 && (
+        <div className="tl-chapters" role="listbox" aria-label="Chapters">
+          {chapters.map((c, i) => {
+            const isCur = currentChapter() && currentChapter().t === c.t;
+            return (
+              <button
+                key={`${c.t}-${i}`}
+                type="button"
+                role="option"
+                aria-selected={isCur}
+                className={`tl-chapter-row${isCur ? ' is-current' : ''}`}
+                onClick={() => pickChapter(c)}
+              >
+                <span className="tl-chapter-time">{formatShort(c.t)}</span>
+                <span className="tl-chapter-name">{c.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="length-row">
         <span className={clipLen > 90 ? 'over' : ''}>Clip length {formatLength(clipLen)}</span>
-        <span className="max">Max 1:30</span>
+        <span key={capFlash} className={`max${capFlash ? ' flash' : ''}`}>Max 1:30</span>
       </div>
 
       <div className={`play-section${locked ? ' rec-lock' : ''}`}>

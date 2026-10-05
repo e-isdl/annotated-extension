@@ -695,6 +695,84 @@ if (!window.__annotatedContentLoaded) {
   void 0;
 }
 
+// Timeline helpers for the extension clip screen (seek, state, chapters).
+function ytTimelineVideo() {
+  return document.querySelector('video.html5-main-video')
+    || document.querySelector('#movie_player video')
+    || document.querySelector('video');
+}
+
+function ytChapterSeconds(text) {
+  const m = String(text || '').trim().match(/^(?:(\d+):)?([0-5]?\d):([0-5]\d)$/);
+  if (!m) return null;
+  return (Number(m[1] || 0) * 3600) + (Number(m[2]) * 60) + Number(m[3]);
+}
+
+function ytChaptersValid(list) {
+  if (!Array.isArray(list) || list.length < 3) return false;
+  if (list[0].t !== 0) return false;
+  for (let i = 1; i < list.length; i += 1) {
+    if (!(list[i].t > list[i - 1].t)) return false;
+  }
+  return true;
+}
+
+function ytDedupeChapters(items) {
+  const out = [];
+  items.forEach((item) => {
+    if (!out.length || out[out.length - 1].t !== item.t) out.push(item);
+  });
+  return out;
+}
+
+function getYouTubeChapters() {
+  try {
+    const items = [];
+    document.querySelectorAll('ytd-macro-markers-list-item-renderer').forEach((el) => {
+      const lines = String(el.innerText || '').split('\n').map((s) => s.trim()).filter(Boolean);
+      if (!lines.length) return;
+      let t = null;
+      let ti = -1;
+      for (let i = 0; i < lines.length; i += 1) {
+        const s = ytChapterSeconds(lines[i]);
+        if (s !== null) { t = s; ti = i; break; }
+      }
+      if (t === null) return;
+      const title = lines.slice(ti + 1).filter((line) => ytChapterSeconds(line) === null).join(' ').trim().slice(0, 140)
+        || lines.slice(0, ti).join(' ').trim().slice(0, 140);
+      if (!title) return;
+      items.push({ t, title });
+    });
+    const deduped = ytDedupeChapters(items);
+    if (ytChaptersValid(deduped)) return deduped.slice(0, 200);
+  } catch (e) {}
+  try {
+    let desc = '';
+    try {
+      const live = document.querySelector('#movie_player')?.getPlayerResponse?.();
+      desc = String(live?.videoDetails?.shortDescription || '');
+    } catch (e) {}
+    if (!desc) {
+      try { desc = String(window.ytInitialPlayerResponse?.videoDetails?.shortDescription || ''); } catch (e) {}
+    }
+    if (desc) {
+      const parsed = [];
+      desc.split('\n').forEach((rawLine) => {
+        const line = String(rawLine || '').trim();
+        const m = line.match(/^((?:\d+:)?[0-5]?\d:[0-5]\d)\s+(.+?)\s*$/);
+        if (!m) return;
+        const t = ytChapterSeconds(m[1]);
+        const title = String(m[2] || '').trim().slice(0, 140);
+        if (t === null || !title) return;
+        parsed.push({ t, title });
+      });
+      const deduped = ytDedupeChapters(parsed);
+      if (ytChaptersValid(deduped)) return deduped.slice(0, 200);
+    }
+  } catch (e) {}
+  return [];
+}
+
 // The message handler registers on every injection (old one removed first)
 // so a re-injected script always answers with fresh handlers. DOM listeners
 // above stay load-once guarded.
@@ -866,6 +944,54 @@ if (!window.__annotatedContentLoaded) {
       } else {
         sendResponse({ ok: false });
       }
+      return true;
+    }
+    if (message.type === 'YT_STATE') {
+      const video = document.querySelector('video.html5-main-video')
+        || document.querySelector('#movie_player video')
+        || document.querySelector('video');
+      if (video) {
+        if (clipMonitor && Number(message.end) > 0) clipEnd = Number(message.end);
+        const dur = Number(video.duration);
+        sendResponse({ ok: true, time: video.currentTime || 0,
+          duration: Number.isFinite(dur) && dur > 0 ? dur : 0,
+          paused: !!video.paused, ad: isAdPlaying() });
+      } else {
+        sendResponse({ ok: false });
+      }
+      return true;
+    }
+    if (message.type === 'YT_SEEK') {
+      const video = document.querySelector('video.html5-main-video')
+        || document.querySelector('#movie_player video')
+        || document.querySelector('video');
+      if (!video) {
+        sendResponse({ ok: false });
+        return true;
+      }
+      if (isAdPlaying()) {
+        sendResponse({ ok: false, code: 'ad' });
+        return true;
+      }
+      try { video.currentTime = Math.max(0, Number(message.time) || 0); } catch (e) {}
+      sendResponse({ ok: true, time: video.currentTime || 0, paused: !!video.paused });
+      return true;
+    }
+    if (message.type === 'YT_PAUSE') {
+      try { ytTimelineVideo()?.pause(); } catch (e) {}
+      sendResponse({ ok: true });
+      return true;
+    }
+    if (message.type === 'YT_RESUME') {
+      try {
+        const p = ytTimelineVideo()?.play();
+        if (p && p.catch) p.catch(() => {});
+      } catch (e) {}
+      sendResponse({ ok: true });
+      return true;
+    }
+    if (message.type === 'YT_CHAPTERS') {
+      sendResponse({ ok: true, chapters: getYouTubeChapters() });
       return true;
     }
     if (message.type === 'CLEAR_HIGHLIGHT') {
