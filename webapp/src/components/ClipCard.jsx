@@ -151,10 +151,10 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
     event.stopPropagation();
     if (canExpand) setMediaExpanded((open) => !open);
   };
-  const hideQuote = hideTranscript && (clip.source_type === 'youtube' || clip.source_type === 'social') && Boolean(sourceImage) && !imageFailed;
+  const hideQuote = hideTranscript && clip.source_type === 'youtube' && Boolean(sourceImage) && !imageFailed;
   const socialVisual = clip.source_type === 'social' && (hasMedia || (sourceImage && !imageFailed));
   const showQuote = !hideQuote && !socialVisual;
-  const tweetExpanded = !hasMedia && (mediaExpanded || (hideTranscript && isXPost));
+  const tweetExpanded = mediaExpanded;
 
   useEffect(() => {
     if (String(clip.id).startsWith('demo-')) return;
@@ -387,7 +387,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
         <button type="button" onClick={handleSave} className={`post-action ${isXPost && canExpand ? '' : 'post-action-last '}${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
         </button>
-        {isXPost && canExpand && !hideTranscript && !hasMedia && (
+        {isXPost && canExpand && !hasMedia && (
           <button type="button" onClick={toggleMedia} className="post-action post-action-last" aria-expanded={mediaExpanded}>
             <SourceIcon type="social" /> {mediaExpanded ? 'Hide tweet' : 'See tweet'}
           </button>
