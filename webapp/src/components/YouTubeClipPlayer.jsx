@@ -86,6 +86,10 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const userPausedRef = useRef(getPlaybackPosition(positionKey)?.userPaused ?? false);
   const playingRef = useRef(false);
   playingRef.current = playing;
+  // Latched when the playhead hits the clip end (or the video ends): stops
+  // the 100ms poll from re-firing reset and stops auto-resume from
+  // replaying it. Cleared by any intentional play or seek.
+  const clipEndedRef = useRef(false);
 
   const start = Math.max(0, Number(startSec) || 0);
   const rawEnd = Number(endSec) || 0;
@@ -103,6 +107,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
 
     const resetToStart = (target) => {
       const bs = boundsRef.current.start;
+      clipEndedRef.current = true;
       try { target?.pauseVideo(); } catch {}
       try { target?.seekTo(bs, true); } catch {}
       setPos(0);
@@ -181,7 +186,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
         try { cur = p.getCurrentTime() || 0; } catch { return; }
         const { start: bStart, end: bEnd } = boundsRef.current;
         if (bEnd > bStart && cur >= bEnd - 0.05) {
-          resetToStart(p);
+          if (!clipEndedRef.current) resetToStart(p);
           return;
         }
         const next = Math.min(Math.max(0, cur - bStart), Math.max(0, bEnd - bStart));
@@ -212,7 +217,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
             try { playerRef.current?.pauseVideo(); } catch {}
             setPlaying(false);
           }
-        } else if (startMuted && !userPausedRef.current) {
+        } else if (startMuted && !userPausedRef.current && !clipEndedRef.current) {
           const p = playerRef.current;
           if (p?.playVideo) {
             try { p.playVideo(); } catch {}
@@ -254,6 +259,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const play = () => {
     const p = playerRef.current;
     if (!p?.playVideo) return;
+    clipEndedRef.current = false;
     claimPlayback(stopRef.current);
     const { start: bs, end: be } = boundsRef.current;
     let cur = bs;
@@ -274,6 +280,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
     const p = playerRef.current;
     mutedRef.current = false;
     userPausedRef.current = false;
+    clipEndedRef.current = false;
     setMuted(false);
     if (!p) return;
     claimPlayback(stopRef.current);
@@ -304,6 +311,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
   const seekToClipPos = (v) => {
     const { start: bs, end: be } = boundsRef.current;
     const clamped = Math.min(Math.max(0, Number(v) || 0), Math.max(0, be - bs));
+    clipEndedRef.current = false;
     setPos(clamped);
     savePlaybackPosition(positionKey, clamped, userPausedRef.current);
     try { playerRef.current?.seekTo(bs + clamped, true); } catch {}
