@@ -154,6 +154,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
   const hideQuote = hideTranscript && clip.source_type === 'youtube' && !playableRecording && Boolean(sourceImage) && !imageFailed;
   const socialVisual = clip.source_type === 'social' && (hasMedia || (sourceImage && !imageFailed));
   const showQuote = !hideQuote && !socialVisual;
+  const xShotFull = isXPost && !hasMedia && canExpand && !isVideoPost;
   const tweetExpanded = mediaExpanded;
 
   useEffect(() => {
@@ -263,8 +264,14 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
             )}
           </div>
         </div>
-        ) : tweetExpanded && canExpand && !isVideoPost ? (
+        ) : (tweetExpanded || xShotFull) && canExpand && !isVideoPost ? (
         <div className="source-preview source-preview-expanded">
+          {isXPost && (
+            <div className="source-preview-copy">
+              <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>
+              {posterHandle && <p className="source-quote-poster">@{posterHandle}</p>}
+            </div>
+          )}
           <div className="source-preview-media" role="button" tabIndex={0} aria-label="Collapse preview" onClick={toggleMedia} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleMedia(event); }}>
             <img src={sourceImage} alt={clip.title || 'Source preview'} className={`source-preview-image-expanded${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />
           </div>
@@ -384,14 +391,9 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
         <button type="button" onClick={handleShare} className="post-action">
           <span>↗</span> <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span>
         </button>
-        <button type="button" onClick={handleSave} className={`post-action ${isXPost && canExpand ? '' : 'post-action-last '}${saved ? 'post-action-saved' : ''}`}>
+        <button type="button" onClick={handleSave} className={`post-action post-action-last ${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
         </button>
-        {isXPost && canExpand && !hasMedia && (
-          <button type="button" onClick={toggleMedia} className="post-action post-action-last" aria-expanded={mediaExpanded}>
-            <SourceIcon type="social" /> {mediaExpanded ? 'Hide tweet' : 'See tweet'}
-          </button>
-        )}
       </div>
       <Link to={href} className="post-card-link" aria-label={cardAriaLabel} draggable={false} onClick={onCardLinkClick} />
     </article>
