@@ -1866,3 +1866,12 @@ this changelog.
 - The background reports its own capture error, which the empty-take
   reason now carries.
 - Local commit only - release follows.
+---
+
+## Tweet recordings fixed at 5 seconds
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- The take is always a 5 second loop. The duration-based target up to
+  60s is gone, replaced by a single RECORD_MS constant.
+- Local commit only - release follows.

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 const CAPTURE_TIMEOUT_MS = 20000;
-const MAX_RECORD_MS = 60000;
+const RECORD_MS = 5000;
 const RECORD_BPS = 2000000;
 const MAX_CLIP_BYTES = 15 * 1024 * 1024;
 
@@ -284,7 +284,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
         prep = next;
       }
       setFitting(false);
-      const targetMs = Math.max(2000, Math.min(prep.durationMs || 15000, MAX_RECORD_MS));
+      const targetMs = RECORD_MS;
 
       const rs = Math.min(2, 1100 / prep.bounds.w);
       const canvas = document.createElement('canvas');
