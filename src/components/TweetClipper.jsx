@@ -64,7 +64,6 @@ async function tweetPrepFunc() {
     return { ok: false, code: 'no-media', articles, videos: 0 };
   }
   const card = video.closest('article[data-testid="tweet"]') || document.querySelector('article[data-testid="tweet"]');
-  const videoSrc = video.currentSrc || video.src || '';
   let box = null;
   let vrect = null;
   if (card) {
@@ -91,7 +90,7 @@ async function tweetPrepFunc() {
   let durationMs = 0;
   const d = Number(video.duration);
   if (Number.isFinite(d) && d > 0) durationMs = Math.floor(d * 1000);
-  return { ok: true, durationMs, bounds, vrect, videoSrc, vw: window.innerWidth, vh: window.innerHeight };
+  return { ok: true, durationMs, bounds, vrect, vw: window.innerWidth, vh: window.innerHeight };
 
   function tweetCardBounds(root) {
     // Full card: author header through body, video, and actions. Tall
@@ -129,42 +128,66 @@ async function tweetPrepFunc() {
 
 async function tweetHybridFunc(a) {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const cleanupOf = (v, url) => {
-    try { v.pause(); } catch (e) {}
-    try { v.removeAttribute('src'); } catch (e) {}
-    try { v.parentNode && v.parentNode.removeChild(v); } catch (e) {}
-    try { url && URL.revokeObjectURL(url); } catch (e) {}
+  const stopStream = (stream) => {
+    try { stream.getTracks().forEach((t) => { try { t.stop(); } catch (e) {} }); } catch (e) {}
+  };
+  const removeEl = (el) => {
+    try { el.pause(); } catch (e) {}
+    try { el.srcObject = null; } catch (e) {}
+    try { el.removeAttribute('src'); } catch (e) {}
+    try { el.parentNode && el.parentNode.removeChild(el); } catch (e) {}
+  };
+  let video = null;
+  let relay = null;
+  let live = null;
+  const restoreVideo = (wasPaused, wasMuted) => {
+    if (!video) return;
+    try { if (wasPaused) video.pause(); } catch (e) {}
+    try { video.muted = wasMuted; } catch (e) {}
   };
   try {
-    if (!a || !a.src || (!/^blob:/.test(a.src) && !/^https?:/.test(a.src))) return { ok: false, reason: 'no-src' };
-    if (/\.m3u8(\?|$)/i.test(a.src)) return { ok: false, reason: 'stream' };
-    let res = null;
-    try {
-      const ctl = new AbortController();
-      const to = setTimeout(() => { try { ctl.abort(); } catch (e) {} }, 25000);
-      res = await fetch(a.src, { signal: ctl.signal });
-      clearTimeout(to);
-    } catch (e) { return { ok: false, reason: 'fetch' }; }
-    if (!res || !res.ok) return { ok: false, reason: 'fetch' };
-    const ct = String(res.headers.get('content-type') || '').toLowerCase();
-    if (ct.includes('mpegurl') || ct.includes('m3u8')) return { ok: false, reason: 'stream' };
-    const file = await res.blob().catch(() => null);
-    if (!file || !file.size) return { ok: false, reason: 'fetch' };
-    const url = URL.createObjectURL(file);
-    const v = document.createElement('video');
-    v.muted = true;
-    v.playsInline = true;
-    v.preload = 'auto';
-    v.style.cssText = 'position:fixed;width:4px;height:4px;opacity:0;pointer-events:none;left:0;top:0;';
-    document.documentElement.appendChild(v);
-    try {
-      v.src = url;
-      await new Promise((resolve, reject) => {
-        const to = setTimeout(() => reject(new Error('timeout')), 10000);
-        v.addEventListener('loadeddata', () => { clearTimeout(to); resolve(); }, { once: true });
-        v.addEventListener('error', () => { clearTimeout(to); reject(new Error('error')); }, { once: true });
+    if (!a || !a.bg || !(a.cw > 0) || !(a.ch > 0)) return { ok: false, reason: 'args' };
+    // Capture the live playing element. Decoded frames work for mp4, HLS,
+    // MSE and blob sources alike, with no fetch and no CORS taint.
+    for (let i = 0; i < 10; i += 1) {
+      const cands = Array.from(document.querySelectorAll('video')).filter((v) => {
+        try {
+          const r = v.getBoundingClientRect();
+          return r.width > 120 && r.height > 120 && r.bottom > 0 && r.top < window.innerHeight;
+        } catch (e) { return false; }
       });
-      try { await v.play(); } catch (e) {}
+      if (cands.length) {
+        cands.sort((x, y) => {
+          const rx = x.getBoundingClientRect();
+          const ry = y.getBoundingClientRect();
+          return (ry.width * ry.height) - (rx.width * rx.height);
+        });
+        video = cands[0];
+        break;
+      }
+      await sleep(200);
+    }
+    if (!video) return { ok: false, reason: 'no-video' };
+    if (typeof video.captureStream !== 'function') return { ok: false, reason: 'no-capture' };
+    let ready = 0;
+    try { ready = video.readyState || 0; } catch (e) {}
+    if (ready < 2) return { ok: false, reason: 'not-ready' };
+    let wasPaused = true;
+    let wasMuted = true;
+    try { wasPaused = !!video.paused; } catch (e) {}
+    try { wasMuted = !!video.muted; } catch (e) {}
+    try { video.muted = true; await video.play(); } catch (e) {}
+    try {
+      live = video.captureStream();
+      if (!live || !live.getVideoTracks().length) { restoreVideo(wasPaused, wasMuted); return { ok: false, reason: 'no-track' }; }
+      relay = document.createElement('video');
+      relay.muted = true;
+      relay.playsInline = true;
+      relay.preload = 'auto';
+      relay.style.cssText = 'position:fixed;width:4px;height:4px;opacity:0;pointer-events:none;left:0;top:0;';
+      document.documentElement.appendChild(relay);
+      relay.srcObject = new MediaStream(live.getVideoTracks());
+      try { await relay.play(); } catch (e) {}
       const bg = await new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => resolve(img);
@@ -175,7 +198,7 @@ async function tweetHybridFunc(a) {
       canvas.width = a.cw;
       canvas.height = a.ch;
       const ctx = canvas.getContext('2d');
-      if (!ctx) { cleanupOf(v, url); return { ok: false, reason: 'canvas' }; }
+      if (!ctx) throw new Error('canvas');
       const stream = canvas.captureStream(30);
       const mimeTypes = ['video/mp4;codecs=avc1.42E01E', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8'];
       let mimeType = null;
@@ -186,7 +209,7 @@ async function tweetHybridFunc(a) {
       const chunks = [];
       rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
       const stopped = new Promise((resolve) => { rec.onstop = () => resolve(); });
-      try { ctx.drawImage(bg, 0, 0, a.cw, a.ch); ctx.drawImage(v, a.vx, a.vy, a.vw, a.vh); } catch (e) {}
+      try { ctx.drawImage(bg, 0, 0, a.cw, a.ch); ctx.drawImage(relay, a.vx, a.vy, a.vw, a.vh); } catch (e) {}
       rec.start(250);
       const t0 = Date.now();
       let poster = null;
@@ -194,7 +217,7 @@ async function tweetHybridFunc(a) {
         const frame = () => {
           try {
             ctx.drawImage(bg, 0, 0, a.cw, a.ch);
-            ctx.drawImage(v, a.vx, a.vy, a.vw, a.vh);
+            ctx.drawImage(relay, a.vx, a.vy, a.vw, a.vh);
           } catch (e) {}
           if (!poster && Date.now() - t0 > 600) {
             try { poster = canvas.toDataURL('image/jpeg', 0.85); } catch (e) {}
@@ -206,8 +229,12 @@ async function tweetHybridFunc(a) {
       });
       try { if (rec.state !== 'inactive') rec.stop(); } catch (e) {}
       await stopped;
-      cleanupOf(v, url);
-      try { stream.getTracks().forEach((t) => { try { t.stop(); } catch (e2) {} }); } catch (e) {}
+      restoreVideo(wasPaused, wasMuted);
+      removeEl(relay);
+      relay = null;
+      stopStream(live);
+      live = null;
+      stopStream(stream);
       const out = new Blob(chunks, { type: rec.mimeType || mimeType || 'video/webm' });
       if (!out.size) return { ok: false, reason: 'empty' };
       const buf = await out.arrayBuffer();
@@ -218,7 +245,9 @@ async function tweetHybridFunc(a) {
       }
       return { ok: true, b64: btoa(bin), mime: out.type || 'video/webm', poster, w: a.cw, h: a.ch };
     } catch (e) {
-      cleanupOf(v, url);
+      restoreVideo(wasPaused, wasMuted);
+      if (relay) { removeEl(relay); relay = null; }
+      if (live) { stopStream(live); live = null; }
       return { ok: false, reason: 'record' };
     }
   } catch (e) {
@@ -382,17 +411,17 @@ export default function TweetClipper({ pageInfo, onReady }) {
         im.src = src;
       });
 
-      // Hybrid take: one crisp card shot as the backdrop, the real video
-      // file composited over it at full frame rate in the page. Falls
-      // through to the shot loop below when the file cannot be fetched.
-      if (prep.videoSrc && prep.vrect) {
+      // Hybrid take: one crisp card shot as the backdrop, the live video
+      // frames composited over it at full frame rate in the page. Falls
+      // through to the shot loop below when live capture is unavailable.
+      if (prep.vrect) {
         const hybridCtl = { stopped: false };
         recCtlRef.current = hybridCtl;
         const hybridTick = setInterval(() => {
           setRecT((t) => Math.min(t + 0.2, (RECORD_MS - 100) / 1000));
         }, 200);
         try {
-          stageRef.current = 'fetching video';
+          stageRef.current = 'recording video';
           const bgShot = await chrome.runtime.sendMessage({ type: 'TWEET_RECORD_SHOT' }).catch(() => null);
           if (!bgShot?.ok || !bgShot.dataUrl) throw new Error('bg-shot');
           const bgImg = await loadImg(bgShot.dataUrl);
@@ -415,7 +444,6 @@ export default function TweetClipper({ pageInfo, onReady }) {
               func: tweetHybridFunc,
               args: [{
                 bg: bgDataUrl,
-                src: prep.videoSrc,
                 vx: Math.round(prep.vrect.x * rs),
                 vy: Math.round(prep.vrect.y * rs),
                 vw: Math.round(prep.vrect.w * rs),

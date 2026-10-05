@@ -1945,3 +1945,17 @@ Files touched: src/components/YouTubeClipper.jsx, src/components/AnnotationForm.
   present (display and publish), still loading the full transcript for the
   Full tab and the Edit expand/contract tools.
 - Build passes. Local commit only - NOT pushed.
+---
+
+## Hybrid recorder uses live capture, hits full frame rate
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- The fetch-based hybrid died on HLS and stream sources, dropping takes
+  to the 1fps shot loop. The recorder now captures the live playing
+  element directly and composites decoded frames over the crisp card at
+  rAF rate, which works for mp4, HLS, MSE and blob sources with no fetch
+  and no CORS taint. Page pause and mute state is restored after the take.
+- Shot loop fallback, screenshot last resort, zoom fit, 5s cap, full-card
+  bounds and publish path all unchanged.
+- Local commit only - release follows.
