@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ClipCard from '../components/ClipCard';
-import { getHideTranscripts, subscribeHideTranscripts } from '../lib/transcriptPrefs';
 import { DEMO_CLIPS } from '../lib/demoData';
 
 const SORT_OPTIONS = [
@@ -19,7 +18,6 @@ export default function Feed({ sortOverride = null }) {
   const [clips, setClips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [usingDemo, setUsingDemo] = useState(false);
-  const [hideTranscripts, setHideTranscripts] = useState(() => getHideTranscripts());
   const sort = SORT_OPTIONS.some((option) => option.value === requestedSort) ? requestedSort : 'best';
   const activeSort = SORT_OPTIONS.find((option) => option.value === sort) || SORT_OPTIONS[0];
 
@@ -70,8 +68,6 @@ export default function Feed({ sortOverride = null }) {
     return () => { cancelled = true; };
   }, [sort]);
 
-  useEffect(() => subscribeHideTranscripts((value) => setHideTranscripts(value)), []);
-
   return (
     <div className="feed-page">
       <section className="feed-heading modern-feed-heading">
@@ -103,7 +99,7 @@ export default function Feed({ sortOverride = null }) {
 
       {loading ? <LoadingSkeleton /> : (
         <div className="feed-list">
-          {clips.map((clip) => <ClipCard key={clip.id} clip={clip} hideTranscript={hideTranscripts} autoPlayVideo={hideTranscripts} />)}
+          {clips.map((clip) => <ClipCard key={clip.id} clip={clip} autoPlayVideo />)}
         </div>
       )}
 

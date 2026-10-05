@@ -5,7 +5,6 @@ import { getCurrentUser } from '../lib/authUser';
 import { useToast } from './ToastProvider';
 import { postHref } from '../lib/links';
 import Avatar from './Avatar';
-import { getHideTranscripts, setHideTranscripts, subscribeHideTranscripts } from '../lib/transcriptPrefs';
 
 const NOTIF_ICONS = {
   comment: (
@@ -49,9 +48,6 @@ export default function Navbar() {
   const menuRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
   const [theme, setTheme] = useState(() => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'));
-  const [hideTranscripts, setHideTranscriptsState] = useState(() => getHideTranscripts());
-
-  useEffect(() => subscribeHideTranscripts((value) => setHideTranscriptsState(value)), []);
   const { push } = useToast();
 
   useEffect(() => {
@@ -236,19 +232,6 @@ export default function Navbar() {
         </form>
 
         <div className="flex items-center gap-4 shrink-0">
-          <button
-            type="button"
-            onClick={() => setHideTranscripts(!hideTranscripts)}
-            aria-label={hideTranscripts ? 'Show transcripts' : 'Hide transcripts'}
-            title={hideTranscripts ? 'Show transcripts' : 'Hide transcripts'}
-            aria-pressed={hideTranscripts}
-            className="flex items-center justify-center w-9 h-9 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M4 6h16M4 10h16M4 14h10M4 18h7" />
-              {hideTranscripts && <line x1="3" y1="3" x2="21" y2="21" />}
-            </svg>
-          </button>
           <button
             type="button"
             onClick={toggleTheme}

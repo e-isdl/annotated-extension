@@ -23,7 +23,7 @@ const H_TARGET = 400; // preferred X media height
 const W_MIN = 360; // minimum readable width, px
 const H_MAX = 560; // collapse height, px
 
-export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo = false }) {
+export default function ClipCard({ clip, autoPlayVideo = false }) {
   const navigate = useNavigate();
   const { push } = useToast();
   const annotation = clip.annotations?.[0];
@@ -151,7 +151,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
     event.stopPropagation();
     if (canExpand) setMediaExpanded((open) => !open);
   };
-  const hideQuote = hideTranscript && clip.source_type === 'youtube' && !playableRecording && Boolean(sourceImage) && !imageFailed;
+  const hideQuote = clip.source_type === 'youtube' && !playableRecording && Boolean(sourceImage) && !imageFailed;
   const socialVisual = clip.source_type === 'social' && (hasMedia || (sourceImage && !imageFailed));
   const showQuote = !hideQuote && !socialVisual;
   const xShotFull = isXPost && !hasMedia && canExpand && !isVideoPost;
@@ -276,7 +276,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
             <img src={sourceImage} alt={clip.title || 'Source preview'} className={`source-preview-image-expanded${clip.source_type === 'youtube' ? ' source-preview-image-youtube' : ''}`} loading="lazy" />
           </div>
         </div>
-        ) : hideTranscript && isVideoPost && sourceImage && !imageFailed ? (
+        ) : isVideoPost && sourceImage && !imageFailed ? (
         <button
           type="button"
           className="source-preview-videothumb"
