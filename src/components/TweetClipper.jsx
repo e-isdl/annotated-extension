@@ -191,6 +191,8 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const recCtlRef = useRef(null);
   const startedRef = useRef(false);
   const tabIdRef = useRef(null);
+  const savedZoomRef = useRef(null);
+  const [fitting, setFitting] = useState(false);
   const [shotFallback, setShotFallback] = useState(false);
 
   const restoreVideo = async (tabId) => {
@@ -199,6 +201,14 @@ export default function TweetClipper({ pageInfo, onReady }) {
     try {
       await chrome.scripting.executeScript({ target: { tabId: id }, func: tweetRestoreFunc });
     } catch {}
+  };
+
+  const restoreZoom = async (tabId) => {
+    const z = savedZoomRef.current;
+    const id = tabId || tabIdRef.current;
+    savedZoomRef.current = null;
+    if (z == null || !id) return;
+    try { await chrome.tabs.setZoom(id, z); } catch {}
   };
 
   const teardownRecording = () => {
@@ -215,12 +225,14 @@ export default function TweetClipper({ pageInfo, onReady }) {
   useEffect(() => () => {
     teardownRecording();
     restoreVideo();
+    restoreZoom();
     setClip((c) => { if (c?.url) URL.revokeObjectURL(c.url); return c; });
   }, []);
 
   const startRecording = async () => {
     teardownRecording();
     setRecError(null);
+    setFitting(false);
     setShotFallback(false);
     setClip(null);
     setPhase('recording');
@@ -229,18 +241,34 @@ export default function TweetClipper({ pageInfo, onReady }) {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) throw new Error('No active tab.');
       tabIdRef.current = tab.id;
-      const prepRes = await withTimeout(
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: tweetPrepFunc,
-        }).catch(() => null),
-        CAPTURE_TIMEOUT_MS,
-      );
-      const prep = prepRes?.[0]?.result;
+      try { savedZoomRef.current = await chrome.tabs.getZoom(tab.id); } catch { savedZoomRef.current = null; }
+      const runPrep = async () => {
+        const r = await withTimeout(
+          chrome.scripting.executeScript({ target: { tabId: tab.id }, func: tweetPrepFunc }).catch(() => null),
+          CAPTURE_TIMEOUT_MS,
+        );
+        return r?.[0]?.result || null;
+      };
+      try { await chrome.tabs.setZoom(tab.id, 1.1); } catch {}
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      setFitting(true);
+      let prep = await runPrep();
       if (!prep?.ok) {
-        if (prep?.code === 'no-media') { runScreenshotFlow(); return; }
+        setFitting(false);
+        if (prep?.code === 'no-media') { await restoreZoom(tab.id); runScreenshotFlow(); return; }
         throw new Error('Could not read this post.');
       }
+      const ZOOM_STEPS = [1.0, 0.9, 0.8, 0.75, 0.67];
+      let zi = 0;
+      while (prep.bounds.h > prep.vh - 8 && zi < ZOOM_STEPS.length) {
+        try { await chrome.tabs.setZoom(tab.id, ZOOM_STEPS[zi]); } catch {}
+        zi += 1;
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        const next = await runPrep();
+        if (!next?.ok) break;
+        prep = next;
+      }
+      setFitting(false);
       const targetMs = Math.max(2000, Math.min(prep.durationMs || 15000, MAX_RECORD_MS));
 
       const rs = Math.min(2, 1100 / prep.bounds.w);
@@ -346,16 +374,19 @@ export default function TweetClipper({ pageInfo, onReady }) {
         try { captureStream.getTracks().forEach((t) => { try { t.stop(); } catch {} }); } catch {}
         try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
         restoreVideo(tab.id);
+        restoreZoom(tab.id);
         setRecError('Recording stopped — keep the X tab open while recording.');
         setPhase('failed');
         return;
       }
       restoreVideo(tab.id);
+      restoreZoom(tab.id);
       try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
     } catch (err) {
       console.error('[tweet-record] failed:', err?.name || '', err?.message || err);
       teardownRecording();
       restoreVideo();
+      restoreZoom();
       setShotFallback(true);
       runScreenshotFlow();
     }
@@ -366,6 +397,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
     if (ctl) ctl.stopped = true;
     teardownRecording();
     restoreVideo();
+    restoreZoom();
     setRecError('Recording cancelled.');
     setPhase('failed');
   };
@@ -484,8 +516,8 @@ export default function TweetClipper({ pageInfo, onReady }) {
 
   const statusText = phase === 'probing'
     ? 'Checking this post for video…'
-    : phase === 'recording'
-      ? `Recording… ${Math.floor(recT)}s`
+      : phase === 'recording'
+        ? (fitting ? 'Fitting the tweet…' : `Recording… ${Math.floor(recT)}s`)
       : phase === 'preview'
         ? 'Tweet recorded with its video and text. It will loop silently on Annotated, like a GIF.'
           : phase === 'shot-working'

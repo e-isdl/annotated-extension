@@ -1815,3 +1815,16 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
   no-video posts plus failed recordings; tab-away and user-cancel stay
   hard stops.
 - Local commit only - NOT pushed.
+---
+
+## Tweet zoom-fit: 110 percent down to 67 percent floor
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- Before recording, the tab zooms to 110 percent and steps out through
+  100, 90, 80, 75, down to a 67 percent floor until the author header
+  and likes row fit the viewport, re-measuring after each step. The
+  panel shows Fitting the tweet while it works.
+- The previous zoom is restored on every exit: done, cancel, tab-away,
+  failure, and unmount, next to the existing video state restore.
+- Local commit only - NOT pushed.
