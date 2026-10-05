@@ -68,6 +68,11 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   const mediaHr = mediaRatio > 0 ? mediaWr / mediaRatio : 0;
   const mediaClipped = mediaHr > H_MAX;
   const isVideoPost = playableRecording || playableEmbed;
+  const [ytThumbStep, setYtThumbStep] = useState(0);
+  const useYtThumb = isYouTube && playableEmbed && Boolean(clip.youtube_id);
+  const ytThumb = useYtThumb
+    ? `https://img.youtube.com/vi/${clip.youtube_id}/${['maxresdefault', 'sddefault', 'hqdefault'][Math.min(ytThumbStep, 2)]}.jpg`
+    : sourceImage;
   const playInline = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -283,7 +288,10 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
           onClick={playInline}
           aria-label={`Play clip from ${formatTime(clip.start_sec)}`}
         >
-          <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />
+          <img src={ytThumb} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => {
+            if (useYtThumb && ytThumbStep < 2) setYtThumbStep((step) => step + 1);
+            else setImageFailed(true);
+          }} />
         </button>
         ) : (
         <div className={`source-preview${hasMedia ? ' source-preview-loop' : ''}`}>
