@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 // Player for recorded X media. Loops repeat silently like a GIF; plain clips
 // play once as a normal video (tap replays in feed, native controls on detail).
 // Autoplay is always muted; reduced-motion users get the poster with tap-to-play.
-export default function LoopPlayer({ src, poster, autoPlay = true, label, loop = true, controls = false, w, h }) {
+export default function LoopPlayer({ src, poster, autoPlay = true, label, loop = true, controls = false, w, h, capped = false }) {
   const ref = useRef(null);
   const reduceMotion = typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
@@ -64,7 +64,7 @@ export default function LoopPlayer({ src, poster, autoPlay = true, label, loop =
       autoPlay={!reduceMotion && autoPlay}
       preload="metadata"
       controls={controls}
-      className="source-loop-video"
+      className={`source-loop-video${capped ? ' source-loop-video-capped' : ''}`}
       style={ratio ? { aspectRatio: ratio } : undefined}
       aria-label={label || (loop ? 'Recorded loop, silent' : 'Recorded video, silent')}
       {...(needsTap && !controls ? { 'data-no-nav': true, onClick: replay, role: 'button', tabIndex: 0 } : {})}

@@ -55,6 +55,13 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
   const hasLoop = clip.media_kind === 'loop' && Boolean(clip.media_url);
   const hasClipMedia = clip.media_kind === 'clip' && Boolean(clip.media_url);
   const hasMedia = hasLoop || hasClipMedia;
+  const tallMedia = Number(clip.media_w) > 0 && Number(clip.media_h) > Number(clip.media_w);
+  const [loopOpen, setLoopOpen] = useState(false);
+  const toggleLoop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setLoopOpen((open) => !open);
+  };
   const isVideoPost = playableRecording || playableEmbed;
   const playInline = (event) => {
     event.preventDefault();
@@ -283,7 +290,14 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
           </div>
           {(hasMedia || (sourceImage && !imageFailed)) && (
             hasMedia ? (
-              <LoopPlayer src={clip.media_url} poster={clip.poster_url || sourceImage} autoPlay loop={hasLoop} w={clip.media_w} h={clip.media_h} />
+              <div className="source-loop-block">
+                <LoopPlayer src={clip.media_url} poster={clip.poster_url || sourceImage} autoPlay loop={hasLoop} w={clip.media_w} h={clip.media_h} capped={!loopOpen && tallMedia} />
+                {tallMedia && (
+                  <button type="button" className="read-more-toggle source-loop-toggle" data-no-nav onClick={toggleLoop} aria-expanded={loopOpen}>
+                    {loopOpen ? 'Show less' : 'Show full recording'}
+                  </button>
+                )}
+              </div>
             ) : isUploadingVideo ? (
               <span className="source-preview-thumbwrap">
                 <img src={sourceImage} alt="" className="source-preview-thumbimg source-preview-image-youtube" loading="lazy" onError={() => setImageFailed(true)} />

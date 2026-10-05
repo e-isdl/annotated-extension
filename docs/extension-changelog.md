@@ -1905,3 +1905,18 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
   in the post quote - tall tweets produce a compact clip instead of a
   three-scroll tower. Screenshot posts are untouched.
 - Local commit only - release follows.
+---
+
+## Recorder reverted to full card, towers collapse in the webapp
+
+Files touched: src/components/TweetClipper.jsx,
+webapp/src/components/LoopPlayer.jsx,
+webapp/src/components/ClipCard.jsx, webapp/src/pages/ClipPage.jsx,
+webapp/src/styles/globals.css, this changelog.
+
+- Recorder untouched apart from restoring the full-card bounds: tall
+  tweets are a display problem, solved where displayed.
+- Portrait loops collapse to a 520px bottom-anchored window showing the
+  video and actions, with a Show full recording toggle for the rest.
+  Landscape and square clips render whole as before. Same on detail.
+- Local commit only - release follows.

@@ -94,11 +94,13 @@ async function tweetPrepFunc() {
   return { ok: true, durationMs, bounds, vrect, videoSrc, vw: window.innerWidth, vh: window.innerHeight };
 
   function tweetCardBounds(root) {
-    // Media block only: author header through video and actions. The body
-    // text lives in the post quote, so recording it too just makes an
-    // unwatchable tower.
+    // Full card: author header through body, video, and actions. Tall
+    // cards are a presentation concern and handled in the webapp.
     const parts = [
       '[data-testid="User-Name"]',
+      '[data-testid="tweetText"]',
+      '[data-testid="tweetPhoto"]',
+      '[data-testid="card.wrapper"]',
       '[data-testid="videoPlayer"]',
       '[data-testid="videoComponent"]',
       'video',
@@ -245,6 +247,7 @@ function tweetBoundsFunc() {
   }
   const parts = [
     '[data-testid="User-Name"]',
+    '[data-testid="tweetText"]',
     '[data-testid="videoPlayer"]',
     '[data-testid="videoComponent"]',
     'video',
