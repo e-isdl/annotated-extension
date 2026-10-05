@@ -34,6 +34,8 @@ function formatBytes(n) {
   return `${n} B`;
 }
 
+const DETAIL_WIN = 120;
+
 const IDLE_REC = { state: 'idle', t: 0, error: null, blob: null, mime: null, url: null };
 
 const Word = memo(function Word({ w, index, selected, isMatch, isCurrent, onWordDoubleClick }) {
@@ -62,19 +64,16 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const [endSec, setEndSec] = useState(resumeRange?.end_sec ?? Math.min(30, data.duration || 300));
   const [startInput, setStartInput] = useState(formatTime(resumeRange?.start_sec ?? 0));
   const [endInput, setEndInput] = useState(formatTime(resumeRange?.end_sec ?? Math.min(30, data.duration || 300)));
-  const [tlMode, setTlMode] = useState('seek');
   const [ytTime, setYtTime] = useState(0);
   const [ytPaused, setYtPaused] = useState(true);
   const [ytAd, setYtAd] = useState(false);
   const [winStart, setWinStart] = useState(0);
-  const [zoomW, setZoomW] = useState(120);
   const [dragView, setDragView] = useState(null);
   const [dragVal, setDragVal] = useState(0);
   const [capFlash, setCapFlash] = useState(0);
   const [chapters, setChapters] = useState([]);
   const [chaptersOpen, setChaptersOpen] = useState(false);
   const [overW, setOverW] = useState(0);
-  const [detailW, setDetailW] = useState(0);
   const [playMode, setPlayMode] = useState('embed');
   const [rec, setRec] = useState(IDLE_REC);
   const overRef = useRef(null);
@@ -86,7 +85,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const wasPlayingRef = useRef(false);
   const lastSeekRef = useRef(0);
   const winStartRef = useRef(0);
-  const zoomWRef = useRef(120);
+  const easeRafRef = useRef(null);
   const portRef = useRef(null);
   const [wordClipperOpen, setWordClipperOpen] = useState(false);
   const [segments, setSegments] = useState(null);
@@ -276,6 +275,9 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) return;
+      try {
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
+      } catch (e) {}
       const res = await chrome.tabs.sendMessage(tab.id, { type: 'YT_CHAPTERS' }).catch(() => null);
       if (res && res.ok && Array.isArray(res.chapters)) setChapters(res.chapters);
     } catch (e) {}
@@ -290,7 +292,6 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   useEffect(() => {
     const measure = () => {
       if (overRef.current) setOverW(overRef.current.clientWidth || 0);
-      if (detailRef.current) setDetailW(detailRef.current.clientWidth || 0);
     };
     measure();
     window.addEventListener('resize', measure);
@@ -298,12 +299,11 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   }, []);
 
   useEffect(() => {
-    recenterTo(startSec);
+    const maxStart = Math.max(0, tlDuration() - DETAIL_WIN);
+    const ws = Math.max(0, Math.min(Math.round(startSec - DETAIL_WIN / 2), maxStart));
+    winStartRef.current = ws;
+    setWinStart(ws);
   }, []);
-
-  useEffect(() => {
-    if (detailRef.current) setDetailW(detailRef.current.clientWidth || 0);
-  }, [duration, overW]);
 
   const toggleChapters = () => {
     if (!chapters.length) return;
@@ -312,12 +312,8 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const pickChapter = (ch) => {
     if (locked || ytAdRef.current) return;
-    const t = Math.round(ch.t);
-    ytSeek(t);
-    if (tlMode === 'start') updateStart(clampStartDrag(t));
-    else if (tlMode === 'end') updateEnd(clampEndDrag(t));
+    ytSeek(Math.round(ch.t));
     setChaptersOpen(false);
-    recenterTo(t);
   };
 
   const currentChapter = () => {
@@ -406,6 +402,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     const clamped = Math.max(0, Math.min(sec, endSec - 1));
     setStartSec(clamped);
     setStartInput(formatTime(clamped));
+    return clamped;
   };
 
   const updateEnd = (sec) => {
@@ -414,6 +411,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     const clamped = Math.min(duration, Math.max(sec, startSec + 1));
     setEndSec(clamped);
     setEndInput(formatTime(clamped));
+    return clamped;
   };
 
   const handleStartInput = (val) => {
@@ -745,7 +743,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const tlDuration = () => Math.max(1, duration || 0);
   const effOverW = overW > 0 ? overW : 360;
-  const showDetail = tlDuration() >= 240 && tlDuration() / effOverW > 0.5;
+  const showDetail = tlDuration() / effOverW > 0.5;
 
   const ytSend = (message) => {
     try {
@@ -808,52 +806,58 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     return applyTimes(startSec, t);
   };
 
-  const recenterTo = (pos) => {
-    const W = zoomWRef.current;
-    const maxStart = Math.max(0, tlDuration() - W);
-    const ws = Math.max(0, Math.min(Math.round(pos - W / 2), maxStart));
-    winStartRef.current = ws;
-    setWinStart(ws);
-  };
+  // Window recentering always eases (see easeWinTo); no instant version remains.
 
-  const anchorForMode = (m) => {
-    const mode = m || tlMode;
-    if (mode === 'start') return startSec;
-    if (mode === 'end') return endSec;
-    return dragView && dragView.kind === 'playhead' ? dragVal : ytTimeRef.current;
-  };
-
-  const pressMode = (m) => {
+  const nudgeStart = (d) => {
     if (locked || ytAdRef.current) return;
-    if (m === 'seek') {
-      setTlMode('seek');
-      recenterTo(anchorForMode('seek'));
-      return;
+    const s = updateStart(startSec + d);
+    ytSeek(s);
+  };
+
+  const nudgeEnd = (d) => {
+    if (locked || ytAdRef.current) return;
+    const e = updateEnd(endSec + d);
+    ytSeek(e);
+  };
+
+  const easeWinTo = (pos) => {
+    const D = tlDuration();
+    const clamped = Math.max(0, Math.min(Math.round(pos - DETAIL_WIN / 2), Math.max(0, D - DETAIL_WIN)));
+    const from = winStartRef.current;
+    if (from === clamped) return;
+    if (easeRafRef.current) cancelAnimationFrame(easeRafRef.current);
+    const t0 = performance.now();
+    const tick = (now) => {
+      const k = Math.min(1, (now - t0) / 150);
+      const e = 1 - Math.pow(1 - k, 2);
+      const ws = Math.round(from + (clamped - from) * e);
+      winStartRef.current = ws;
+      setWinStart(ws);
+      if (k < 1) easeRafRef.current = requestAnimationFrame(tick);
+      else easeRafRef.current = null;
+    };
+    easeRafRef.current = requestAnimationFrame(tick);
+  };
+
+  const detailHandleAt = (xPx, width) => {
+    const w = Math.max(1, width);
+    const inWin = (t) => t >= winStart && t <= winStart + DETAIL_WIN;
+    const px = (t) => ((t - winStart) / DETAIL_WIN) * w;
+    const ds = inWin(startSec) ? Math.abs(xPx - px(startSec)) : Infinity;
+    const de = inWin(endSec) ? Math.abs(xPx - px(endSec)) : Infinity;
+    if (Math.min(ds, de) > 14) return null;
+    if (ds <= 14 && de <= 14) {
+      const mid = (px(startSec) + px(endSec)) / 2;
+      return xPx <= mid ? 'start' : 'end';
     }
-    const applied = m === 'start' ? stampStart() : stampEnd();
-    setTlMode(m);
-    recenterTo(applied ? applied[m === 'start' ? 0 : 1] : (m === 'start' ? startSec : endSec));
-  };
-
-  const setZoom = (w) => {
-    zoomWRef.current = w;
-    setZoomW(w);
-    recenterTo(anchorForMode());
-  };
-
-  const armMarker = (which) => {
-    if (locked) return;
-    setTlMode(which);
-    const t = which === 'start' ? startSec : endSec;
-    ytSeek(t);
-    recenterTo(t);
+    return ds <= 14 ? 'start' : 'end';
   };
 
   const xToSec = (bar, clientX, rect) => {
     const w = Math.max(1, rect.width);
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
     if (bar === 'over') return Math.round((x / w) * tlDuration());
-    return Math.round(winStartRef.current + (x / w) * zoomWRef.current);
+    return Math.round(winStartRef.current + (x / w) * DETAIL_WIN);
   };
 
   const seekThrottled = (t) => {
@@ -887,16 +891,19 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     return e;
   };
 
-  const beginDrag = (bar, clientX, jump) => {
+  const beginDrag = (bar, clientX, jump, grabKind) => {
     if (ytAdRef.current || locked) return;
+    if (easeRafRef.current) { cancelAnimationFrame(easeRafRef.current); easeRafRef.current = null; }
     const el = bar === 'over' ? overRef.current : detailRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const wasPlaying = !ytPausedRef.current;
     if (wasPlaying) ytSend({ type: 'YT_PAUSE' });
     wasPlayingRef.current = wasPlaying;
-    const kind = tlMode === 'seek' ? 'playhead' : tlMode;
-    dragRef.current = { kind, bar, el, lastX: clientX, panDir: 0, raf: 0, lastFrame: 0, value: 0 };
+    let kind = 'playhead';
+    if (bar === 'detail' && grabKind) kind = grabKind;
+    else if (bar === 'detail') kind = detailHandleAt(clientX - rect.left, rect.width) || 'playhead';
+    dragRef.current = { kind, bar, el, lastX: clientX, value: 0 };
     if (jump !== false) {
       dragRef.current.value = applyDragValue(kind, xToSec(bar, clientX, rect));
     } else if (kind === 'playhead') {
@@ -911,31 +918,10 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     const onMove = (e) => {
       const d = dragRef.current;
       if (!d || !d.el) return;
-      const rect = d.el.getBoundingClientRect();
+      const r = d.el.getBoundingClientRect();
       d.lastX = e.clientX;
-      const edge = e.clientX - rect.left;
-      d.panDir = d.bar === 'detail' ? (edge < 20 ? -1 : edge > rect.width - 20 ? 1 : 0) : 0;
-      d.value = applyDragValue(d.kind, xToSec(d.bar, e.clientX, rect));
+      d.value = applyDragValue(d.kind, xToSec(d.bar, e.clientX, r));
     };
-    const step = (now) => {
-      const d = dragRef.current;
-      if (!d || !d.el) return;
-      const dt = Math.min(0.1, Math.max(0, (now - (d.lastFrame || now)) / 1000));
-      d.lastFrame = now;
-      if (d.panDir !== 0 && d.bar === 'detail') {
-        const rect = d.el.getBoundingClientRect();
-        const W = zoomWRef.current;
-        const maxStart = Math.max(0, tlDuration() - W);
-        const ws = Math.max(0, Math.min(Math.round(winStartRef.current + d.panDir * (W / 2) * dt), maxStart));
-        if (ws !== winStartRef.current) {
-          winStartRef.current = ws;
-          setWinStart(ws);
-          d.value = applyDragValue(d.kind, xToSec(d.bar, d.lastX, rect));
-        }
-      }
-      d.raf = requestAnimationFrame(step);
-    };
-    dragRef.current.raf = requestAnimationFrame(step);
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
@@ -943,7 +929,6 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
       window.removeEventListener('blur', onUp);
       const d = dragRef.current;
       dragRef.current = null;
-      if (d && d.raf) cancelAnimationFrame(d.raf);
       setDragView(null);
       setDragVal(0);
       if (!d) return;
@@ -952,11 +937,9 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
         wasPlayingRef.current = false;
         ytSend({ type: 'YT_RESUME' });
       }
-      const W = zoomWRef.current;
-      const ws = winStartRef.current;
-      const lo = ws + 0.2 * W;
-      const hi = ws + 0.8 * W;
-      if (d.value < lo || d.value > hi) recenterTo(d.value);
+      const lo = winStartRef.current + 0.2 * DETAIL_WIN;
+      const hi = winStartRef.current + 0.8 * DETAIL_WIN;
+      if (d.value < lo || d.value > hi) easeWinTo(d.value);
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -967,8 +950,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const overPct = (t) => Math.max(0, Math.min(100, (t / tlDuration()) * 100));
 
   const detailPct = (t) => {
-    const W = Math.max(1, zoomW);
-    return Math.max(0, Math.min(100, ((t - winStart) / W) * 100));
+    return Math.max(0, Math.min(100, ((t - winStart) / DETAIL_WIN) * 100));
   };
 
   const markerValue = (which) => {
@@ -988,34 +970,33 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     const t = cur + dir * step;
     if (which === 'start') {
       if ((endSec - t) > 90) flashCap();
-      updateStart(clampStartDrag(t));
-      ytSeek(startSec);
+      ytSeek(updateStart(clampStartDrag(t)));
     } else {
       if ((t - startSec) > 90) flashCap();
-      updateEnd(clampEndDrag(t));
-      ytSeek(endSec);
+      ytSeek(updateEnd(clampEndDrag(t)));
     }
   };
 
-  const renderMarkers = (bar, pctFn) => {
+  const inDetailWin = (t) => t >= winStart && t <= winStart + DETAIL_WIN;
+
+  const renderMarkers = (pctFn) => {
     const sPos = dragView && dragView.kind === 'start' ? dragVal : startSec;
     const ePos = dragView && dragView.kind === 'end' ? dragVal : endSec;
     const mk = (which, pos) => {
-      const dim = (tlMode === 'start' && which === 'end') || (tlMode === 'end' && which === 'start');
-      const noDrag = tlMode === 'seek';
+      if (!inDetailWin(pos)) return null;
       return (
         <div
           key={which}
-          className={`tl-marker is-${which}${dim ? ' is-dim' : ''}${noDrag ? ' is-static' : ''}`}
+          className={`tl-marker is-${which}`}
           style={{ left: `${pctFn(pos)}%` }}
           role="slider"
-          tabIndex={noDrag || dim ? -1 : 0}
+          tabIndex={0}
           aria-label={which === 'start' ? 'Start time' : 'End time'}
           aria-valuemin={0}
           aria-valuemax={Math.round(tlDuration())}
           aria-valuenow={Math.round(pos)}
           aria-valuetext={formatTime(pos)}
-          onPointerDown={(e) => { e.stopPropagation(); beginDrag(bar, e.clientX, false); }}
+          onPointerDown={(e) => { e.stopPropagation(); beginDrag('detail', e.clientX, false, which); }}
           onKeyDown={markerKeyDown(which)}
         >
           <span className="tl-marker-line" aria-hidden="true" />
@@ -1025,17 +1006,17 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
     return <>{mk('start', sPos)}{mk('end', ePos)}</>;
   };
 
-  const renderRange = (pctFn) => {
+  const renderRange = (pctFn, minPx) => {
     const s = dragView && dragView.kind === 'start' ? dragVal : startSec;
     const e = dragView && dragView.kind === 'end' ? dragVal : endSec;
     const lo = Math.min(s, e);
     const wPct = Math.abs(pctFn(e) - pctFn(s));
-    return <div className="tl-range" style={{ left: `${pctFn(lo)}%`, width: `max(${wPct}%, 8px)` }} />;
+    return <div className="tl-range" style={{ left: `${pctFn(lo)}%`, width: `max(${wPct}%, ${minPx}px)` }} />;
   };
 
-  const renderPlayhead = (pctFn) => {
+  const renderPlayhead = (pctFn, small) => {
     const p = dragView && dragView.kind === 'playhead' ? dragVal : ytTime;
-    return <div className="tl-play" style={{ left: `${pctFn(p)}%` }} />;
+    return <div className={`tl-play${small ? ' is-dot' : ''}`} style={{ left: `${pctFn(p)}%` }} />;
   };
 
   const renderBubble = (bar, pctFn) => {
@@ -1045,16 +1026,32 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   };
 
   const chapNow = currentChapter();
-  const detailTickStep = zoomW > 300 ? 60 : 10;
-  const detailLabelStep = zoomW > 300 ? 120 : 30;
   const detailTicks = [];
   if (showDetail) {
     const D = tlDuration();
-    const first = Math.ceil(winStart / detailTickStep) * detailTickStep;
-    for (let t = first; t <= Math.min(winStart + zoomW, D); t += detailTickStep) {
-      detailTicks.push({ t, label: t % detailLabelStep === 0 });
+    const first = Math.ceil(winStart / 10) * 10;
+    for (let t = first; t <= Math.min(winStart + DETAIL_WIN, D); t += 10) {
+      detailTicks.push({ t, label: t % 30 === 0 });
     }
   }
+  const edgeChips = (() => {
+    if (!showDetail) return [];
+    const out = [];
+    const sIn = startSec >= winStart && startSec <= winStart + DETAIL_WIN;
+    const eIn = endSec >= winStart && endSec <= winStart + DETAIL_WIN;
+    if (sIn && eIn) return out;
+    const sSide = startSec < winStart ? 'left' : 'right';
+    const eSide = endSec < winStart ? 'left' : 'right';
+    if (!sIn && !eIn && sSide === eSide) {
+      const useStart = sSide === 'left' ? startSec >= endSec : startSec <= endSec;
+      const t = useStart ? startSec : endSec;
+      out.push({ side: sSide, t });
+      return out;
+    }
+    if (!sIn) out.push({ side: sSide, t: startSec });
+    if (!eIn) out.push({ side: eSide, t: endSec });
+    return out;
+  })();
 
   if (wordClipperOpen) {
     return (
@@ -1193,7 +1190,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
             </svg>
             <span>Replay</span>
           </button>
-          <span className="play-clip-range">{formatShort(currentTime)}</span>
+          <span className="play-clip-time">{formatShort(dragView && dragView.kind === 'playhead' ? dragVal : ytTime)} / {formatShort(duration)}</span>
         </div>
       )}
 
@@ -1202,82 +1199,84 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
         {chapters.length > 0 && chapNow && (
           <div className="tl-chapter" title={chapNow.title}>{chapNow.title}</div>
         )}
-        <div className="tl-modes" role="group" aria-label="Timeline mode">
-          <button type="button" disabled={locked || ytAd} className={`tl-mode${tlMode === 'seek' ? ' is-active' : ''}`} aria-pressed={tlMode === 'seek'} onClick={() => pressMode('seek')}>Seek</button>
-          <button type="button" disabled={locked || ytAd} className={`tl-mode${tlMode === 'start' ? ' is-active' : ''}`} aria-pressed={tlMode === 'start'} onClick={() => pressMode('start')}>Set start</button>
-          <button type="button" disabled={locked || ytAd} className={`tl-mode${tlMode === 'end' ? ' is-active' : ''}`} aria-pressed={tlMode === 'end'} onClick={() => pressMode('end')}>Set end</button>
-        </div>
         <div ref={overRef} className="tl-bar tl-over" onPointerDown={(e) => beginDrag('over', e.clientX)}>
           <div className="tl-track" />
           {chapters.map((c, i) => (
             <div key={`ct${i}`} className="tl-ctick" style={{ left: `${overPct(c.t)}%` }} />
           ))}
           {showDetail && (
-            <div className="tl-window" style={{ left: `${overPct(winStart)}%`, width: `${Math.max(0, overPct(winStart + zoomW) - overPct(winStart))}%` }} />
+            <div className="tl-window" style={{ left: `${overPct(winStart)}%`, width: `${Math.max(0, overPct(winStart + DETAIL_WIN) - overPct(winStart))}%` }} />
           )}
-          {renderRange(overPct)}
-          {renderMarkers('over', overPct)}
-          {renderPlayhead(overPct)}
+          {renderRange(overPct, 6)}
+          {renderPlayhead(overPct, true)}
           {renderBubble('over', overPct)}
         </div>
         {showDetail && (
-          <>
-            <div className="tl-zoomrow">
-              <span className="tl-zoomlabel">Window</span>
-              {[{ w: 600, l: '10m' }, { w: 120, l: '2m' }, { w: 30, l: '30s' }].map((chip) => (
-                <button key={chip.l} type="button" disabled={locked || ytAd} className={`tl-chip${zoomW === chip.w ? ' is-active' : ''}`} aria-pressed={zoomW === chip.w} onClick={() => setZoom(chip.w)}>{chip.l}</button>
-              ))}
-            </div>
-            <div ref={detailRef} className="tl-bar tl-detail" onPointerDown={(e) => beginDrag('detail', e.clientX)}>
-              <div className="tl-track" />
-              {detailTicks.map((k) => (
-                <div key={`tk${k.t}`} className="tl-tick" style={{ left: `${detailPct(k.t)}%` }} />
-              ))}
-              {detailTicks.map((k) => k.label && (
-                <div key={`tl${k.t}`} className="tl-ticklabel" style={{ left: `${detailPct(k.t)}%` }}>{formatShort(k.t)}</div>
-              ))}
-              {renderRange(detailPct)}
-              {renderMarkers('detail', detailPct)}
-              {renderPlayhead(detailPct)}
-              {renderBubble('detail', detailPct)}
-            </div>
-          </>
+          <div ref={detailRef} className="tl-bar tl-detail" onPointerDown={(e) => beginDrag('detail', e.clientX)}>
+            <div className="tl-track" />
+            {detailTicks.map((k) => (
+              <div key={`tk${k.t}`} className="tl-tick" style={{ left: `${detailPct(k.t)}%` }} />
+            ))}
+            {detailTicks.map((k) => k.label && (
+              <div key={`tl${k.t}`} className="tl-ticklabel" style={{ left: `${detailPct(k.t)}%` }}>{formatShort(k.t)}</div>
+            ))}
+            {renderRange(detailPct, 8)}
+            {renderMarkers(detailPct)}
+            {renderPlayhead(detailPct, false)}
+            {renderBubble('detail', detailPct)}
+            {edgeChips.map((chip) => (
+              <button
+                key={`${chip.side}-${chip.t}`}
+                type="button"
+                className={`tl-edgechip is-${chip.side}`}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); ytSeek(chip.t); }}
+                aria-label={`Move playhead to ${formatTime(chip.t)}`}
+              >
+                {chip.side === 'left' ? `< ${formatShort(chip.t)}` : `${formatShort(chip.t)} >`}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
       <div className={`time-cards${locked ? ' rec-lock' : ''}`}>
-        <div className={`time-card${tlMode === 'start' ? ' is-armed' : ''}`}>
-          <span className="time-card-label">Start</span>
-          <input
-            type="text"
-            className="time-input"
-            value={startInput}
-            onChange={(e) => handleStartInput(e.target.value)}
-            onFocus={() => armMarker('start')}
-            onBlur={() => setStartInput(formatTime(startSec))}
-            placeholder="0:00:00"
-            aria-label="Start time"
-          />
-          <div className="nudge-row">
-            <button type="button" className="nudge" onClick={() => updateStart(startSec - 5)}>-5s</button>
-            <button type="button" className="nudge" onClick={() => updateStart(startSec + 5)}>+5s</button>
+        <div className="time-card">
+          <div className="time-card-top">
+            <span className="time-card-label">Start</span>
+            <button type="button" className="set-btn" disabled={locked || ytAd} onClick={() => stampStart()}>Set start</button>
+          </div>
+          <div className="time-card-bottom">
+            <input
+              type="text"
+              className="time-input"
+              value={startInput}
+              onChange={(e) => handleStartInput(e.target.value)}
+              onBlur={() => setStartInput(formatTime(startSec))}
+              placeholder="0:00:00"
+              aria-label="Start time"
+            />
+            <button type="button" className="nudge-sm" disabled={locked || ytAd} onClick={() => nudgeStart(-5)} aria-label="Back 5 seconds">-5s</button>
+            <button type="button" className="nudge-sm" disabled={locked || ytAd} onClick={() => nudgeStart(5)} aria-label="Forward 5 seconds">+5s</button>
           </div>
         </div>
-        <div className={`time-card${tlMode === 'end' ? ' is-armed' : ''}`}>
-          <span className="time-card-label">End</span>
-          <input
-            type="text"
-            className="time-input"
-            value={endInput}
-            onChange={(e) => handleEndInput(e.target.value)}
-            onFocus={() => armMarker('end')}
-            onBlur={() => setEndInput(formatTime(endSec))}
-            placeholder="0:00:30"
-            aria-label="End time"
-          />
-          <div className="nudge-row">
-            <button type="button" className="nudge" onClick={() => updateEnd(endSec - 5)}>-5s</button>
-            <button type="button" className="nudge" onClick={() => updateEnd(endSec + 5)}>+5s</button>
+        <div className="time-card">
+          <div className="time-card-top">
+            <span className="time-card-label">End</span>
+            <button type="button" className="set-btn" disabled={locked || ytAd} onClick={() => stampEnd()}>Set end</button>
+          </div>
+          <div className="time-card-bottom">
+            <input
+              type="text"
+              className="time-input"
+              value={endInput}
+              onChange={(e) => handleEndInput(e.target.value)}
+              onBlur={() => setEndInput(formatTime(endSec))}
+              placeholder="0:00:30"
+              aria-label="End time"
+            />
+            <button type="button" className="nudge-sm" disabled={locked || ytAd} onClick={() => nudgeEnd(-5)} aria-label="Back 5 seconds">-5s</button>
+            <button type="button" className="nudge-sm" disabled={locked || ytAd} onClick={() => nudgeEnd(5)} aria-label="Forward 5 seconds">+5s</button>
           </div>
         </div>
       </div>
@@ -1381,13 +1380,15 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
       )}
 
       {rec.state !== 'recording' && (
-        <button
-          onClick={canContinue ? handleContinue : startRecording}
-          disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
-          className="btn-primary w-full"
-        >
-          {canContinue ? 'Continue' : 'Record clip'}
-        </button>
+        <div className="continue-sticky">
+          <button
+            onClick={canContinue ? handleContinue : startRecording}
+            disabled={clipLen > 90 || clipLen <= 0 || endSec <= startSec}
+            className="btn-primary w-full"
+          >
+            {canContinue ? 'Continue' : 'Record clip'}
+          </button>
+        </div>
       )}
     </div>
   );

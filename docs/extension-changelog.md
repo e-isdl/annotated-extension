@@ -1996,3 +1996,31 @@ src/styles/panel.css, this changelog.
   the same start/end state. Word clipper flag still clears on any time
   edit. Embed/Record cards, Continue, header and word clipper untouched.
 - Build passes. Local commit only - NOT pushed.
+
+---
+
+## Simplified clip screen (local)
+
+Files touched: src/components/YouTubeClipper.jsx, src/styles/panel.css,
+this changelog.
+
+- Removed: mode row, zoom chips (fixed 120 s window), handle lock/dim and
+  all armed state, edge pan, replay time readout.
+- Tools row is Chapters + Word clipper at half width, 36 px, outline.
+  Chapters button force-refreshes content.js before asking, fixing the
+  dead button on stale tabs. Chapter tap only seeks and closes.
+- Overview is an 8 px strip (chapter ticks grey, solid red range min 6 px,
+  dark dot playhead, outline window rect, no handles, click/drag moves
+  playhead). Detail bar is 56 px with 10 s ticks and 30 s-only labels,
+  full-height red handles, playhead knob, mono bubble. Detail shows only
+  when D/barWidth > 0.5. Off-window markers hide behind edge chips that
+  seek on tap (one chip per side).
+- Detail grab: nearest handle within 14 px (midpoint tiebreak), else the
+  playhead. Window frozen during drags; 150 ms ease recenter when the
+  playhead leaves the middle 60% on release.
+- Time cards rebuilt: label + outlined red Set button on top, mono input
+  with small -5s/+5s below (nudges move the marker and seek to it).
+- Play row shows playhead / duration right; play-mode cards sit side by
+  side; Continue is sticky at the panel bottom.
+- Red only on markers, ranges, Continue and the selected play card.
+- Build passes. Local commit only - NOT pushed.
