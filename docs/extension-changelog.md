@@ -1928,3 +1928,20 @@ Reverted webapp/src/components/LoopPlayer.jsx,
 webapp/src/components/ClipCard.jsx, webapp/src/pages/ClipPage.jsx and
 the loop rules in webapp/src/styles/globals.css to their 9ce87fb state.
 The recorder is untouched. Mute-button styles stay.
+
+---
+
+## Word clipper words override sentence rules (local fix)
+
+Files touched: src/components/YouTubeClipper.jsx, src/components/AnnotationForm.jsx.
+
+- Problem: the clipper forwarded only integer seconds, and the annotate step
+  re-cut the text with complete-sentence rules, dropping the exact clipped
+  words (leading/trailing fragments trimmed, neighboring sentences pulled in).
+- YouTubeClipper now tracks word-clip use (double-click or bar drag) and
+  forwards the exact picked words as word_transcript. Any scrub/time/input
+  edit clears the flag, so manual time edits fall back to sentence rules.
+- AnnotationForm uses word_transcript verbatim as the clip transcript when
+  present (display and publish), still loading the full transcript for the
+  Full tab and the Edit expand/contract tools.
+- Build passes. Local commit only - NOT pushed.

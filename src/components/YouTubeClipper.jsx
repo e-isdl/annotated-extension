@@ -78,6 +78,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
   const durationRef = useRef(0);
   durationRef.current = duration;
   const timesTouchedRef = useRef(false);
+  const wordClipUsedRef = useRef(false);
 
   const syncStartToVideoTime = (dur) => {
     if (timesTouchedRef.current) return;
@@ -311,6 +312,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const updateStart = (sec) => {
     timesTouchedRef.current = true;
+    wordClipUsedRef.current = false;
     const clamped = Math.max(0, Math.min(sec, endSec - 1));
     setStartSec(clamped);
     setStartInput(formatTime(clamped));
@@ -318,6 +320,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const updateEnd = (sec) => {
     timesTouchedRef.current = true;
+    wordClipUsedRef.current = false;
     const clamped = Math.min(duration, Math.max(sec, startSec + 1));
     setEndSec(clamped);
     setEndInput(formatTime(clamped));
@@ -325,6 +328,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const handleStartInput = (val) => {
     timesTouchedRef.current = true;
+    wordClipUsedRef.current = false;
     setStartInput(val);
     const sec = parseTime(val);
     if (!isNaN(sec) && sec >= 0 && sec < endSec) setStartSec(sec);
@@ -332,6 +336,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const handleEndInput = (val) => {
     timesTouchedRef.current = true;
+    wordClipUsedRef.current = false;
     setEndInput(val);
     const sec = parseTime(val);
     if (!isNaN(sec) && sec > startSec && sec <= duration) setEndSec(sec);
@@ -339,6 +344,11 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const handleContinue = () => {
     if (endSec <= startSec || clipLen <= 0 || clipLen > 90) return;
+    let wordTranscript = null;
+    if (wordClipUsedRef.current && words.length) {
+      const picked = words.slice(Math.max(0, wordStart), Math.min(words.length - 1, wordEnd) + 1);
+      if (picked.length) wordTranscript = picked.map((w) => w.text).join(' ').trim() || null;
+    }
     onReady({
       source_url: pageInfo.url,
       source_type: 'youtube',
@@ -348,6 +358,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
       end_sec: Math.ceil(endSec),
       duration: duration || null,
       thumbnail: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`,
+      ...(wordTranscript ? { word_transcript: wordTranscript } : {}),
       ...(playMode === 'record' && rec.blob
         ? { recorded_clip: { blob: rec.blob, mime: rec.mime, seconds: rec.t } }
         : {}),
@@ -540,6 +551,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const onWordDoubleClick = useCallback((index) => {
     wordScrollArmedRef.current = false;
+    wordClipUsedRef.current = true;
     const s = wordStateRef.current;
     if (!s.words.length) return;
     const w = s.words[index];
@@ -560,6 +572,7 @@ export default function YouTubeClipper({ pageInfo, onReady, published, embedRequ
 
   const onWordHandleEvent = useCallback((which, phase, e) => {
     if (phase !== 'down') return;
+    wordClipUsedRef.current = true;
     e.preventDefault();
     e.stopPropagation();
     if (wordDragCleanupRef.current) return;

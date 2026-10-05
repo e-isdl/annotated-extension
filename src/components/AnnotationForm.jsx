@@ -92,14 +92,20 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
 
   useEffect(() => {
     if (isYouTube && clipData.youtube_id && clipData.start_sec !== undefined && clipData.end_sec !== undefined) {
+      // Clipped words override the sentence rules: when the word clipper was
+      // used, its exact words are the clip transcript, no re-cutting.
+      const lockedTranscript = clipData.word_transcript || null;
+      if (lockedTranscript) setTranscript(lockedTranscript);
       if (transcriptCache && transcriptCache.key === cacheKey) {
         const full = transcriptCache.full;
         const segments = transcriptCache.segments;
 
-        const excerpt = segments?.length
-          ? excerptYouTubeTranscript(segments, clipData.start_sec, clipData.end_sec)
-          : full;
-        setTranscript(excerpt || '');
+        if (!lockedTranscript) {
+          const excerpt = segments?.length
+            ? excerptYouTubeTranscript(segments, clipData.start_sec, clipData.end_sec)
+            : full;
+          setTranscript(excerpt || '');
+        }
 
         setFullTranscript(full);
         return;
@@ -113,7 +119,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
       setShowClipTranscript(false);
       fetchTranscriptDirect(clipData.youtube_id, clipData.start_sec, clipData.end_sec)
         .then(({ filtered, full, segments }) => {
-          setTranscript(filtered);
+          if (!lockedTranscript) setTranscript(filtered);
           setFullTranscript(full);
           setTranscriptCache({ key: cacheKey, full, segments });
         })
