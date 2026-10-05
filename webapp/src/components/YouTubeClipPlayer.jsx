@@ -301,6 +301,44 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
     refocus();
   };
 
+  // The round play button never touches audio: pause means pause.
+  const togglePlayPause = () => {
+    if (playing) {
+      userPausedRef.current = true;
+      savePlaybackPosition(positionKey, pos, true);
+      pause();
+    } else {
+      userPausedRef.current = false;
+      play();
+    }
+    refocus();
+  };
+
+  const toggleMute = () => {
+    const p = playerRef.current;
+    if (mutedRef.current) {
+      mutedRef.current = false;
+      userPausedRef.current = false;
+      clipEndedRef.current = false;
+      setMuted(false);
+      if (!p?.playVideo) return;
+      claimPlayback(stopRef.current);
+      try { p.unMute(); p.setVolume(100); } catch {}
+      const { start: bs, end: be } = boundsRef.current;
+      let cur = bs;
+      try { cur = p.getCurrentTime() ?? bs; } catch {}
+      if (!(cur >= bs) || (be > bs && cur >= be - 0.05)) {
+        try { p.seekTo(bs, true); } catch {}
+        setPos(0);
+      }
+      try { p.playVideo(); } catch {}
+    } else {
+      mutedRef.current = true;
+      setMuted(true);
+      try { p?.mute(); } catch {}
+    }
+  };
+
   const closePlayer = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -369,7 +407,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
           <button
             type="button"
             className="ytclip-play"
-            onClick={toggle}
+            onClick={togglePlayPause}
             aria-label={playing ? 'Pause clip' : 'Play clip'}
           >
             {playing ? (
@@ -379,6 +417,25 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
             ) : (
               <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M8 5v14l11-7z" fill="currentColor" />
+              </svg>
+            )}
+          </button>
+          <button
+            type="button"
+            className="ytclip-mute"
+            onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+            aria-label={muted ? 'Unmute clip' : 'Mute clip'}
+            aria-pressed={!muted}
+          >
+            {muted ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                <path d="M16.5 9.5l5 5M21.5 9.5l-5 5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                <path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
               </svg>
             )}
           </button>

@@ -609,6 +609,8 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .ytclip-bar { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 2px 0; }
 .ytclip-play { width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border-soft); background: var(--surface-2); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .ytclip-play:hover { border-color: var(--accent); color: var(--accent-text); }
+.ytclip-mute { width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border-soft); background: var(--surface-2); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.ytclip-mute:hover { border-color: var(--accent); color: var(--accent-text); }
 .ytclip-track { flex: 1; min-width: 0; height: 24px; background: transparent; cursor: pointer; touch-action: none; -webkit-appearance: none; appearance: none; --p: 0%; }
 .ytclip-track::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: linear-gradient(to right, var(--accent) 0 var(--p), var(--surface-3) var(--p) 100%); }
 .ytclip-track::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; margin-top: -4.5px; border: none; border-radius: 50%; background: var(--accent); opacity: 0; transition: opacity 0.15s ease; }
