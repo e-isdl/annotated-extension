@@ -295,7 +295,23 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
           </div>
           {(hasMedia || (sourceImage && !imageFailed)) && (
             hasMedia ? (
-              <div className={`xmedia-wrap${mediaClipped && !mediaOpen ? ' xmedia-clipped' : ''}`}>
+              <div
+                className={`xmedia-wrap${mediaClipped && !mediaOpen ? ' xmedia-clipped' : ''}${mediaClipped ? ' xmedia-toggle' : ''}`}
+                {...(mediaClipped ? {
+                  'data-no-nav': true,
+                  role: 'button',
+                  tabIndex: 0,
+                  'aria-expanded': mediaOpen,
+                  'aria-label': mediaOpen ? 'Show less of the recording' : 'Show full recording',
+                  onClick: (event) => { event.preventDefault(); event.stopPropagation(); setMediaOpen((open) => !open); },
+                  onKeyDown: (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setMediaOpen((open) => !open);
+                    }
+                  },
+                } : {})}
+              >
                 <LoopPlayer
                   src={clip.media_url}
                   poster={clip.poster_url || sourceImage}
@@ -309,26 +325,7 @@ export default function ClipCard({ clip, hideTranscript = false, autoPlayVideo =
                     if (v.videoWidth && v.videoHeight) setMediaNatural({ w: v.videoWidth, h: v.videoHeight });
                   }}
                 />
-                {mediaClipped && !mediaOpen && (
-                  <div className="xmedia-fade">
-                    <button
-                      type="button"
-                      className="read-more-toggle"
-                      onClick={(event) => { event.preventDefault(); event.stopPropagation(); setMediaOpen(true); }}
-                    >
-                      Show full tweet
-                    </button>
-                  </div>
-                )}
-                {mediaClipped && mediaOpen && (
-                  <button
-                    type="button"
-                    className="read-more-toggle xmedia-collapse"
-                    onClick={(event) => { event.preventDefault(); event.stopPropagation(); setMediaOpen(false); }}
-                  >
-                    Show less
-                  </button>
-                )}
+                {mediaClipped && !mediaOpen && <div className="xmedia-fade" aria-hidden="true" />}
               </div>
             ) : isUploadingVideo ? (
               <span className="source-preview-thumbwrap">
