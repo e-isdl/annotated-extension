@@ -67,7 +67,7 @@ export default function SavedPage() {
           <Link to="/" className="btn-primary">Browse Home</Link>
         </div>
       ) : (
-        <div className="feed-list mt-8">{clips.map((clip) => <ClipCard key={clip.id} clip={clip} />)}</div>
+        <div className="feed-list mt-8">{clips.map((clip) => <ClipCard key={clip.id} clip={clip} autoPlayVideo />)}</div>
       )}
     </div>
   );

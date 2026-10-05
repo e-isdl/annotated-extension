@@ -30,7 +30,7 @@ export default function SourcePage() {
       <p className="eyebrow">Source domain</p>
       <h1 className="section-title">{decodedDomain}</h1>
       <p className="section-subtitle">Annotations that keep this source in view.</p>
-      {loading ? <div className="post-card post-skeleton" /> : clips.length ? <div className="feed-list">{clips.map((clip) => <ClipCard key={clip.id} clip={{ ...clip, community_name: clip.community_name || clip.communities?.name, community_slug: clip.community_slug || clip.communities?.slug }} />)}</div> : <div className="empty-state compact-empty"><h2 className="text-lg font-semibold text-text-primary">No annotations yet.</h2><Link to="/create" className="btn-primary">Start one</Link></div>}
+      {loading ? <div className="post-card post-skeleton" /> : clips.length ? <div className="feed-list">{clips.map((clip) => <ClipCard key={clip.id} autoPlayVideo clip={{ ...clip, community_name: clip.community_name || clip.communities?.name, community_slug: clip.community_slug || clip.communities?.slug }} />)}</div> : <div className="empty-state compact-empty"><h2 className="text-lg font-semibold text-text-primary">No annotations yet.</h2><Link to="/create" className="btn-primary">Start one</Link></div>}
     </section>
   );
 }

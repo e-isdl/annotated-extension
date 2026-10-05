@@ -108,7 +108,7 @@ export default function SearchPage() {
           {clips.length === 0 ? (
             <p className="text-sm text-text-secondary text-center py-8">No clips found.</p>
           ) : (
-            clips.map((clip) => <ClipCard key={clip.id} clip={clip} />)
+            clips.map((clip) => <ClipCard key={clip.id} clip={clip} autoPlayVideo />)
           )}
         </div>
       ) : (

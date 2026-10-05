@@ -379,7 +379,7 @@ export default function Profile() {
             </p>
           )}
           {currentClips.map((clip) => (
-            <ClipCard key={clip.id} clip={clip} />
+            <ClipCard key={clip.id} clip={clip} autoPlayVideo />
           ))}
         </div>
       )}

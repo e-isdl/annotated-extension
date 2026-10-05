@@ -95,7 +95,7 @@ export default function CommunityPage() {
       </div>
 
       <div className="feed-list">
-        {loading ? <div className="post-card post-skeleton" /> : communityId && clips.length ? clips.map((clip) => <ClipCard key={clip.id} clip={clip} />) : (
+        {loading ? <div className="post-card post-skeleton" /> : communityId && clips.length ? clips.map((clip) => <ClipCard key={clip.id} clip={clip} autoPlayVideo />) : (
           <div className="empty-state compact-empty">
             <span className="text-3xl">✎</span>
             <h2 className="text-lg font-semibold text-text-primary">{communityId ? 'Be the first to start this conversation.' : 'This community could not be found.'}</h2>
