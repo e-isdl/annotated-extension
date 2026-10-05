@@ -192,6 +192,8 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const startedRef = useRef(false);
   const tabIdRef = useRef(null);
   const savedZoomRef = useRef(null);
+  const recordErrRef = useRef(null);
+  const stageRef = useRef('');
   const [fitting, setFitting] = useState(false);
   const [shotFallback, setShotFallback] = useState(false);
 
@@ -232,6 +234,8 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const startRecording = async () => {
     teardownRecording();
     setRecError(null);
+    recordErrRef.current = null;
+    stageRef.current = '';
     setFitting(false);
     setShotFallback(false);
     setClip(null);
@@ -241,9 +245,8 @@ export default function TweetClipper({ pageInfo, onReady }) {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) throw new Error('No active tab.');
       tabIdRef.current = tab.id;
-      try { savedZoomRef.current = await chrome.tabs.getZoom(tab.id); } catch { savedZoomRef.current = null; }
-      const runPrep = async () => {
-        const r = await withTimeout(
+      stageRef.current = 'finding video';      try { savedZoomRef.current = await chrome.tabs.getZoom(tab.id); } catch { savedZoomRef.current = null; }
+      const runPrep = async () => {        const r = await withTimeout(
           chrome.scripting.executeScript({ target: { tabId: tab.id }, func: tweetPrepFunc }).catch(() => null),
           CAPTURE_TIMEOUT_MS,
         );
@@ -301,6 +304,9 @@ export default function TweetClipper({ pageInfo, onReady }) {
         if (cancelled || ctl.tabGone) return;
         const blob = new Blob(ctl.chunks, { type: recorder.mimeType || mimeType || 'video/webm' });
         if (frames === 0 || blob.size === 0) {
+          const reason = `Recording failed at capturing: no frames.`;
+          recordErrRef.current = reason;
+          setRecError(reason);
           setShotFallback(true);
           runScreenshotFlow();
           return;
@@ -341,6 +347,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
 
       let crop = prep.bounds;
       let cropVw = prep.vw;
+      stageRef.current = 'capturing';
       while (Date.now() - ctl.t0 < targetMs) {
         if (ctl.stopped) break;
         let dataUrl = null;
@@ -381,12 +388,17 @@ export default function TweetClipper({ pageInfo, onReady }) {
       }
       restoreVideo(tab.id);
       restoreZoom(tab.id);
+      stageRef.current = 'finishing';
       try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
     } catch (err) {
       console.error('[tweet-record] failed:', err?.name || '', err?.message || err);
       teardownRecording();
       restoreVideo();
       restoreZoom();
+      const raw = err?.name && err.name !== 'Error' ? ` (${err.name})` : '';
+      const reason = `Recording failed at ${stageRef.current || 'starting'}: ${err?.message || 'could not record'}${raw}`;
+      recordErrRef.current = reason;
+      setRecError(reason);
       setShotFallback(true);
       runScreenshotFlow();
     }
@@ -420,7 +432,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
       if (!result?.ok || !result.dataUrl) {
         if (result?.reason === 'too-tall') { setShotState('text'); setPhase('none'); }
         else if (result?.hasPhotos === false) { setShotState('none'); setPhase('none'); }
-        else { setShotState('failed'); setPhase('failed'); setRecError('Screenshot unavailable.'); }
+        else { setShotState('failed'); setPhase('failed'); setRecError(recordErrRef.current || 'Screenshot unavailable.'); }
         return;
       }
       const { data: { user } } = await supabase.auth.getUser();
@@ -445,6 +457,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
       console.error('tweet screenshot failed:', err?.message || err);
       setShotState('failed');
       setPhase('failed');
+      setRecError(recordErrRef.current || 'Screenshot unavailable.');
     }
   };
 
@@ -524,7 +537,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
             ? 'No video in this post — preparing a high-quality screenshot…'
               : phase === 'none'
                 ? (shotFallback
-                  ? 'Recording failed, so a screenshot will be used instead.'
+                  ? `${recError || 'Recording failed.'} A screenshot will be used instead.`
                   : 'No video in this post, so its text will be shown instead.')
               : phase === 'failed'
                 ? (recError || 'Recording unavailable.')

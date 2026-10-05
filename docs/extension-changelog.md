@@ -1828,3 +1828,14 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
 - The previous zoom is restored on every exit: done, cancel, tab-away,
   failure, and unmount, next to the existing video state restore.
 - Local commit only - NOT pushed.
+---
+
+## Recording failures name their stage again
+
+Files touched: src/components/TweetClipper.jsx, this changelog.
+
+- The failure fallback hid the cause, so stage tracking is back:
+  finding video, capturing, finishing. The reason survives onto the
+  screenshot screens instead of being overwritten, so a failed
+  recording reports exactly where it died.
+- Local commit only - NOT pushed.
