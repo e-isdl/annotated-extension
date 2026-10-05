@@ -316,7 +316,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
         if (cancelled || ctl.tabGone) return;
         const blob = new Blob(ctl.chunks, { type: recorder.mimeType || mimeType || 'video/webm' });
         if (frames === 0 || blob.size === 0) {
-          const reason = `Recording failed at capturing: no frames.`;
+          const reason = `Recording failed at capturing: ${lastShotError || 'no frames'}.`;
           recordErrRef.current = reason;
           setRecError(reason);
           setShotFallback(true);
@@ -359,14 +359,24 @@ export default function TweetClipper({ pageInfo, onReady }) {
 
       let crop = prep.bounds;
       let cropVw = prep.vw;
+      let misses = 0;
+      let lastShotError = null;
       stageRef.current = 'capturing';
       while (Date.now() - ctl.t0 < targetMs) {
         if (ctl.stopped) break;
         let dataUrl = null;
         try {
-          dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 80 });
+          const shot = await chrome.runtime.sendMessage({ type: 'TWEET_RECORD_SHOT' }).catch(() => null);
+          if (shot?.ok && shot.dataUrl) dataUrl = shot.dataUrl;
+          else if (shot && !shot.ok && shot.error) lastShotError = shot.error;
         } catch { dataUrl = null; }
-        if (!dataUrl) break;
+        if (!dataUrl) {
+          misses += 1;
+          if ((frames === 0 && misses >= 3) || misses >= 10) break;
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          continue;
+        }
+        misses = 0;
         await drawShot(dataUrl);
         frames += 1;
         if (!ctl.poster && Date.now() - ctl.t0 > 600) {

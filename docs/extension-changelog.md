@@ -1851,3 +1851,18 @@ Files touched: src/components/TweetClipper.jsx, this changelog.
 - The prep nudges the first tweet into view before hunting the video so
   lazy-mounted players exist to be found.
 - Local commit only - release follows.
+---
+
+## Record shots routed through the background
+
+Files touched: background.js, src/components/TweetClipper.jsx,
+this changelog.
+
+- Panel-side visible-tab shots came back empty while the background
+  identical call succeeds, so each frame is now captured in the service
+  worker and handed to the panel. Single-frame misses no longer kill a
+  take: three strikes before any frame, ten mid-take, and a partial take
+  still previews instead of failing.
+- The background reports its own capture error, which the empty-take
+  reason now carries.
+- Local commit only - release follows.

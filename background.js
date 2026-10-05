@@ -249,6 +249,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     captureTweetScreenshot().then(sendResponse);
     return true;
   }
+  if (message.type === 'TWEET_RECORD_SHOT') {
+    (async () => {
+      try {
+        const tab = await getActiveTab();
+        if (!tab?.id) { sendResponse({ ok: false, error: 'no active tab' }); return; }
+        const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 80 });
+        if (!dataUrl) { sendResponse({ ok: false, error: 'empty shot' }); return; }
+        sendResponse({ ok: true, dataUrl });
+      } catch (e) {
+        sendResponse({ ok: false, error: e?.message || 'capture failed' });
+      }
+    })();
+    return true;
+  }
 });
 
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
