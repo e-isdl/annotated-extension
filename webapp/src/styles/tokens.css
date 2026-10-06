@@ -172,7 +172,7 @@ html[data-theme="tokyo"] {
   --btn-bg: linear-gradient(135deg, #7AA2F7, #BB9AF7);
   --btn-bg-hover: linear-gradient(135deg, #94B3FA, #CDB4FA);
   --glow: 0 0 18px rgba(122, 162, 247, .50);
-  --bg-image: linear-gradient(rgba(13, 15, 32, .80), rgba(13, 15, 32, .86)), radial-gradient(55% 38% at 12% -4%, rgba(122, 162, 247, .30), transparent 70%), radial-gradient(45% 35% at 92% 6%, rgba(247, 118, 142, .20), transparent 70%), radial-gradient(70% 40% at 50% 112%, rgba(125, 207, 255, .16), transparent 70%), url("/themes/tokyo-night.jpg") center / cover no-repeat;
+  --bg-image: linear-gradient(rgba(13, 15, 32, .58), rgba(13, 15, 32, .68)), radial-gradient(55% 38% at 12% -4%, rgba(122, 162, 247, .30), transparent 70%), radial-gradient(45% 35% at 92% 6%, rgba(247, 118, 142, .20), transparent 70%), radial-gradient(70% 40% at 50% 112%, rgba(125, 207, 255, .16), transparent 70%), url("/themes/tokyo-night.jpg") center / cover no-repeat;
   --overlay: repeating-linear-gradient(104deg, rgba(190, 205, 255, .045) 0 1px, transparent 1px 9px);
   --active-bg: linear-gradient(90deg, rgba(122, 162, 247, .26), rgba(187, 154, 247, .10));
   --active-text: #D6DDFF;
