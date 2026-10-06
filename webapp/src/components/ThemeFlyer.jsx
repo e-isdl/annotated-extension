@@ -5,10 +5,10 @@ const RELEASES = 'https://github.com/e-isdl/annotated-extension/releases';
 
 // After a theme change the buddy leaves the theme button and glides
 // in a straight line to the GitHub releases link, lands just below it
-// and says "hello!" while huffing like a puppy and waving for 15
-// seconds - then he is gone for good until the page is refreshed.
-// One flight per page load; falls back to the bottom-right corner on
-// pages without the right rail.
+// and jumps up and down, happy, saying "Try the extension" with the
+// pill pointing up at the link - for 15 seconds, then he is gone for
+// good until the page is refreshed. One flight per page load; falls
+// back to the bottom-right corner on pages without the right rail.
 export default function ThemeFlyer() {
   const [flight, setFlight] = useState(null);
   const busyRef = useRef(false);
@@ -67,7 +67,7 @@ export default function ThemeFlyer() {
       }}
       aria-label="Download the extension here"
     >
-      {docked && <span className="theme-flyer-bubble">hello!</span>}
+      {docked && <span className="theme-flyer-bubble">Try the extension</span>}
       {docked ? <ThemeBuddy cute /> : <ThemeBuddy />}
     </a>
   );

@@ -2929,3 +2929,9 @@ this changelog.
 - He then fades out and stays gone until the page is refreshed; only one flight per page load (later theme changes do not bring him back).
 - Removed the jetpack, spark trail, thrust plume, flight pill copy and all flight-path machinery (ThemeNudge/ThemeFlyer/globals.css buddy block reverted to the simple originals plus the new behaviors).
 - Checks: webapp build passes.
+### Buddy wording and docked behavior corrected
+
+- At the extension the pill now reads "Try the extension" and its tail points up at the GitHub link (same pill shape as before, retargeted from the buddy to the link).
+- Docked buddy now jumps up and down with squash-and-stretch, happy face, still waving - replaced the huffing/panting.
+- Removed "hello!" and "Hi!" everywhere: the button buddy says only "Try themes!" (original wording).
+- Checks: webapp build passes.
