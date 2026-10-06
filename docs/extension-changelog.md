@@ -2779,3 +2779,25 @@ this changelog.
   no cache mismatch can strip.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Tokyo backdrop removed, muted text fixed
+
+**Files touched:** `webapp/src/App.jsx`,
+`webapp/src/components/ThemeBackdrop.jsx` (deleted),
+`webapp/src/styles/globals.css`, `webapp/src/styles/tokens.css`,
+`webapp/public/themes/tokyo-night.jpg` (deleted), this changelog.
+
+- The Tokyo photo backdrop (fixed img + veil div) was the cause of
+  muted text on every non-card page: the veil had no z-index, so it
+  painted above all normal-flow content, while only feed cards
+  (lifted by z-index 1) escaped it. Detail, drafts, saved and
+  leaderboard text all sat under the dark veil.
+- Feature removed entirely per decision: component, mount, CSS
+  rules and the photo asset are gone; Tokyo's `--bg-image` is now
+  `none`, so the theme is flat `--bg` plus the existing rain
+  overlay.
+- Checks: root build and webapp build pass; built CSS contains no
+  `theme-backdrop` rules and no `themes/` asset.
+- Pushed to master with this entry (Cloudflare rebuilds from source).

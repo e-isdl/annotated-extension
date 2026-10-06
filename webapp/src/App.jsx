@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import ThemeBackdrop from './components/ThemeBackdrop';
 import AppSidebar from './components/AppSidebar';
 import RightRail from './components/RightRail';
 import Feed from './pages/Feed';
@@ -29,7 +28,6 @@ export default function App() {
       <ScrollToTop />
       <ToastProvider>
         <div className="min-h-screen bg-bg-base text-text-primary font-ui">
-          <ThemeBackdrop />
           <Navbar />
           <AppShell />
           <MobileNav />
