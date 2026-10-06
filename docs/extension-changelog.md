@@ -2864,3 +2864,24 @@ this changelog.
   smile and blush cheeks; the normal blinking face is kept for the
   load nudge and for the flight.
 - Checks: webapp build passes.
+---
+
+## Slow jetpack flight along a long winding journey
+
+**Files touched:** `webapp/src/components/ThemeFlyer.jsx`,
+`webapp/src/components/ThemeNudge.jsx`, `webapp/src/styles/globals.css`,
+this changelog.
+
+- The post-theme-change flight is now a long, slow, curved journey
+  (~4.2s eased): he dives left across the feed, sweeps along the
+  bottom, then rises to the GitHub link. Progress is mapped onto
+  arc length so the pace stays steady and watchable, with a gentle
+  bank into each turn.
+- He rides a jetpack for the trip: a tank on his back with a
+  flickering flame, and a jetpack face (wide eyes, open excited
+  mouth) that switches to the cute face only once docked.
+- The landed bubble now matches the "Try themes!" pill: text and
+  buddy share one rounded pill with a tail pointing up at the
+  link, copy wrapping inside a max width so nothing overflows the
+  right edge (the old side bubble is gone).
+- Checks: webapp build passes.
