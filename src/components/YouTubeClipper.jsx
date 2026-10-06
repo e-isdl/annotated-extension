@@ -899,6 +899,7 @@ export default function YouTubeClipper({
   };
 
   const useEmbedInstead = () => {
+    if (rec.url) URL.revokeObjectURL(rec.url);
     setPlayMode('embed');
     setRec(IDLE_REC);
   };

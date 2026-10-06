@@ -23,22 +23,42 @@ function withTimeout(promise, ms) {
 }
 
 // Self-contained page functions: they run via chrome.scripting and depend on
-// nothing in the tab (no content script needed at all). The video is found
-// page-wide (largest visible player) so a wrong article guess can never hide
-// it; the card around it gives the recording bounds.
-async function tweetPrepFunc() {
+// nothing in the tab (no content script needed at all). Video is searched
+// ONLY inside this post's own article: the old page-wide "largest video"
+// hunt grabbed stray players (ads, other posts) and sent photo-only posts
+// down the recording path, where they hung forever at "Fitting".
+async function tweetPrepFunc(a) {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  try {
-    const hint = document.querySelector('article[data-testid="tweet"]');
-    if (hint) hint.scrollIntoView({ block: 'center', behavior: 'instant' });
-  } catch (e) {}
-  await sleep(400);
-  const visibleVideos = () => Array.from(document.querySelectorAll('video')).filter((v) => {
+  const bigEnough = (v) => {
     try {
       const r = v.getBoundingClientRect();
       return r.width > 120 && r.height > 120 && r.bottom > 0 && r.top < window.innerHeight;
     } catch (e) { return false; }
-  });
+  };
+  // A video counts only if it behaves like media, not a placeholder:
+  // real frames, playback progress, or actually playing.
+  const looksAlive = (v) => {
+    try {
+      return (v.readyState >= 2 && v.videoWidth > 0) || v.currentTime > 0 || !v.paused;
+    } catch (e) { return false; }
+  };
+  // This post's own article: the one linking its status timestamp. The
+  // first article on the page can be a reply or promoted post, which is
+  // how photo posts inherited somebody else's video.
+  const statusId = String((a && a.statusId) || '');
+  let post = null;
+  try {
+    const articles = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
+    if (statusId) {
+      post = articles.find((el) => {
+        try { return !!el.querySelector(`a[href$="/status/${statusId}"]`); } catch (e) { return false; }
+      }) || null;
+    }
+    if (!post) post = articles[0] || null;
+    if (post) post.scrollIntoView({ block: 'center', behavior: 'instant' });
+  } catch (e) {}
+  await sleep(400);
+  const inPostVideos = () => (post ? Array.from(post.querySelectorAll('video')).filter(bigEnough) : []);
   const largest = (list) => {
     const sorted = list.slice().sort((a, b) => {
       const ra = a.getBoundingClientRect();
@@ -49,21 +69,20 @@ async function tweetPrepFunc() {
   };
   let video = null;
   for (let i = 0; i < 25; i += 1) {
-    const cands = visibleVideos();
-    if (cands.length) {
-      const best = largest(cands);
-      video = best;
-      try {
-        if (best.readyState >= 2 || best.currentTime > 0 || !best.paused) break;
-      } catch (e) { break; }
-    }
+    const best = largest(inPostVideos());
+    if (best && looksAlive(best)) { video = best; break; }
     await sleep(200);
   }
   if (!video) {
     const articles = document.querySelectorAll('article[data-testid="tweet"]').length;
     return { ok: false, code: 'no-media', articles, videos: 0 };
   }
-  const card = video.closest('article[data-testid="tweet"]') || document.querySelector('article[data-testid="tweet"]');
+  // Mark it so the capture step grabs THIS element, never a page-wide stray.
+  try {
+    document.querySelectorAll('video[data-annotated-target]').forEach((v) => { try { delete v.dataset.annotatedTarget; } catch (e2) {} });
+    video.dataset.annotatedTarget = '1';
+  } catch (e) {}
+  const card = post;
   let box = null;
   let vrect = null;
   if (card) {
@@ -147,24 +166,36 @@ async function tweetHybridFunc(a) {
   };
   try {
     if (!a || !a.bg || !(a.cw > 0) || !(a.ch > 0)) return { ok: false, reason: 'args' };
-    // Capture the live playing element. Decoded frames work for mp4, HLS,
-    // MSE and blob sources alike, with no fetch and no CORS taint.
-    for (let i = 0; i < 10; i += 1) {
-      const cands = Array.from(document.querySelectorAll('video')).filter((v) => {
-        try {
-          const r = v.getBoundingClientRect();
-          return r.width > 120 && r.height > 120 && r.bottom > 0 && r.top < window.innerHeight;
-        } catch (e) { return false; }
-      });
-      if (cands.length) {
+    // Capture the marked video from prep (same tweet). Falls back to a video
+    // inside this post's own article. Never page-wide: stray players must
+    // not hijack another post's recording.
+    const bigEnough = (v) => {
+      try {
+        const r = v.getBoundingClientRect();
+        return r.width > 120 && r.height > 120 && r.bottom > 0 && r.top < window.innerHeight;
+      } catch (e) { return false; }
+    };
+    const findVideo = () => {
+      try {
+        const marked = document.querySelector('video[data-annotated-target="1"]');
+        if (marked && bigEnough(marked)) return marked;
+      } catch (e) {}
+      try {
+        const post = document.querySelector('article[data-testid="tweet"]');
+        if (!post) return null;
+        const cands = Array.from(post.querySelectorAll('video')).filter(bigEnough);
+        if (!cands.length) return null;
         cands.sort((x, y) => {
           const rx = x.getBoundingClientRect();
           const ry = y.getBoundingClientRect();
           return (ry.width * ry.height) - (rx.width * rx.height);
         });
-        video = cands[0];
-        break;
-      }
+        return cands[0];
+      } catch (e) { return null; }
+    };
+    for (let i = 0; i < 10; i += 1) {
+      video = findVideo();
+      if (video) break;
       await sleep(200);
     }
     if (!video) return { ok: false, reason: 'no-video' };
@@ -256,19 +287,33 @@ async function tweetHybridFunc(a) {
 }
 
 function tweetBoundsFunc() {
-  const cands = Array.from(document.querySelectorAll('video')).filter((v) => {
+  // Tracks the marked video from prep (same tweet). Falls back to a video
+  // inside this post's own article. Never page-wide.
+  const bigEnough = (v) => {
     try {
       const r = v.getBoundingClientRect();
       return r.width > 120 && r.height > 120 && r.bottom > 0 && r.top < window.innerHeight;
     } catch (e) { return false; }
-  });
-  if (!cands.length) return { ok: false };
-  cands.sort((a, b) => {
-    const ra = a.getBoundingClientRect();
-    const rb = b.getBoundingClientRect();
-    return (rb.width * rb.height) - (ra.width * ra.height);
-  });
-  const video = cands[0];
+  };
+  let video = null;
+  try {
+    const marked = document.querySelector('video[data-annotated-target="1"]');
+    if (marked && bigEnough(marked)) video = marked;
+  } catch (e) {}
+  if (!video) {
+    try {
+      const post = document.querySelector('article[data-testid="tweet"]');
+      const cands = post ? Array.from(post.querySelectorAll('video')).filter(bigEnough) : [];
+      if (!cands.length) return { ok: false };
+      cands.sort((a, b) => {
+        const ra = a.getBoundingClientRect();
+        const rb = b.getBoundingClientRect();
+        return (rb.width * rb.height) - (ra.width * ra.height);
+      });
+      video = cands[0];
+    } catch (e) { return { ok: false }; }
+  }
+  if (!video) return { ok: false };
   const card = video.closest('article[data-testid="tweet"]');
   if (!card) {
     const vr = video.getBoundingClientRect();
@@ -326,7 +371,6 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const stageRef = useRef('');
   const [fitting, setFitting] = useState(false);
   const [shotFallback, setShotFallback] = useState(false);
-  const [probeInfo, setProbeInfo] = useState(null);
 
   const restoreZoom = async (tabId) => {
     const z = savedZoomRef.current;
@@ -358,35 +402,38 @@ export default function TweetClipper({ pageInfo, onReady }) {
     setRecError(null);
     recordErrRef.current = null;
     stageRef.current = '';
-    setProbeInfo(null);
     setFitting(false);
     setShotFallback(false);
     setClip(null);
-    setPhase('recording');
     setRecT(0);
+    // NOTE: phase stays 'probing' through search and framing. Recording UI
+    // (Cancel button, Recording… states) appears only once a video is
+    // confirmed and capture actually starts.
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) throw new Error('No active tab.');
       tabIdRef.current = tab.id;
+      const statusId = String(url || '').match(/\/status\/(\d+)/)?.[1] || '';
       stageRef.current = 'finding video';      try { savedZoomRef.current = await chrome.tabs.getZoom(tab.id); } catch { savedZoomRef.current = null; }
       const runPrep = async () => {        const r = await withTimeout(
-          chrome.scripting.executeScript({ target: { tabId: tab.id }, func: tweetPrepFunc }).catch(() => null),
+          chrome.scripting.executeScript({ target: { tabId: tab.id }, func: tweetPrepFunc, args: [{ statusId }] }).catch(() => null),
           CAPTURE_TIMEOUT_MS,
         );
         return r?.[0]?.result || null;
       };
       try { await chrome.tabs.setZoom(tab.id, 1.1); } catch {}
       await new Promise((resolve) => setTimeout(resolve, 350));
-      setFitting(true);
       let prep = await runPrep();
       if (!prep?.ok) {
-        setFitting(false);
         if (prep?.code === 'no-media') { await restoreZoom(tab.id); runScreenshotFlow(); return; }
         throw new Error('Could not read this post.');
       }
+      // Video confirmed: framing text may show from here on.
+      setFitting(true);
       const ZOOM_STEPS = [1.0, 0.9, 0.8, 0.75, 0.67];
       let zi = 0;
-      while (prep.bounds.y + prep.bounds.h > prep.vh - 8 && zi < ZOOM_STEPS.length) {
+      const fitDeadline = Date.now() + 25000;
+      while (prep.bounds.y + prep.bounds.h > prep.vh - 8 && zi < ZOOM_STEPS.length && Date.now() < fitDeadline) {
         try { await chrome.tabs.setZoom(tab.id, ZOOM_STEPS[zi]); } catch {}
         zi += 1;
         await new Promise((resolve) => setTimeout(resolve, 350));
@@ -394,7 +441,10 @@ export default function TweetClipper({ pageInfo, onReady }) {
         if (!next?.ok) break;
         prep = next;
       }
+      if (Date.now() >= fitDeadline) throw new Error('Could not frame this post.');
       setFitting(false);
+      // Video confirmed by prep: only now does the recording UI appear.
+      setPhase('recording');
       const targetMs = RECORD_MS;
 
       const rs = Math.min(2, 1100 / prep.bounds.w);
@@ -593,8 +643,8 @@ export default function TweetClipper({ pageInfo, onReady }) {
         if (recCtlRef.current === ctl) recCtlRef.current = null;
         try { captureStream.getTracks().forEach((t) => { try { t.stop(); } catch {} }); } catch {}
         try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
-        restoreZoom(tab.id);
-        setRecError('Recording stopped — keep the X tab open while recording.');
+      restoreZoom(tab.id);
+      setRecError('Recording stopped. Keep the X tab open while recording.');
         setPhase('failed');
         return;
       }
@@ -606,7 +656,10 @@ export default function TweetClipper({ pageInfo, onReady }) {
       teardownRecording();
       restoreZoom();
       const raw = err?.name && err.name !== 'Error' ? ` (${err.name})` : '';
-      const reason = `Recording failed at ${stageRef.current || 'starting'}: ${err?.message || 'could not record'}${raw}`;
+      const stage = stageRef.current || 'starting';
+      const reason = stage === 'finding video'
+        ? `No video found in this post.${raw}`
+        : `Could not finish recording the video.${raw}`;
       recordErrRef.current = reason;
       setRecError(reason);
       setShotFallback(true);
@@ -737,19 +790,21 @@ export default function TweetClipper({ pageInfo, onReady }) {
   const canContinue = phase === 'preview' || phase === 'none';
 
   const statusText = phase === 'probing'
-    ? 'Checking this post for video…'
+    ? 'Looking for video in this post…'
       : phase === 'recording'
-        ? (fitting ? 'Fitting the tweet…' : `Recording… ${Math.floor(recT)}s`)
+        ? (fitting ? 'Found video. Framing the post for capture…' : `Recording the post video… ${Math.floor(recT)}s`)
       : phase === 'preview'
-        ? 'Tweet recorded with its video and text. It will loop silently on Annotated, like a GIF.'
+        ? 'Video captured. It will loop silently, like a GIF.'
           : phase === 'shot-working'
-            ? 'No video in this post — preparing a high-quality screenshot…'
+            ? 'No video here. Taking a screenshot instead…'
               : phase === 'none'
                 ? (shotFallback
-                  ? `${recError || 'Recording failed.'} A screenshot will be used instead.`
-                  : 'No video in this post, so its text will be shown instead.')
+                  ? `${recError || 'Recording failed.'} Using a screenshot instead.`
+                  : shotState === 'ready'
+                    ? 'Screenshot ready.'
+                    : 'Text-only post. Nothing to capture.')
               : phase === 'failed'
-                ? (recError || 'Recording unavailable.')
+                ? (recError || 'Recording unavailable. Try again below.')
                 : null;
 
   return (
@@ -788,9 +843,6 @@ export default function TweetClipper({ pageInfo, onReady }) {
       {statusText && (
         <div className="annotation-mark bg-bg-surface rounded-r-lg p-3">
           <p className="text-xs text-text-muted">{statusText}</p>
-          {probeInfo && phase !== 'preview' && (
-            <p className="text-xs text-text-muted mt-1">probe: {probeInfo}</p>
-          )}
           {phase === 'recording' && (
             <button
               type="button"
@@ -825,7 +877,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
         disabled={busy || publishing || !canContinue}
         className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {publishing ? 'Uploading recording…' : busy ? 'Working…' : 'Continue to Annotate →'}
+        {publishing ? 'Uploading recording…' : phase === 'recording' ? 'Recording…' : phase === 'shot-working' ? 'Capturing screenshot…' : busy ? 'Working…' : 'Continue to Annotate →'}
       </button>
     </div>
   );

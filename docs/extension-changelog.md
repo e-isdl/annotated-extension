@@ -2302,6 +2302,47 @@ this changelog.
 
 ---
 
+## Tweet video search scoped to the post, fit loop bounded
+
+**Files touched:** `src/components/TweetClipper.jsx`, this changelog.
+
+- Root cause of photo posts entering the recording flow: all three page
+  functions hunted the largest `<video>` page-wide, so a stray player
+  anywhere (ads, other posts) sent photo-only posts down the recording
+  path where they hung at fitting. Prep, hybrid capture and live bounds
+  now search only inside this post's own article; prep marks its video
+  so capture grabs that exact element. No video in the article means
+  the screenshot flow, immediately.
+- The zoom-fit loop gets a 25s deadline after which it fails over to
+  the screenshot flow instead of hanging on "Framing" forever.
+- Checks: `npm run build` passes.
+- Local commit only - NOT pushed. Chrome-verify on a photo-only post:
+  "No video here. Taking a screenshot instead…" with no recording
+  text, and on a video post the clip records the right player.
+
+---
+
+## Recording UI gated behind confirmed video, exact-article targeting
+
+**Files touched:** `src/components/TweetClipper.jsx`, this changelog.
+
+- "Found video" still appeared first because the recording phase (and
+  its Cancel button) switched on before prep resolved, and the poll
+  accepted any element without proof of media from possibly the wrong
+  article. Now: phase stays neutral ("Looking for video…", no Cancel
+  button) through search and framing; recording UI appears only when
+  capture actually starts.
+- Prep takes the post's status ID and targets the article linking that
+  exact status timestamp (first article was sometimes a reply or
+  promoted post). A candidate counts only with real media signs
+  (frames, progress, or playing); placeholders no longer qualify.
+- Checks: `npm run build` passes.
+- Local commit only - NOT pushed. Chrome-verify on the David Sacks
+  photo post: neutral checking text straight to the screenshot flow,
+  never recording UI.
+
+---
+
 ## Podcast: tab audio only, mic path removed
 
 - The microphone fallback is gone from the podcast clipper: one button,
@@ -2310,3 +2351,15 @@ this changelog.
   device picker deleted (take-screen voice notes untouched).
 - Recording block restored after an edit collision, with the Spotify
   tab instruction in the level caption.
+
+---
+
+## Release v5 (manifest 2.3.19)
+
+- Ships everything since v4: tweet clipper text rewritten per state
+  (photo posts never see recording UI), video search scoped to the
+  post's own article with media-proof acceptance, recording UI gated
+  behind confirmed video, fit loop bounded, podcast via tab audio with
+  silence rejection and slim player, Spotify show pages routed, helper
+  copy naming the Full Video Timeline, white-screen TDZ fix.
+- Pushed to master. Released as v5 with annotated-extension.zip.
