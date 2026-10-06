@@ -2511,3 +2511,19 @@ this changelog.
 - Checks: extension + webapp builds pass; `npm test` 45/46
   (pre-existing transcript failure).
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Sonnet palette applied to the five themes
+
+**Files touched:** `webapp/src/styles/tokens.css`,
+`webapp/src/lib/themes.js`, this changelog.
+
+- Replaced all five theme blocks verbatim; light and dark untouched.
+- Highlighter check passed: the webapp mark (`::selection`) forces
+  near-black `--on-yellow` text, so every `yellow-soft` alpha raised
+  to .78 per the delivery note.
+- Swatch trios in the picker updated to the new bg/surface/accent
+  hexes.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
