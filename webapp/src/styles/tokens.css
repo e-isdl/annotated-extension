@@ -229,7 +229,7 @@ html[data-theme="terminal"] {
   --glow: 0 0 12px rgba(0, 255, 102, .55);
   --text-glow: 0 0 6px rgba(0, 255, 102, .40);
   --bg-image: radial-gradient(110% 60% at 50% -10%, rgba(0, 255, 102, .14), transparent 65%);
-  --overlay: repeating-linear-gradient(0deg, rgba(0, 0, 0, .30) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .55) 100%);
+  --overlay: repeating-linear-gradient(0deg, rgba(0, 0, 0, .30) 0 1px, transparent 1px 6px), radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .55) 100%);
   --active-bg: rgba(0, 255, 102, .14);
   --active-text: #00FF66;
   --chip-bg: rgba(255, 176, 0, .10);

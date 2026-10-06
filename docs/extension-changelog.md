@@ -2566,3 +2566,14 @@ this changelog.
 - Skipped per order optionality: view-transition crossfade.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Terminal scanlines sparser
+
+**Files touched:** `webapp/src/styles/tokens.css`, this changelog.
+
+- Terminal overlay scanlines every 6px instead of every 3px.
+  Terminal block only.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
