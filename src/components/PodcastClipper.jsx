@@ -37,6 +37,10 @@ export default function PodcastClipper({ pageInfo, onReady }) {
   const maxLevelRef = useRef(0);
   const audioUrlRef = useRef(null);
   const recordingRef = useRef(false);
+  const decodedRef = useRef(null);
+  const [trimPeaks, setTrimPeaks] = useState([]);
+  const [trim, setTrim] = useState({ s: 0, e: 0 });
+  const [takeDur, setTakeDur] = useState(0);
   const episodeTitle = pageInfo?.data?.title || '';
 
   useEffect(() => () => {
@@ -119,6 +123,7 @@ export default function PodcastClipper({ pageInfo, onReady }) {
   const resetTake = () => {
     if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
     audioUrlRef.current = null;
+    decodedRef.current = null;
     setAudioUrl(null);
     setAudioBlob(null);
     setRecorded(false);
@@ -126,6 +131,9 @@ export default function PodcastClipper({ pageInfo, onReady }) {
     setSeconds(0);
     setLevel(0);
     setEpHeld(false);
+    setTrim({ s: 0, e: 0 });
+    setTrimPeaks([]);
+    setTakeDur(0);
     setError('');
   };
 
@@ -175,25 +183,73 @@ export default function PodcastClipper({ pageInfo, onReady }) {
     return '';
   };
 
-  const blobIsSilent = async (blob) => {
+  const decodeAudioBlob = async (blob) => {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    const ctx = new Ctx();
     try {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new Ctx();
-      try {
-        const data = await blob.arrayBuffer();
-        const decoded = await ctx.decodeAudioData(data);
-        const ch = decoded.getChannelData(0);
-        let sum = 0;
-        let n = 0;
-        for (let i = 0; i < ch.length; i += 10) { sum += ch[i] * ch[i]; n += 1; }
-        const rms = Math.sqrt(sum / Math.max(1, n));
-        return rms < 0.004;
-      } finally {
-        try { ctx.close(); } catch (e) {}
-      }
+      const data = await blob.arrayBuffer();
+      return await ctx.decodeAudioData(data);
     } catch (e) {
-      return false;
+      return null;
+    } finally {
+      try { ctx.close(); } catch (e) {}
     }
+  };
+
+  const bufferPeaks = (buffer, n) => {
+    const ch0 = buffer.getChannelData(0);
+    const ch1 = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : null;
+    const total = ch0.length;
+    const step = Math.max(1, Math.floor(total / n));
+    const out = [];
+    for (let i = 0; i < n; i += 1) {
+      let peak = 0;
+      const from = i * step;
+      const to = Math.min(total, from + step);
+      for (let j = from; j < to; j += 8) {
+        const v = Math.abs(ch0[j]) + (ch1 ? Math.abs(ch1[j]) : 0);
+        if (v > peak) peak = v;
+      }
+      out.push(Math.min(1, peak / (ch1 ? 2 : 1)));
+    }
+    const max = Math.max(0.001, ...out);
+    return out.map((p) => Math.max(0.06, Math.sqrt(p / max)));
+  };
+
+  // 16-bit PCM mono WAV encode of buffer[startSec, endSec). Keeps uploads
+  // playable everywhere with no encoder dependency. 90s mono ≈ 8MB.
+  const encodeWavSlice = (buffer, startSec, endSec) => {
+    const rate = buffer.sampleRate;
+    const s0 = Math.max(0, Math.floor(startSec * rate));
+    const s1 = Math.min(buffer.length, Math.ceil(endSec * rate));
+    const len = Math.max(1, s1 - s0);
+    const chans = buffer.numberOfChannels;
+    const data = new Int16Array(len);
+    for (let i = 0; i < len; i += 1) {
+      let v = 0;
+      for (let c = 0; c < chans; c += 1) v += buffer.getChannelData(c)[s0 + i] || 0;
+      v /= chans;
+      const clamped = Math.max(-1, Math.min(1, v));
+      data[i] = clamped < 0 ? clamped * 0x8000 : clamped * 0x7FFF;
+    }
+    const header = new ArrayBuffer(44);
+    const dv = new DataView(header);
+    const wstr = (off, s) => { for (let i = 0; i < s.length; i += 1) dv.setUint8(off + i, s.charCodeAt(i)); };
+    wstr(0, 'RIFF');
+    dv.setUint32(4, 36 + len * 2, true);
+    wstr(8, 'WAVE');
+    wstr(12, 'fmt ');
+    dv.setUint32(16, 16, true);
+    dv.setUint16(20, 1, true);
+    dv.setUint16(22, 1, true);
+    dv.setUint32(24, rate, true);
+    dv.setUint32(28, rate * 2, true);
+    dv.setUint16(32, 2, true);
+    dv.setUint16(34, 16, true);
+    wstr(36, 'data');
+    dv.setUint32(40, len * 2, true);
+    return new Blob([header, data.buffer], { type: 'audio/wav' });
   };
 
   const beginCapture = async () => {
@@ -279,11 +335,26 @@ export default function PodcastClipper({ pageInfo, onReady }) {
         setError('Recording captured no audio. Try again.');
         return;
       }
-      const flat = maxLevelRef.current < 0.02;
-      const silent = await blobIsSilent(blob);
-      if (flat || silent) {
-        setError('We could not hear anything. Make sure the episode is playing (and tab audio is shared), then try again.');
-        return;
+      const decoded = await decodeAudioBlob(blob);
+      const dur = decoded && decoded.duration > 0 ? decoded.duration : 0;
+      if (decoded && dur > 0) {
+        const ch = decoded.getChannelData(0);
+        let sum = 0;
+        let n = 0;
+        for (let i = 0; i < ch.length; i += 10) { sum += ch[i] * ch[i]; n += 1; }
+        if (Math.sqrt(sum / Math.max(1, n)) < 0.004 || maxLevelRef.current < 0.02) {
+          setError('We could not hear anything. Make sure the episode is playing (and tab audio is shared), then try again.');
+          return;
+        }
+        decodedRef.current = decoded;
+        setTakeDur(dur);
+        setSeconds(Math.round(dur));
+        setTrim({ s: 0, e: dur });
+        setTrimPeaks(bufferPeaks(decoded, 56));
+      } else {
+        // Undecodable but non-empty: accept the whole take, trimming off.
+        decodedRef.current = null;
+        setTrimPeaks([]);
       }
       setAudioBlob(blob);
       const url = URL.createObjectURL(blob);
@@ -315,16 +386,30 @@ export default function PodcastClipper({ pageInfo, onReady }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Sign in again before uploading this audio clip.');
-      const filename = `clips/podcasts/${user.id}/${Date.now()}.webm`;
-      const { error } = await supabase.storage.from('clips').upload(filename, audioBlob, { contentType: 'audio/webm' });
+      // Trimmed takes are re-encoded as WAV slices; full takes upload raw.
+      const full = !decodedRef.current || (trim.s <= 0.5 && trim.e >= takeDur - 0.5);
+      let file = audioBlob;
+      let ext = 'webm';
+      let contentType = 'audio/webm';
+      let clipSeconds = seconds;
+      if (!full) {
+        file = encodeWavSlice(decodedRef.current, trim.s, trim.e);
+        ext = 'wav';
+        contentType = 'audio/wav';
+        clipSeconds = Math.max(1, Math.round(trim.e - trim.s));
+      }
+      if (file.size > 15 * 1024 * 1024) throw new Error('This clip is too big. Trim it shorter and try again.');
+      const filename = `clips/podcasts/${user.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('clips').upload(filename, file, { contentType });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('clips').getPublicUrl(filename);
+      decodedRef.current = null;
       onReady({
         source_url: pageInfo.url,
         source_type: 'podcast',
         title: episodeTitle,
         audio_url: publicUrl,
-        duration: seconds,
+        duration: clipSeconds,
       });
     } catch (uploadError) {
       setError(uploadError.message || 'Audio upload failed. Please try again.');
@@ -389,8 +474,12 @@ export default function PodcastClipper({ pageInfo, onReady }) {
         )}
         {recorded && audioUrl && (
           <>
-            <AudioPreview url={audioUrl} seconds={seconds} />
-            <p className="text-xs text-text-muted">Recorded {seconds}s. Listen back, then continue.</p>
+            {trimPeaks.length > 0 && takeDur > 0 ? (
+              <TrimPreview url={audioUrl} dur={takeDur} peaks={trimPeaks} trim={trim} onTrim={setTrim} />
+            ) : (
+              <AudioPreview url={audioUrl} seconds={seconds} />
+            )}
+            <p className="text-xs text-text-muted">Recorded {seconds}s. Listen back, trim it, then continue.</p>
           </>
         )}
         {uploading && <p className="text-xs text-text-muted">Uploading...</p>}
@@ -406,6 +495,132 @@ export default function PodcastClipper({ pageInfo, onReady }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function TrimPreview({ url, dur, peaks, trim, onTrim }) {
+  const audioRef = useRef(null);
+  const barRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [t, setT] = useState(trim.s);
+  const n = Math.max(1, peaks.length);
+
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return undefined;
+    const onTime = () => {
+      const ct = el.currentTime || 0;
+      setT(ct);
+      if (ct >= trim.e - 0.05) {
+        try { el.pause(); } catch (e) {}
+        try { el.currentTime = trim.s; } catch (e) {}
+      }
+    };
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    const onEnd = () => setPlaying(false);
+    el.addEventListener('timeupdate', onTime);
+    el.addEventListener('play', onPlay);
+    el.addEventListener('pause', onPause);
+    el.addEventListener('ended', onEnd);
+    return () => {
+      el.removeEventListener('timeupdate', onTime);
+      el.removeEventListener('play', onPlay);
+      el.removeEventListener('pause', onPause);
+      el.removeEventListener('ended', onEnd);
+    };
+  }, [url, trim.s, trim.e]);
+
+  const toggle = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (el.paused) {
+      const from = (t >= trim.s && t < trim.e) ? t : trim.s;
+      try { el.currentTime = from; } catch (e) {}
+      el.play().catch(() => {});
+    } else {
+      el.pause();
+    }
+  };
+
+  const posToTime = (clientX) => {
+    const r = barRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(clientX - r.left, Math.max(1, r.width)));
+    return Math.round((x / Math.max(1, r.width)) * dur);
+  };
+
+  const onHandleDown = (which) => (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const move = (ev) => {
+      const v = posToTime(ev.clientX);
+      if (which === 's') onTrim((p) => ({ ...p, s: Math.max(0, Math.min(v, p.e - 1)) }));
+      else onTrim((p) => ({ ...p, e: Math.min(dur, Math.max(v, p.s + 1)) }));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+
+  const seekPreview = (e) => {
+    const el = audioRef.current;
+    if (!el || !barRef.current) return;
+    const r = barRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - r.left, Math.max(1, r.width)));
+    try { el.currentTime = (x / Math.max(1, r.width)) * dur; } catch (err) {}
+  };
+
+  const lo = Math.max(0, Math.min(100, (trim.s / Math.max(1, dur)) * 100));
+  const hi = Math.max(0, Math.min(100, (trim.e / Math.max(1, dur)) * 100));
+  const playPct = Math.max(0, Math.min(100, (t / Math.max(1, dur)) * 100));
+
+  return (
+    <div className="pod-trim">
+      <div className="pod-trim-top">
+        <button type="button" className="pod-play" onClick={toggle} aria-label={playing ? "Pause preview" : "Play trimmed preview"}>
+          {playing ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor" /></svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
+          )}
+        </button>
+        <span className="pod-time">{fmtTime(t)} / {fmtTime(dur)}</span>
+      </div>
+      <div ref={barRef} className="pod-trim-bar" onPointerDown={seekPreview} role="slider"
+        aria-label="Trim range" aria-valuemin={0} aria-valuemax={Math.round(dur)}
+        aria-valuetext={`${fmtTime(trim.s)} to ${fmtTime(trim.e)}`} tabIndex={0}>
+        <audio ref={audioRef} src={url} preload="metadata" />
+        <div className="pod-trim-bars" aria-hidden="true">
+          {peaks.map((p, i) => {
+            const center = ((i + 0.5) / n) * 100;
+            const inRegion = center >= lo && center <= hi;
+            const played = center <= playPct;
+            return (
+              <span
+                key={i}
+                className="pod-trim-bar-seg"
+                style={{
+                  height: `${Math.round(8 + p * 92)}%`,
+                  background: played && inRegion ? 'var(--red-btn)' : 'var(--border-strong)',
+                  opacity: inRegion ? 1 : 0.3,
+                }}
+              />
+            );
+          })}
+        </div>
+        <div className="pod-trim-range" style={{ left: `${lo}%`, width: `${Math.max(0, hi - lo)}%` }} aria-hidden="true" />
+        <button type="button" className="pod-trim-handle is-start" style={{ left: `${lo}%` }}
+          onPointerDown={onHandleDown('s')} aria-label={`Trim start, ${fmtTime(trim.s)}`} />
+        <button type="button" className="pod-trim-handle is-end" style={{ left: `${hi}%` }}
+          onPointerDown={onHandleDown('e')} aria-label={`Trim end, ${fmtTime(trim.e)}`} />
+      </div>
+      <p className="pod-trim-foot">Trim {fmtTime(trim.s)} - {fmtTime(trim.e)} ({fmtTime(trim.e - trim.s)})</p>
     </div>
   );
 }

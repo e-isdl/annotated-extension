@@ -2489,3 +2489,25 @@ this changelog.
   Escape to close.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Podcast trimmer in the clipper, detail matches feed
+
+**Files touched:** `src/components/PodcastClipper.jsx`,
+`src/styles/panel.css`, `webapp/src/components/PodcastEpisode.jsx`,
+`webapp/src/pages/ClipPage.jsx`, `webapp/src/styles/globals.css`,
+this changelog.
+
+- Extension: recorded takes open a trimmer (real decoded waveform,
+  two draggable handles, region-only preview, live
+  `Trim X – Y (len)` readout). Continue uploads the trimmed slice
+  re-encoded as WAV (full takes still upload raw); duration sent is
+  the trimmed length. Decode happens once per take and is reused for
+  the silence check.
+- Detail page renders the same feed component in a larger layout
+  (bigger art and title, 96-bar player) instead of its own plain
+  block.
+- Checks: extension + webapp builds pass; `npm test` 45/46
+  (pre-existing transcript failure).
+- Pushed to master with this entry (Cloudflare rebuilds from source).

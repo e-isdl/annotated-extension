@@ -43,14 +43,15 @@ function useSpotifyArt(sourceUrl) {
   return { art, name };
 }
 
-export default function PodcastEpisode({ clip }) {
+export default function PodcastEpisode({ clip, layout = 'feed' }) {
   const src = clip.audio_url;
   const { art, name } = useSpotifyArt(clip.source_url);
   const title = cleanTitle(name || clip.title) || 'Spotify episode';
   const duration = Number(clip.duration) || 0;
   if (!src) return null;
+  const detail = layout === 'detail';
   return (
-    <div className="podcast-episode">
+    <div className={`podcast-episode${detail ? ' podcast-episode-detail' : ''}`}>
       <div className="podcast-row">
         {art ? (
           <img src={art} alt="" loading="lazy" className="podcast-art" />
@@ -65,7 +66,7 @@ export default function PodcastEpisode({ clip }) {
         <div className="podcast-main">
           <p className="podcast-title" title={title}>{title}</p>
           <p className="podcast-show">Spotify</p>
-          <AudioPlayer src={src} compact bars={48} durationHint={duration} accent={SPOTIFY_GREEN} />
+          <AudioPlayer src={src} compact={!detail} bars={detail ? 96 : 48} durationHint={duration} accent={SPOTIFY_GREEN} />
         </div>
       </div>
       <div className="podcast-foot">

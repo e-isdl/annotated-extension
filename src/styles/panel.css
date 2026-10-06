@@ -517,3 +517,15 @@ input.tl-chip.is-editing { width: 84px; background: var(--bg); color: var(--text
 .pod-play:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .pod-time { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pod-seek { flex: 1; min-width: 0; accent-color: var(--red-btn); cursor: pointer; }
+/* Podcast trimmer: waveform with draggable region handles. */
+.pod-trim { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.pod-trim-top { display: flex; align-items: center; gap: 10px; }
+.pod-trim-bar { position: relative; height: 64px; touch-action: none; cursor: default; user-select: none; -webkit-user-select: none; }
+.pod-trim-bar:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 8px; }
+.pod-trim-bars { position: absolute; inset: 0; display: flex; align-items: center; gap: 2px; }
+.pod-trim-bar-seg { flex: 1; min-width: 0; border-radius: 2px; }
+.pod-trim-range { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--red) 14%, transparent); border-top: 2px solid var(--red-btn); border-bottom: 2px solid var(--red-btn); border-radius: 4px; pointer-events: none; }
+.pod-trim-handle { position: absolute; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--bg); border: 2px solid var(--red-btn); box-shadow: 0 1px 4px rgba(0,0,0,.3); padding: 0; cursor: ew-resize; z-index: 2; }
+.pod-trim-handle:active { cursor: ew-resize; }
+.pod-trim-handle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pod-trim-foot { margin: 0; text-align: center; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 700; color: var(--text); }

@@ -148,6 +148,8 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .podcast-foot { display: flex; justify-content: flex-end; }
 .podcast-badge { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
 .podcast-dot { width: 8px; height: 8px; border-radius: 50%; background: #1DB954; flex: none; }
+.podcast-episode-detail .podcast-art { width: 88px; height: 88px; border-radius: 14px; }
+.podcast-episode-detail .podcast-title { font-size: 17px; }
 .source-media-podcast { display: flex; flex-direction: column; }
 .post-source-title { margin: 10px 2px 9px; color: var(--text-primary); font-size: 14px; font-weight: 550; line-height: 1.4; }
 .post-text-body { margin: 4px 2px 0; color: var(--text-secondary); font: 400 14px/1.6 var(--reading-font, inherit); white-space: pre-wrap; word-break: break-word; }

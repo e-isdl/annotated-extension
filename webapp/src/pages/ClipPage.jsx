@@ -8,6 +8,7 @@ import YouTubeClipPlayer from '../components/YouTubeClipPlayer';
 import ClipPlayer from '../components/ClipPlayer';
 import LoopPlayer from '../components/LoopPlayer';
 import AudioPlayer from '../components/AudioPlayer';
+import PodcastEpisode from '../components/PodcastEpisode';
 import FileClaimButton from '../components/FileClaimButton';
 import ReportButton from '../components/ReportButton';
 import CommentSection from '../components/CommentSection';
@@ -396,8 +397,7 @@ export default function ClipPage() {
         )}
         {clip.source_type === 'podcast' && clip.audio_url && (
           <div className="source-media source-media-podcast">
-            <p className="podcast-episode-caption">Episode recording</p>
-            <AudioPlayer src={clip.audio_url} bars={96} durationHint={Number(clip.duration) || 0} />
+            <PodcastEpisode clip={clip} layout="detail" />
           </div>
         )}
         {!isX && clip.source_type === 'article' && clip.article_text && (
