@@ -21,3 +21,30 @@ export function isThemeId(value) {
 export function themeLabel(id) {
   return THEMES.find((t) => t.id === id)?.label || 'Dark';
 }
+
+// Browser chrome tint per theme. Light/Dark intentionally absent: no tag.
+export const THEME_META_BG = {
+  synthwave: '#170834',
+  tokyo: '#0F1226',
+  terminal: '#010603',
+  gruvbox: '#1F1A15',
+  dracula: '#1D1E2A',
+};
+
+export function syncThemeMeta(id) {
+  if (typeof document === 'undefined') return;
+  try {
+    const bg = THEME_META_BG[id];
+    let meta = document.head ? document.head.querySelector('meta[name="theme-color"]') : null;
+    if (bg) {
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        document.head.appendChild(meta);
+      }
+      meta.content = bg;
+    } else if (meta) {
+      meta.remove();
+    }
+  } catch {}
+}

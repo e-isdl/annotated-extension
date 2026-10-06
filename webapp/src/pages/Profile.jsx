@@ -329,7 +329,7 @@ export default function Profile() {
             <div key={comment.id} className="bg-bg-surface border border-border rounded-lg p-3">
               <Link
                 to={postHref(comment.clips)}
-                className="text-xs text-accent-text hover:text-accent transition-colors no-underline block mb-2"
+                className="text-xs text-accent-2 hover:text-accent-2 transition-colors no-underline block mb-2"
               >
                 {comment.clips?.title || 'Untitled clip'}
                 {comment.clips?.profiles?.handle && (
@@ -350,7 +350,7 @@ export default function Profile() {
               <div className="flex items-center justify-between">
                 <Link
                   to={postHref(claim.clips)}
-                  className="text-xs text-accent-text hover:text-accent transition-colors no-underline"
+                  className="text-xs text-accent-2 hover:text-accent-2 transition-colors no-underline"
                 >
                   {claim.clips?.title || 'Untitled clip'}
                 </Link>
@@ -361,7 +361,7 @@ export default function Profile() {
                 {claim.claimant_email && (
                   <a
                     href={`mailto:${claim.claimant_email}?subject=Re: Claim on your clip&body=Hi, I'm reaching out regarding your claim.`}
-                    className="text-xs text-accent-text hover:text-accent transition-colors no-underline"
+                    className="text-xs text-accent-2 hover:text-accent-2 transition-colors no-underline"
                   >
                     Reply to {claim.claimant_email}
                   </a>

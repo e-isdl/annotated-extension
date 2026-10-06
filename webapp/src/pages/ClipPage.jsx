@@ -264,12 +264,12 @@ export default function ClipPage() {
               )}
               {isOwner && (confirmDelete ? (
                   <div className="flex items-center gap-2 p-1.5">
-                    <span className="text-[11px] text-[var(--red)]">Delete post?</span>
+                    <span className="text-[11px] text-[var(--danger)]">Delete post?</span>
                     <button
                       type="button"
                       onClick={handleDeleteClip}
                       disabled={deleting}
-                      className="text-[11px] px-2 py-1 rounded-md text-[var(--on-red)] bg-[var(--red-btn)] hover:bg-[var(--red-btn-hover)] transition-colors disabled:opacity-40"
+                      className="text-[11px] px-2 py-1 rounded-md text-[var(--on-red)] bg-[var(--danger-btn)] hover:bg-[var(--red-btn-hover)] transition-colors disabled:opacity-40"
                     >
                       {deleting ? '...' : 'Yes'}
                     </button>
@@ -286,7 +286,7 @@ export default function ClipPage() {
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(true)}
-                    className="w-full text-left text-[11px] px-2 py-1.5 rounded-md text-[var(--red)] hover:bg-[var(--red-soft)] transition-colors"
+                    className="w-full text-left text-[11px] px-2 py-1.5 rounded-md text-[var(--danger)] hover:bg-[var(--red-soft)] transition-colors"
                   >
                     Delete
                   </button>
@@ -459,7 +459,7 @@ export default function ClipPage() {
                 {claim.claimant_email && (
                   <a
                     href={`mailto:${claim.claimant_email}?subject=Re: Claim on your clip&body=Hi, I'm reaching out regarding your claim on my annotation.`}
-                    className="text-xs text-accent-text hover:text-accent transition-colors"
+                    className="text-xs text-accent-2 hover:text-accent-2 transition-colors"
                   >
                     Reply to {claim.claimant_email}
                   </a>

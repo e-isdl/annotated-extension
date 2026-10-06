@@ -1,3 +1,31 @@
+:root {
+  --danger: var(--red);
+  --danger-btn: var(--red-btn);
+  --accent-2: var(--red);
+  --play: #1DB954;
+  --vote-down: #6ea8fe;
+  --avatar-default: #4759b8;
+  --community-s: 66%;
+  --community-l: 28%;
+  --btn-bg: var(--red-btn);
+  --btn-bg-hover: var(--red-btn-hover);
+  --glow: none;
+  --text-glow: none;
+  --bg-image: none;
+  --overlay: none;
+  --active-bg: var(--surface-2);
+  --active-text: var(--text-primary);
+  --chip-bg: var(--surface-2);
+  --chip-border: var(--border);
+  --chip-text: var(--text-secondary);
+  --card-border: var(--surface-3);
+  --card-border-hover: var(--border-strong);
+  --card-hover-shadow: none;
+  --scroll-thumb: var(--border);
+  --display-font: inherit;
+}
+
+
 :root, [data-theme="dark"] {
   color-scheme: dark;
   --bg: #08090B;
@@ -54,131 +82,277 @@
    below this line. Every theme sets the full token set so components
    never leak colors across themes. */
 
-[data-theme="synthwave"] {
+/* synthwave: composite. Original Outrun sunset ramp, neon pink + cyan + sunset orange. AA-checked. */
+html[data-theme="synthwave"] {
   color-scheme: dark;
-  --bg: #130C25;
-  --card: #1D1337;
-  --surface: #1D1337;
-  --surface-2: #2A1C4E;
-  --surface-3: #382866;
-  --border: #3C2C6C;
-  --border-strong: #654FA6;
-  --text: #F7EEFF;
-  --text-2: #CDBEF0;
-  --text-3: #AE9BDC;
-  --red: #FF66B3;
+  --bg: #170834;
+  --card: #26104F;
+  --surface: #26104F;
+  --surface-2: #351B6E;
+  --surface-3: #44278A;
+  --border: #3D2280;
+  --border-strong: #7A48D8;
+  --text: #FFF0FB;
+  --text-2: #E6C6F7;
+  --text-3: #C9A8F2;
+  --red: #FF73BC;
   --red-btn: #FF3E9F;
-  --red-btn-hover: #FF74BC;
-  --on-red: #170A2C;
-  --red-soft: rgba(255, 62, 159, .15);
-  --yellow: #FFEE58;
-  --yellow-soft: rgba(255, 238, 88, .78);
+  --red-btn-hover: #FF6CB8;
+  --on-red: #1A0638;
+  --red-soft: rgba(255, 62, 159, .16);
+  --yellow: #FFE45E;
+  --yellow-soft: rgba(255, 228, 94, .78);
   --on-yellow: #111114;
   --ok: #3DF2A0;
   --warn: #FFA64D;
-  --focus: #3CE6F5;
+  --focus: #22E5F5;
+  --danger: #FF5468;
+  --danger-btn: #FF5468;
+  --accent-2: #22E5F5;
+  --play: #FF3E9F;
+  --vote-down: #22E5F5;
+  --avatar-default: #7A48D8;
+  --community-s: 90%;
+  --community-l: 50%;
+  --btn-bg: linear-gradient(135deg, #FF2E93, #FF8A3D);
+  --btn-bg-hover: linear-gradient(135deg, #FF5CAB, #FFA15E);
+  --glow: 0 0 20px rgba(255, 62, 159, .55);
+  --bg-image: radial-gradient(120% 55% at 50% 112%, rgba(255, 138, 61, .75) 0%, rgba(255, 62, 159, .45) 30%, rgba(255, 62, 159, 0) 62%), linear-gradient(180deg, #170834 0%, #27104F 60%, #3B1068 100%);
+  --overlay: repeating-linear-gradient(0deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 4px);
+  --active-bg: linear-gradient(90deg, rgba(255, 62, 159, .30), rgba(34, 229, 245, .10));
+  --active-text: #FFF0FB;
+  --chip-bg: rgba(34, 229, 245, .12);
+  --chip-border: rgba(34, 229, 245, .50);
+  --chip-text: #8FF4FF;
+  --card-border: #4A2A98;
+  --card-border-hover: #FF73BC;
+  --card-hover-shadow: 0 0 0 1px rgba(255, 115, 188, .45), 0 10px 36px rgba(255, 62, 159, .28);
+  --scroll-thumb: #6A3CC4;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-pill: 9999px;
+  --ui-font: 'Exo 2', 'Reddit Sans', Inter, system-ui, sans-serif;
+  --display-font: 'Orbitron', 'Exo 2', sans-serif;
 }
 
 
-[data-theme="tokyo"] {
+/* tokyo: hybrid. Official Tokyo Night accent/ok/warn/danger/focus hues on a deeper, bluer neon-night ramp. AA-checked. */
+html[data-theme="tokyo"] {
   color-scheme: dark;
-  --bg: #11121A;
-  --card: #1B1C28;
-  --surface: #1B1C28;
-  --surface-2: #252839;
-  --surface-3: #30344C;
-  --border: #2C3048;
-  --border-strong: #4A5278;
-  --text: #C0CAF5;
-  --text-2: #A9B1D6;
-  --text-3: #939CCB;
+  --bg: #0F1226;
+  --card: #181B38;
+  --surface: #181B38;
+  --surface-2: #222650;
+  --surface-3: #2E3366;
+  --border: #2F3572;
+  --border-strong: #5360B8;
+  --text: #D6DDFF;
+  --text-2: #B0BBF2;
+  --text-3: #97A3EE;
   --red: #7AA2F7;
   --red-btn: #7AA2F7;
   --red-btn-hover: #94B3FA;
-  --on-red: #14151E;
-  --red-soft: rgba(122, 162, 247, .15);
+  --on-red: #0F1226;
+  --red-soft: rgba(122, 162, 247, .16);
   --yellow: #F5D76E;
   --yellow-soft: rgba(245, 215, 110, .78);
   --on-yellow: #111114;
   --ok: #9ECE6A;
   --warn: #FF9E64;
   --focus: #7DCFFF;
+  --danger: #F7768E;
+  --danger-btn: #F7768E;
+  --accent-2: #BB9AF7;
+  --play: #7AA2F7;
+  --vote-down: #7DCFFF;
+  --avatar-default: #3D59A1;
+  --community-s: 55%;
+  --community-l: 42%;
+  --btn-bg: linear-gradient(135deg, #7AA2F7, #BB9AF7);
+  --btn-bg-hover: linear-gradient(135deg, #94B3FA, #CDB4FA);
+  --glow: 0 0 18px rgba(122, 162, 247, .50);
+  --bg-image: radial-gradient(55% 38% at 12% -4%, rgba(122, 162, 247, .30), transparent 70%), radial-gradient(45% 35% at 92% 6%, rgba(247, 118, 142, .20), transparent 70%), radial-gradient(70% 40% at 50% 112%, rgba(125, 207, 255, .16), transparent 70%);
+  --overlay: repeating-linear-gradient(104deg, rgba(190, 205, 255, .045) 0 1px, transparent 1px 9px);
+  --active-bg: linear-gradient(90deg, rgba(122, 162, 247, .26), rgba(187, 154, 247, .10));
+  --active-text: #D6DDFF;
+  --chip-bg: rgba(187, 154, 247, .14);
+  --chip-border: rgba(187, 154, 247, .50);
+  --chip-text: #CDB4FA;
+  --card-border: #2B3170;
+  --card-border-hover: #7AA2F7;
+  --card-hover-shadow: 0 0 0 1px rgba(122, 162, 247, .50), 0 10px 34px rgba(122, 162, 247, .22);
+  --scroll-thumb: #4A56A8;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+  --ui-font: 'Zen Kaku Gothic New', 'Reddit Sans', Inter, system-ui, sans-serif;
+  --display-font: 'Zen Kaku Gothic New', 'Reddit Sans', sans-serif;
 }
 
 
-[data-theme="terminal"] {
+/* terminal: composite. Green-tinted phosphor blacks, pure #00FF66 phosphor, amber secondary. AA-checked. */
+html[data-theme="terminal"] {
   color-scheme: dark;
-  --bg: #050906;
-  --card: #0D170F;
-  --surface: #0D170F;
-  --surface-2: #132118;
-  --surface-3: #1C2F20;
-  --border: #20382A;
-  --border-strong: #3A6A47;
-  --text: #D2FFDD;
-  --text-2: #8FD6A2;
-  --text-3: #74B986;
-  --red: #3DFF7F;
-  --red-btn: #3DFF7F;
-  --red-btn-hover: #6BFF9E;
-  --on-red: #04100A;
-  --red-soft: rgba(61, 255, 127, .13);
+  --bg: #010603;
+  --card: #06140A;
+  --surface: #06140A;
+  --surface-2: #0B2112;
+  --surface-3: #11301B;
+  --border: #17502A;
+  --border-strong: #25913F;
+  --text: #B6FFC9;
+  --text-2: #5CE585;
+  --text-3: #45C46D;
+  --red: #00FF66;
+  --red-btn: #00FF66;
+  --red-btn-hover: #5CFF95;
+  --on-red: #00140A;
+  --red-soft: rgba(0, 255, 102, .13);
   --yellow: #FFD21F;
   --yellow-soft: rgba(255, 210, 31, .78);
   --on-yellow: #111114;
-  --ok: #5BF08F;
+  --ok: #7CFF9E;
   --warn: #FFB000;
-  --focus: #6FF0FF;
+  --focus: #FFB000;
+  --danger: #FF5F56;
+  --danger-btn: #FF5F56;
+  --accent-2: #FFB000;
+  --play: #00FF66;
+  --vote-down: #FF5F56;
+  --avatar-default: #17502A;
+  --community-s: 0%;
+  --community-l: 10%;
+  --btn-bg: #00FF66;
+  --btn-bg-hover: #5CFF95;
+  --glow: 0 0 12px rgba(0, 255, 102, .55);
+  --text-glow: 0 0 6px rgba(0, 255, 102, .40);
+  --bg-image: radial-gradient(110% 60% at 50% -10%, rgba(0, 255, 102, .14), transparent 65%);
+  --overlay: repeating-linear-gradient(0deg, rgba(0, 0, 0, .30) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .55) 100%);
+  --active-bg: rgba(0, 255, 102, .14);
+  --active-text: #00FF66;
+  --chip-bg: rgba(255, 176, 0, .10);
+  --chip-border: rgba(255, 176, 0, .55);
+  --chip-text: #FFC933;
+  --card-border: #17502A;
+  --card-border-hover: #00FF66;
+  --card-hover-shadow: 0 0 0 1px #00FF66, 0 0 22px rgba(0, 255, 102, .30);
+  --scroll-thumb: #1E7A3A;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-pill: 2px;
+  --ui-font: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --reading-font: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --display-font: 'VT323', 'JetBrains Mono', monospace;
 }
 
 
-[data-theme="gruvbox"] {
+/* gruvbox: hybrid. Official Gruvbox hues (orange, yellow, green, aqua, red) on a warmer brown ramp, hard 70s shadows, grain. AA-checked. */
+html[data-theme="gruvbox"] {
   color-scheme: dark;
-  --bg: #1D2021;
-  --card: #282828;
-  --surface: #282828;
-  --surface-2: #32302F;
-  --surface-3: #3C3836;
-  --border: #3A3735;
-  --border-strong: #665C54;
-  --text: #F2E5BC;
-  --text-2: #CDBE9F;
-  --text-3: #B2A38C;
-  --red: #FE8019;
+  --bg: #1F1A15;
+  --card: #2B231B;
+  --surface: #2B231B;
+  --surface-2: #382E23;
+  --surface-3: #483A2C;
+  --border: #4A3B2B;
+  --border-strong: #8C7655;
+  --text: #F9EDC8;
+  --text-2: #DCC9A0;
+  --text-3: #C9B38D;
+  --red: #FF9B3D;
   --red-btn: #FE8019;
   --red-btn-hover: #FF9A3C;
-  --on-red: #1D2021;
-  --red-soft: rgba(254, 128, 25, .15);
+  --on-red: #1F1A15;
+  --red-soft: rgba(254, 128, 25, .16);
   --yellow: #FABD2F;
   --yellow-soft: rgba(250, 189, 47, .78);
   --on-yellow: #111114;
   --ok: #B8BB26;
   --warn: #D79921;
   --focus: #83A598;
+  --danger: #FF5A44;
+  --danger-btn: #FF5A44;
+  --accent-2: #8EC07C;
+  --play: #FE8019;
+  --vote-down: #83A598;
+  --avatar-default: #8C7655;
+  --community-s: 45%;
+  --community-l: 36%;
+  --btn-bg: #FE8019;
+  --btn-bg-hover: #FF9A3C;
+  --glow: 3px 3px 0 rgba(0, 0, 0, .55);
+  --bg-image: radial-gradient(70% 45% at 8% -8%, rgba(254, 128, 25, .18), transparent 65%), radial-gradient(55% 40% at 100% 100%, rgba(184, 187, 38, .10), transparent 65%);
+  --overlay: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/></svg>");
+  --active-bg: rgba(254, 128, 25, .20);
+  --active-text: #FFC48A;
+  --chip-bg: rgba(142, 192, 124, .12);
+  --chip-border: rgba(142, 192, 124, .45);
+  --chip-text: #A8D494;
+  --card-border: #4A3B2B;
+  --card-border-hover: #FE8019;
+  --card-hover-shadow: 4px 4px 0 #FE8019;
+  --scroll-thumb: #8C7655;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 6px;
+  --ui-font: 'IBM Plex Sans', 'Reddit Sans', Inter, system-ui, sans-serif;
+  --display-font: 'Fraunces', Georgia, serif;
 }
 
 
-[data-theme="dracula"] {
+/* dracula: hybrid. Official Dracula purple/pink/cyan/green/orange/red/yellow on a deeper velvet ramp with aurora backdrop. AA-checked. */
+html[data-theme="dracula"] {
   color-scheme: dark;
-  --bg: #1E1F29;
-  --card: #282A36;
-  --surface: #282A36;
-  --surface-2: #333646;
-  --surface-3: #3C4055;
-  --border: #363949;
-  --border-strong: #5A6490;
+  --bg: #1D1E2A;
+  --card: #2A2C3E;
+  --surface: #2A2C3E;
+  --surface-2: #363951;
+  --surface-3: #444866;
+  --border: #474B73;
+  --border-strong: #7B84C2;
   --text: #F8F8F2;
-  --text-2: #C4C8E0;
-  --text-3: #A8B2DE;
-  --red: #C7A5FB;
+  --text-2: #D6D9F0;
+  --text-3: #BBC1EA;
+  --red: #D2B2FF;
   --red-btn: #BD93F9;
   --red-btn-hover: #CFA8FF;
-  --on-red: #1E1F29;
-  --red-soft: rgba(189, 147, 249, .15);
+  --on-red: #1D1E2A;
+  --red-soft: rgba(189, 147, 249, .16);
   --yellow: #F1FA8C;
   --yellow-soft: rgba(241, 250, 140, .78);
   --on-yellow: #111114;
   --ok: #50FA7B;
   --warn: #FFB86C;
   --focus: #8BE9FD;
+  --danger: #FF6B6B;
+  --danger-btn: #FF6B6B;
+  --accent-2: #FF79C6;
+  --play: #BD93F9;
+  --vote-down: #8BE9FD;
+  --avatar-default: #6272A4;
+  --community-s: 55%;
+  --community-l: 44%;
+  --btn-bg: linear-gradient(135deg, #BD93F9, #FF79C6);
+  --btn-bg-hover: linear-gradient(135deg, #CFA8FF, #FF9AD5);
+  --glow: 0 0 22px rgba(189, 147, 249, .50);
+  --bg-image: radial-gradient(60% 42% at 88% -6%, rgba(255, 121, 198, .24), transparent 65%), radial-gradient(55% 45% at 0% 100%, rgba(189, 147, 249, .24), transparent 65%);
+  --active-bg: linear-gradient(90deg, rgba(189, 147, 249, .30), rgba(255, 121, 198, .14));
+  --active-text: #F8F8F2;
+  --chip-bg: rgba(255, 121, 198, .12);
+  --chip-border: rgba(255, 121, 198, .45);
+  --chip-text: #FF9AD5;
+  --card-border: #474B73;
+  --card-border-hover: #BD93F9;
+  --card-hover-shadow: 0 0 0 1px rgba(189, 147, 249, .55), 0 12px 40px rgba(189, 147, 249, .26);
+  --scroll-thumb: #6A74B5;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 9999px;
+  --ui-font: 'Manrope', 'Reddit Sans', Inter, system-ui, sans-serif;
+  --display-font: 'Playfair Display', Georgia, serif;
 }

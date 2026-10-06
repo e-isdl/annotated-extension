@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import AudioPlayer from './AudioPlayer';
 
-const SPOTIFY_GREEN = '#1DB954';
+const SPOTIFY_GREEN = 'var(--play)';
 
 // Spotify oEmbed responses, cached per source URL so a feed of episodes
 // fetches each show page once. Falls back silently to no artwork.

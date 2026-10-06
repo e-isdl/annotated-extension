@@ -2527,3 +2527,35 @@ this changelog.
   hexes.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Theme orders: five distinct websites, light/dark frozen
+
+**Files touched:** `webapp/src/styles/tokens.css`,
+`webapp/src/styles/globals.css`, `webapp/index.html`,
+`webapp/src/lib/themes.js`, `webapp/src/components/Navbar.jsx`,
+`webapp/src/components/PodcastEpisode.jsx`,
+`webapp/src/components/RightRail.jsx`, `webapp/src/pages/ClipPage.jsx`,
+`webapp/src/pages/Profile.jsx`, this changelog.
+
+- tokens.css: `:root` defaults for 16 new tokens (danger, accent-2,
+  play, vote-down moved here, avatar-default, community-s/l, btn-bg,
+  glow, text-glow, bg-image, overlay, active-*, chip-*, card-*,
+  scroll-thumb, display-font); five theme blocks replaced verbatim
+  per order as `html[data-theme]` with yellow-soft at .78 (mark
+  forces on-yellow). Light/Dark blocks untouched.
+- globals.css wiring, all token-driven: body backdrop + text glow +
+  overlay layer, gradient/glow buttons, danger for field/profile/
+  toast errors and delete confirm, active pills, chips, card
+  border/hover-shadow, accent-2 secondary links, display font on
+  headings/titles/logo/buttons, themed scrollbar + Firefox-only
+  themed scrollbars, community/avatar vars, play var.
+- Navbar: logo-text hook, theme menu unchanged, meta sync on switch.
+  index.html: 9 font families merged into the Fonts link + pre-paint
+  boot script (allowlist, per-theme meta). themes.js: meta map.
+- Theme extras, all reduced-motion gated: tokyo rain + Tokyo Nights
+  logo suffix, terminal blinking cursor, synthwave logo glow.
+- Skipped per order optionality: view-transition crossfade.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).

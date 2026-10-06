@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import { useToast } from './ToastProvider';
 import { postHref } from '../lib/links';
-import { THEMES, isThemeId, themeLabel } from '../lib/themes';
+import { THEMES, isThemeId, themeLabel, syncThemeMeta } from '../lib/themes';
 import Avatar from './Avatar';
 
 const NOTIF_ICONS = {
@@ -222,6 +222,7 @@ export default function Navbar() {
     if (!isThemeId(id)) return;
     setTheme(id);
     document.documentElement.dataset.theme = id;
+    syncThemeMeta(id);
     try { localStorage.setItem('annotated-theme', id); } catch {}
     setShowThemes(false);
   };
@@ -234,7 +235,7 @@ export default function Navbar() {
           <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center">
             <span className="text-[var(--on-red)] font-bold text-xs">A</span>
           </div>
-          <span className="font-semibold text-sm text-text-primary">Annotated</span>
+          <span className="font-semibold text-sm text-text-primary navbar-logo-text">Annotated</span>
         </Link>
 
         <form
@@ -331,7 +332,7 @@ export default function Navbar() {
                     <div className="p-3 border-b border-border flex items-center justify-between">
                       <Link to="/notifications" onClick={() => setShowNotifs(false)} className="text-xs font-medium text-text-primary no-underline">Notifications</Link>
                       {notifCount > 0 && (
-                        <button onClick={markAllRead} className="text-[10px] text-accent-text hover:text-accent">Mark all read</button>
+                        <button onClick={markAllRead} className="text-[10px] text-accent-2 hover:text-accent-2">Mark all read</button>
                       )}
                     </div>
                     {notifications.length === 0 ? (
