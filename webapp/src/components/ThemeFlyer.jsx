@@ -3,12 +3,13 @@ import { ThemeBuddy } from './ThemeNudge';
 
 const RELEASES = 'https://github.com/e-isdl/annotated-extension/releases';
 
-// After a theme change the buddy takes his "Try the extension" pill
-// from under the theme button and glides straight to the GitHub
-// releases link, landing flush under it with the pill tail pointing
-// up at the link. He then jumps up and down, happy, for 15 seconds -
-// and is gone until the page is refreshed. One flight per page load;
-// falls back to the bottom-right corner without the right rail.
+// After a theme change the buddy alone glides from the theme button
+// to the GitHub releases link. Only once he lands does the "Try the
+// extension" pill appear around him - flush under the link, tail
+// pointing up at it - and he jumps up and down inside it, smiling,
+// for 15 seconds. Then he is gone until the page is refreshed. One
+// flight per page load; falls back to the bottom-right corner
+// without the right rail.
 export default function ThemeFlyer() {
   const [flight, setFlight] = useState(null);
   const busyRef = useRef(false);
@@ -27,8 +28,8 @@ export default function ThemeFlyer() {
       const nudge = document.querySelector('.theme-nudge');
       const n = nudge ? nudge.getBoundingClientRect() : null;
       const start = n && n.width > 0
-        ? { x: Math.round(n.left), y: Math.round(n.top) }
-        : { x: Math.round(b.right + 4 - 190), y: Math.round(b.bottom + 8) };
+        ? { x: Math.round(n.left + 7), y: Math.round(n.top + 6) }
+        : { x: Math.round(b.left + b.width / 2 - 18), y: Math.round(b.bottom + 8) };
 
       const link = document.querySelector('[data-github-link]');
       const l = link ? link.getBoundingClientRect() : null;
@@ -48,11 +49,14 @@ export default function ThemeFlyer() {
     return () => { window.removeEventListener('annotated:theme-changed', begin); clearAll(); };
   }, []);
 
-  // Measure the pill once it is on screen so the dock sits flush with
-  // the right edge of the link, tail directly under it.
+  // The pill is laid out hidden during the start phase so its exact
+  // width is known before takeoff; the dock lands flush with the
+  // right edge of the link, tail directly under it.
   useLayoutEffect(() => {
     if (!flight || flight.phase !== 'start' || flight.end || !rootRef.current) return;
-    const w = rootRef.current.offsetWidth;
+    const m = rootRef.current.querySelector('.theme-flyer-measure');
+    if (!m) return;
+    const w = m.offsetWidth;
     let end;
     if (flight.target) {
       end = { x: flight.target.right - w, y: flight.target.bottom + 10 };
@@ -85,10 +89,22 @@ export default function ThemeFlyer() {
       }}
       aria-label="Try the extension"
     >
-      <span className="theme-flyer-pill">
-        <ThemeBuddy cute={docked} />
-        <span>Try the extension</span>
-      </span>
+      {docked ? (
+        <span className="theme-flyer-pill">
+          <ThemeBuddy cute />
+          <span>Try the extension</span>
+        </span>
+      ) : (
+        <>
+          <ThemeBuddy />
+          {flight.phase === 'start' && (
+            <span className="theme-flyer-pill theme-flyer-measure" aria-hidden="true">
+              <ThemeBuddy cute />
+              <span>Try the extension</span>
+            </span>
+          )}
+        </>
+      )}
     </a>
   );
 }

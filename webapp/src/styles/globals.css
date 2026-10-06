@@ -261,22 +261,22 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 @keyframes nudge-point { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-16deg); } }
 @keyframes nudge-blink { 0%, 91%, 100% { transform: scaleY(1); } 94% { transform: scaleY(.12); } }
 @media (min-width: 640px) { .theme-nudge { display: inline-flex; } }
-/* The same "Try themes!"-style pill on a trip: the buddy rides inside
-   it as it glides straight to the GitHub link, lands flush under the
-   link with the tail pointing up at it, and jumps up and down happy
-   for 15 seconds - then it is gone until the page is refreshed. */
+/* The buddy flies alone; the "Try the extension" pill appears only
+   once he lands flush under the GitHub link with its tail pointing
+   up at it. He then jumps up and down inside it, smiling, for 15
+   seconds - and is gone until the page is refreshed. */
 .theme-flyer { position: fixed; z-index: 70; display: inline-flex; align-items: center; text-decoration: none; transition: transform 2.4s cubic-bezier(.36,1.25,.5,1), opacity .45s ease; }
 .theme-flyer-leave { opacity: 0; }
 .theme-flyer-pill { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 6px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-primary); font-size: 12px; font-weight: 650; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
 .theme-flyer-pill::after { content: ""; position: absolute; top: -5px; right: 24px; width: 9px; height: 9px; background: var(--surface-2); border-left: 1px solid var(--border); border-top: 1px solid var(--border); border-radius: 2px 0 0 0; transform: rotate(45deg); }
 .theme-flyer:hover .theme-flyer-pill { border-color: var(--border-strong); }
-.theme-flyer-start .theme-flyer-pill { animation: nudge-pop .35s cubic-bezier(.2,1.4,.4,1) both; }
-.theme-flyer-docked .theme-flyer-pill { animation: nudge-jump .55s ease-in-out infinite; }
-.theme-flyer-docked .theme-nudge-buddy { animation: none; }
-.theme-flyer-docked .theme-nudge-arm { animation: nudge-wave .6s ease-in-out infinite; }
+.theme-flyer-measure { position: absolute; left: -9999px; top: 0; visibility: hidden; }
+.theme-flyer-docked .theme-flyer-pill { animation: nudge-pop .35s cubic-bezier(.2,1.4,.4,1) both; }
+.theme-flyer-docked .theme-nudge-buddy { animation: nudge-jump .55s ease-in-out .35s infinite; }
+.theme-flyer-docked .theme-nudge-arm { animation: nudge-wave .6s ease-in-out .35s infinite; }
 @keyframes nudge-jump { 0% { transform: translateY(0) scaleY(1); animation-timing-function: cubic-bezier(.3,.6,.4,1); } 12% { transform: translateY(1px) scaleY(.94); } 55% { transform: translateY(-9px) scaleY(1.06); animation-timing-function: ease-in; } 90% { transform: translateY(0) scaleY(.96); } 100% { transform: translateY(0) scaleY(1); } }
 @keyframes nudge-wave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-34deg); } }
-@media (prefers-reduced-motion: reduce) { .theme-nudge, .theme-nudge-buddy, .theme-nudge-arm, .theme-nudge-eyes, .theme-flyer-start .theme-flyer-pill, .theme-flyer-docked .theme-flyer-pill, .theme-flyer-docked .theme-nudge-arm { animation: none; } .theme-flyer { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .theme-nudge, .theme-nudge-buddy, .theme-nudge-arm, .theme-nudge-eyes, .theme-flyer-docked .theme-flyer-pill, .theme-flyer-docked .theme-nudge-buddy, .theme-flyer-docked .theme-nudge-arm { animation: none; } .theme-flyer { transition: none; } }
 .post-timestamp-row { display: flex; align-items: center; gap: 7px; margin: 10px 0 0; }
 .post-actions, .detail-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 0; }
 .post-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 5px 11px; border: 0; border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: color .15s, background .15s; }
