@@ -2577,3 +2577,15 @@ this changelog.
   Terminal block only.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Terminal scanlines every 2px, fainter, readable font
+
+**Files touched:** `webapp/src/styles/tokens.css`, this changelog.
+
+- Overlay scanlines back to every 2px but fainter (.16 opacity).
+  Display font VT323 replaced with JetBrains Mono. Terminal block
+  only.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
