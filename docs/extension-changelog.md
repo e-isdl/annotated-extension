@@ -2469,3 +2469,23 @@ this changelog.
   silence rejection and slim player, Spotify show pages routed, helper
   copy naming the Full Video Timeline, white-screen TDZ fix.
 - Pushed to master. Released as v5 with annotated-extension.zip.
+
+---
+
+## Five iconic themes, picker in the navbar
+
+**Files touched:** `webapp/src/lib/themes.js` (new),
+`webapp/src/styles/tokens.css`, `webapp/src/main.jsx`,
+`webapp/src/components/Navbar.jsx`, `webapp/src/styles/globals.css`,
+this changelog.
+
+- Light and Dark frozen. New: 80s Retro (synthwave neon dusk),
+  Tokyo Night (official Night palette), Terminal (phosphor green),
+  Gruvbox (retro groove orange), Dracula (official spec purple).
+  Each sets the full token set, persisted in the same localStorage
+  key, honored on boot.
+- Sun/moon toggle replaced with a palette button in the navbar:
+  dropdown with swatch trios, hints, active check, outside-click and
+  Escape to close.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).

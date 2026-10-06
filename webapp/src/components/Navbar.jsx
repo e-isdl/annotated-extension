@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import { useToast } from './ToastProvider';
 import { postHref } from '../lib/links';
+import { THEMES, isThemeId, themeLabel } from '../lib/themes';
 import Avatar from './Avatar';
 
 const NOTIF_ICONS = {
@@ -46,8 +47,13 @@ export default function Navbar() {
   const location = useLocation();
   const notifRef = useRef(null);
   const menuRef = useRef(null);
+  const themeRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [theme, setTheme] = useState(() => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'));
+  const [showThemes, setShowThemes] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    const current = document.documentElement.dataset.theme;
+    return isThemeId(current) ? current : 'light';
+  });
   const { push } = useToast();
 
   useEffect(() => {
@@ -137,6 +143,23 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showMenu]);
 
+  // Click outside / Escape to close the theme menu
+  useEffect(() => {
+    if (!showThemes) return;
+    function handleClick(e) {
+      if (themeRef.current && !themeRef.current.contains(e.target)) setShowThemes(false);
+    }
+    function handleKey(e) {
+      if (e.key === 'Escape') setShowThemes(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [showThemes]);
+
   async function loadNotifications(userId) {
     const { data } = await supabase
       .from('notifications')
@@ -195,11 +218,12 @@ export default function Navbar() {
 
   const accountHandle = profile?.handle || user?.user_metadata?.user_name || user?.id || '';
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem('annotated-theme', next); } catch {}
+  const applyTheme = (id) => {
+    if (!isThemeId(id)) return;
+    setTheme(id);
+    document.documentElement.dataset.theme = id;
+    try { localStorage.setItem('annotated-theme', id); } catch {}
+    setShowThemes(false);
   };
 
 
@@ -232,24 +256,53 @@ export default function Navbar() {
         </form>
 
         <div className="flex items-center gap-4 shrink-0">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-            title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
-            className="flex items-center justify-center w-9 h-9 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors"
-          >
-            {theme === 'dark' ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" />
+          <div className="relative" ref={themeRef}>
+            <button
+              type="button"
+              onClick={() => setShowThemes((value) => !value)}
+              aria-label={`Theme: ${themeLabel(theme)}. Change theme`}
+              aria-haspopup="menu"
+              aria-expanded={showThemes}
+              title={`Theme: ${themeLabel(theme)}`}
+              className="flex items-center justify-center w-9 h-9 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                <path d="M12 3a9 9 0 0 1 0 18c-1.5 0-2-1-1.4-2.2.7-1.5-.1-3.1-1.8-3.4-1.6-.3-2.3-1.7-1.4-3.1.9-1.5.3-3.4-1.4-3.9-1.1-.3-1.4-1.4-.9-2.5C5.7 3.9 8.5 3 12 3z" fill="currentColor" opacity="0.35" stroke="none" />
+                <circle cx="12" cy="12" r="3.2" fill="currentColor" />
               </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
+            </button>
+            {showThemes && (
+              <div className="account-menu theme-menu" role="menu" aria-label="Themes">
+                <p className="theme-menu-caption">Theme</p>
+                {THEMES.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={theme === item.id}
+                    onClick={() => applyTheme(item.id)}
+                    className={`account-menu-item theme-menu-item${theme === item.id ? ' is-active' : ''}`}
+                  >
+                    <span className="theme-swatches" aria-hidden="true">
+                      {item.swatches.map((color) => (
+                        <span key={color} className="theme-swatch" style={{ background: color }} />
+                      ))}
+                    </span>
+                    <span className="theme-menu-text">
+                      <span className="theme-menu-label">{item.label}</span>
+                      <span className="theme-menu-hint">{item.hint}</span>
+                    </span>
+                    {theme === item.id && (
+                      <svg className="theme-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M4 12.5l5 5L20 6.5" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
             )}
-          </button>
+          </div>
           <Link to="/explore" className="hidden sm:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Explore</Link>
           <Link to="/leaderboard" className="hidden md:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
           <Link to="/create" className="btn-primary h-9 text-xs">Create</Link>
