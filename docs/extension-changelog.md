@@ -2765,3 +2765,17 @@ this changelog.
 - Theme-keyed map (Tokyo only for now), follows theme switches live.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Backdrop positioning immune to stale CSS
+
+**Files touched:** `webapp/src/components/ThemeBackdrop.jsx`,
+this changelog.
+
+- The photo rendered in-flow (pushing the page down) when a fresh
+  JS bundle met a cached stylesheet without its rules. Positioning
+  is now inline styles (fixed, full viewport, behind content), which
+  no cache mismatch can strip.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).

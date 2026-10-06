@@ -22,7 +22,23 @@ export default function ThemeBackdrop() {
   if (!src) return null;
   return (
     <>
-      <img src={src} alt="" aria-hidden="true" className="theme-backdrop-photo" draggable={false} />
+      <img
+        src={src}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className="theme-backdrop-photo"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          objectFit: 'cover',
+          zIndex: -1,
+          pointerEvents: 'none',
+        }}
+      />
       <div className="theme-backdrop-veil" aria-hidden="true" />
     </>
   );
