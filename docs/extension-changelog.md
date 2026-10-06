@@ -2738,3 +2738,14 @@ this changelog.
   opens the recorder; `/intl/` marketing paths still fall through.
 - Checks: webapp + extension builds pass.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## New is the default feed
+
+**Files touched:** `webapp/src/pages/Feed.jsx`, this changelog.
+
+- Landing `/` now opens on the New tab for everyone; Best stays one
+  tap away with its Home heading. Clean URLs follow the new default.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).

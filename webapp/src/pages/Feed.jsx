@@ -18,7 +18,7 @@ export default function Feed({ sortOverride = null }) {
   const [clips, setClips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [usingDemo, setUsingDemo] = useState(false);
-  const sort = SORT_OPTIONS.some((option) => option.value === requestedSort) ? requestedSort : 'best';
+  const sort = SORT_OPTIONS.some((option) => option.value === requestedSort) ? requestedSort : 'new';
   const activeSort = SORT_OPTIONS.find((option) => option.value === sort) || SORT_OPTIONS[0];
 
   useEffect(() => {
@@ -87,8 +87,8 @@ export default function Feed({ sortOverride = null }) {
             role="tab"
             aria-selected={sort === option.value}
             onClick={() => {
-              if (sortOverride) navigate(option.value === 'best' ? '/' : `/?sort=${option.value}`);
-              else setSearchParams(option.value === 'best' ? {} : { sort: option.value });
+              if (sortOverride) navigate(option.value === 'new' ? '/' : `/?sort=${option.value}`);
+              else setSearchParams(option.value === 'new' ? {} : { sort: option.value });
             }}
             className={sort === option.value ? 'feed-tab feed-tab-active' : 'feed-tab'}
           >
