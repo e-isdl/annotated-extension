@@ -84,7 +84,7 @@ async function realPeaks(src: string, n: number): Promise<number[]> {
  * `compact` = feed version. `bars` tunes waveform resolution.
  * `durationHint` shows a length before metadata loads.
  */
-export function AudioPlayer({ src, compact = false, bars = DEFAULT_BARS, durationHint = 0 }: { src: string; compact?: boolean; bars?: number; durationHint?: number }) {
+export function AudioPlayer({ src, compact = false, bars = DEFAULT_BARS, durationHint = 0, accent = PLAYED }: { src: string; compact?: boolean; bars?: number; durationHint?: number; accent?: string }) {
   const audio = useRef<HTMLAudioElement>(null);
   const wave = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -185,7 +185,7 @@ export function AudioPlayer({ src, compact = false, bars = DEFAULT_BARS, duratio
         onClick={toggle}
         aria-label={playing ? "Pause audio commentary" : "Play audio commentary"}
         style={{
-          width: size, height: size, borderRadius: "50%", border: 0, background: PLAYED, flex: "none",
+          width: size, height: size, borderRadius: "50%", border: 0, background: accent, flex: "none",
           display: "grid", placeItems: "center", cursor: "pointer",
         }}
       >
@@ -223,7 +223,7 @@ export function AudioPlayer({ src, compact = false, bars = DEFAULT_BARS, duratio
             key={i}
             style={{
               flex: 1, height: 4 + p * (waveH - 4), borderRadius: 2,
-              background: (i + 0.5) / peaks.length <= pct ? PLAYED : UNPLAYED,
+              background: (i + 0.5) / peaks.length <= pct ? accent : UNPLAYED,
             }}
           />
         ))}

@@ -2327,6 +2327,36 @@ this changelog.
 
 ---
 
+## Spotify-style podcast feed cards
+
+**Files touched:** `webapp/src/components/AudioPlayer.tsx` (accent prop),
+`webapp/src/components/PodcastEpisode.jsx` (new),
+`webapp/src/components/ClipCard.jsx`,
+`webapp/src/styles/globals.css`, this changelog.
+
+- Feed podcast cards render an episode block per the mock: cover art
+  (Spotify oEmbed, cached per URL, icon fallback), episode title,
+  green play button, real waveform, runtime, and a "Spotify Clip"
+  stamp. Placeholder quote stays hidden when episode audio exists.
+- Checks: webapp build passes.
+- Local commit only - NOT pushed. Chrome-verify on feed: artwork,
+  green play, waveform seeks, runtime shows, stamp renders.
+
+---
+
+## Webapp dark theme goes blue-black
+
+**Files touched:** `webapp/src/styles/tokens.css`, this changelog.
+
+- Dark tokens only, nothing else: background `#0D0D0F` to `#06090D`,
+  cards/surfaces into dark blue-gray, borders to subtle blue-gray,
+  primary text brighter white, secondary to soft blue-gray. Light
+  theme and all accents untouched.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
 ## Release v6 (manifest 2.3.20)
 
 - Ships everything since v5: episode transport in the panel (Play/Pause

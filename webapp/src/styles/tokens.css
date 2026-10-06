@@ -1,15 +1,15 @@
 :root, [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0D0D0F;
-  --card: #17171A;
-  --surface: #17171A;
-  --surface-2: #212126;
-  --surface-3: #2B2B32;
-  --border: #3A3A42;
-  --border-strong: #53535E;
-  --text: #D6D6DC;
-  --text-2: #ADADB8;
-  --text-3: #8B8B96;
+  --bg: #06090D;
+  --card: #0C1219;
+  --surface: #0C1219;
+  --surface-2: #131C26;
+  --surface-3: #1B2534;
+  --border: #222E3B;
+  --border-strong: #38465A;
+  --text: #F2F5F7;
+  --text-2: #9AA7B4;
+  --text-3: #6E7B89;
   --red: #FF4545;
   --red-btn: #E5192B;
   --red-btn-hover: #FF2E3F;
