@@ -15,7 +15,9 @@
     margin: 0;
     padding: 0;
   }
-  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1; background: var(--overlay); }
+  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1; background: var(--overlay);
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - 190px), transparent calc(50% - 130px), transparent calc(50% + 130px), #000 calc(50% + 190px), #000 100%);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - 190px), transparent calc(50% - 130px), transparent calc(50% + 130px), #000 calc(50% + 190px), #000 100%); }
   /* Scanlines sit above panel chrome but never above photos or video. */
   html[data-theme="synthwave"] :is(img, video),
   html[data-theme="tokyo"] :is(img, video),

@@ -2706,3 +2706,19 @@ this changelog.
   transcript failure).
 - Committed + pushed; dist rebuilt in place (reload the panel on
   chrome://extensions).
+
+---
+
+## Drift masked out of the content column, both surfaces
+
+**Files touched:** `webapp/src/styles/globals.css`,
+`src/styles/panel.css`, this changelog.
+
+- The animated overlay is masked transparent across the middle
+  content (webapp: outside a centered ~700px band on wide screens;
+  panel: outside a centered ~260px band), so rain/scanlines live in
+  the background and sides, never marching over cards and text.
+- Checks: webapp + extension builds pass; `npm test` 45/46
+  (pre-existing transcript failure).
+- Committed + pushed; dist rebuilt in place (reload the panel on
+  chrome://extensions).
