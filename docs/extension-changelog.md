@@ -2608,6 +2608,23 @@ this changelog.
 
 ---
 
+## Overlay below content, terminal titles reverted
+
+**Files touched:** `webapp/src/styles/globals.css`, this changelog.
+
+- Why feed media still caught lines: feed cards wrap content in a
+  z-index:1 context, capping everything inside below the overlay no
+  matter the media rule. Overlay now sits at z-index 0: above page
+  and card backgrounds and bare text, below all positioned content,
+  so photos, video, embeds, menus, dialogs and toasts stay clean in
+  every theme including Light/Dark (no-op there).
+- Terminal titles back to the UI font (display font stays on logo
+  and buttons only).
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
 ## Rain everywhere, media stays clean
 
 **Files touched:** `webapp/src/styles/globals.css`, this changelog.

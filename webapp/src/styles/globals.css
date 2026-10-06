@@ -27,10 +27,11 @@
   * { box-sizing: border-box; }
   html { background: var(--bg-base); scroll-behavior: smooth; }
   body { margin: 0; padding: 0; background: var(--bg-image), var(--bg-base); background-attachment: fixed; color: var(--text-primary); font-family: var(--ui-font); text-shadow: var(--text-glow); -webkit-font-smoothing: antialiased; }
-  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1; background: var(--overlay); }
-  /* Scanline overlays sit above cards and text but never above photos or
-     video: media in line-overlay themes paints just above the overlay
-     while menus, dialogs and toasts (z-index 20+) stay on top. */
+  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; background: var(--overlay); }
+  /* Scanline overlays sit above page and card backgrounds but below all
+     positioned content, so lines texture cards and text yet never cover
+     photos, video, embeds, menus, dialogs or toasts. Bare-page media is
+     lifted explicitly below as backup. */
   html[data-theme="synthwave"] :is(img, video, iframe),
   html[data-theme="tokyo"] :is(img, video, iframe),
   html[data-theme="terminal"] :is(img, video, iframe) { position: relative; z-index: 2; }
@@ -128,7 +129,7 @@ html[data-theme="synthwave"] .navbar-logo-text { text-shadow: 0 0 14px rgba(255,
 
 .feed-page, .section-page, .create-page, .detail-page { width: 100%; }
 .feed-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 5px 0 17px; }
-.feed-heading h1, .section-title { margin: 0; color: var(--text-primary); font-family: var(--display-font); font-size: clamp(21px, 2.5vw, 26px); font-weight: 650; letter-spacing: -.025em; }
+.feed-heading h1, .section-title { margin: 0; color: var(--text-primary); font-size: clamp(21px, 2.5vw, 26px); font-weight: 650; letter-spacing: -.025em; }
 .feed-transcript-toggle { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 10px; flex-shrink: 0; }
 .feed-heading p, .section-subtitle { margin: 6px 0 0; color: var(--text-muted); font-size: 13px; line-height: 1.55; }
 .section-title { margin: 10px 0 8px; }
@@ -147,7 +148,7 @@ html[data-theme="synthwave"] .navbar-logo-text { text-shadow: 0 0 14px rgba(255,
 .post-meta-separator { color: var(--text-3); }
 .post-author { color: var(--text-secondary); text-decoration: none; }
 .post-meta .badge { margin-left: auto; }
-.post-annotation-preview { margin: 11px 2px 9px; color: var(--text); font-family: var(--display-font); font-size: 19px; font-weight: 700; line-height: 1.4; letter-spacing: -.01em; }
+.post-annotation-preview { margin: 11px 2px 9px; color: var(--text); font-family: var(--ui-font); font-size: 19px; font-weight: 700; line-height: 1.4; letter-spacing: -.01em; }
 .post-annotation-preview::first-letter, .annotation-lead-copy::first-letter { text-transform: uppercase; }
 .post-commentary-more { color: var(--text-muted); }
 .post-annotation-preview-clamped { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 5; -webkit-box-orient: vertical; }
@@ -323,7 +324,7 @@ html[data-theme="synthwave"] .navbar-logo-text { text-shadow: 0 0 14px rgba(255,
 .annotation-lead-kicker { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 .annotation-lead-author { display: flex; align-items: center; gap: 8px; min-height: 28px; margin-top: 6px; }
 .annotation-lead-handle { color: var(--text-secondary); font-size: 12px; font-weight: 650; }
-.annotation-lead-copy { display: block; margin: 7px 0 0; color: var(--text); font: 500 18px/1.5 var(--display-font); letter-spacing: -.01em; }
+.annotation-lead-copy { display: block; margin: 7px 0 0; color: var(--text); font: 500 18px/1.5 var(--ui-font); letter-spacing: -.01em; }
 .annotation-edit-trigger { color: var(--text-secondary); }
 .annotation-edit-trigger:hover { color: var(--accent-strong); }
 .annotation-edit-form { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; }
