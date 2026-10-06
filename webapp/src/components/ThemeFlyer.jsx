@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ThemeBuddy } from './ThemeNudge';
 
 const RELEASES = 'https://github.com/e-isdl/annotated-extension/releases';
-const FLY_MS = 4200;
+const FLY_MS = 4600;
 
 // Densely sample a Catmull-Rom spline through the waypoints, then
 // map an eased clock onto cumulative arc length so the buddy moves
@@ -40,19 +40,21 @@ function sample(path, u) {
   return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f };
 }
 
-// After a theme change the buddy launches from the theme button on a
-// long, slow, swooping journey (jetpack on, excited face) across the
-// feed and along the bottom, then rises to dock just below the GitHub
-// link as a "Try themes!"-style pill with a cute face, text wrapped
-// and a tail pointing up at the link. Clicking opens the releases
-// page. One flight per trigger; falls back to the bottom-right corner
-// on pages without the right rail.
+// After a theme change the buddy boosts straight up off the theme
+// button and flies a long, slow airshow route (big jetpack, thrust
+// plume trailing naturally behind him, determined face) across the
+// page, then climbs to dock just below the GitHub link as a
+// "Try themes!"-style pill with a cute face, text wrapped and a tail
+// pointing up at the link. Clicking opens the releases page. One
+// flight per trigger; falls back to the bottom-right corner on pages
+// without the right rail.
 export default function ThemeFlyer() {
   const [flight, setFlight] = useState(null);
   const [adjust, setAdjust] = useState({ dx: 0, dy: 0 });
   const [savedLink, setSavedLink] = useState(null);
   const busyRef = useRef(false);
   const measuredRef = useRef(false);
+  const dirRef = useRef(1);
   const flyerRef = useRef(null);
   const pillRef = useRef(null);
 
@@ -82,12 +84,17 @@ export default function ThemeFlyer() {
       end.x = Math.max(end.x, 64);
       end.y = Math.min(Math.max(end.y, 64), H - 64);
 
+      // Airshow route: boost straight up over the navbar, cruise
+      // left across the top, carve down the left side, sweep low
+      // across the feed, then pull up and climb to the link.
       const journey = [
         start,
-        { x: Math.max(16, start.x - 0.35 * W), y: start.y + 0.32 * H },
-        { x: 0.14 * W, y: 0.58 * H },
-        { x: 0.42 * W, y: 0.85 * H },
-        { x: Math.max(end.x - 0.34 * W, 0.1 * W), y: Math.min(end.y + 0.12 * H, H - 48) },
+        { x: Math.max(16, start.x - 0.10 * W), y: 30 },
+        { x: 0.40 * W, y: 46 },
+        { x: 0.11 * W, y: 0.42 * H },
+        { x: 0.34 * W, y: 0.80 * H },
+        { x: 0.66 * W, y: 0.78 * H },
+        { x: Math.max(end.x - 0.28 * W, 0.15 * W), y: Math.min(end.y + 0.14 * H, H - 48) },
         end,
       ];
 
@@ -106,12 +113,17 @@ export default function ThemeFlyer() {
     return () => { window.removeEventListener('annotated:theme-changed', begin); clearAll(); };
   }, []);
 
-  // The rAF journey: eased progress along the arc-length path, with a
-  // gentle bank into each turn.
+  // The rAF journey: eased progress along the arc-length path. He
+  // flies himself - body leans into the direction of travel, the
+  // jetpack mirrors to his back, and the thrust plume trails
+  // naturally opposite his velocity.
   useEffect(() => {
     if (!flight || flight.phase !== 'fly') return;
     const el = flyerRef.current;
     if (!el) return;
+    const svg = el.querySelector('svg');
+    const jet = svg && svg.querySelector('[data-jetpack]');
+    const exh = svg && svg.querySelector('[data-exhaust]');
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const dur = reduce ? 700 : FLY_MS;
     const t0 = performance.now();
@@ -121,10 +133,25 @@ export default function ThemeFlyer() {
       const p = Math.min(1, (now - t0) / dur);
       const e = ease(p);
       const cur = sample(flight.path, e);
-      const nxt = sample(flight.path, Math.min(1, e + 0.012));
-      const ang = Math.atan2(nxt.y - cur.y, nxt.x - cur.x) * 180 / Math.PI;
-      const bank = Math.max(-15, Math.min(15, ang * 0.3));
-      el.style.transform = `translate(${cur.x - flight.start.x}px, ${cur.y - flight.start.y}px) rotate(${bank}deg)`;
+      const look = sample(flight.path, Math.min(1, e + 0.03));
+      const vx = look.x - cur.x, vy = look.y - cur.y;
+      const mag = Math.hypot(vx, vy) || 1;
+      if (Math.abs(vx) > 0.5) dirRef.current = vx < 0 ? -1 : 1;
+      const dirX = dirRef.current;
+
+      el.style.transform = `translate(${cur.x - flight.start.x}px, ${cur.y - flight.start.y}px)`;
+      if (svg) svg.style.transform = `rotate(${Math.max(-13, Math.min(13, (vx / mag) * 16)).toFixed(2)}deg)`;
+      if (jet) jet.setAttribute('transform', dirX < 0 ? 'translate(44 0) scale(-1 1)' : '');
+
+      // Exhaust points opposite the local velocity; if that direction
+      // would cross the tank, trail straight back instead.
+      const lvx = Math.abs(vx);
+      let rot = Math.atan2(-vy, -lvx) * 180 / Math.PI - 90;
+      rot = ((rot + 180) % 360 + 360) % 360 - 180;
+      const ang = (90 + rot) * Math.PI / 180;
+      if (Math.sin(ang) < -0.02 && Math.cos(ang) > -0.6) rot = 90;
+      if (exh) exh.setAttribute('transform', `rotate(${rot.toFixed(1)} 3 39)`);
+
       if (p < 1) raf = requestAnimationFrame(step);
       else el.style.transform = `translate(${flight.end.x - flight.start.x}px, ${flight.end.y - flight.start.y}px)`;
     };

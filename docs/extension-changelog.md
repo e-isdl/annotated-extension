@@ -2885,3 +2885,28 @@ this changelog.
   link, copy wrapping inside a max width so nothing overflows the
   right edge (the old side bubble is gone).
 - Checks: webapp build passes.
+---
+
+## Big advanced jetpack, natural thrust, determined pilot
+
+**Files touched:** `webapp/src/components/ThemeNudge.jsx`,
+`webapp/src/components/ThemeFlyer.jsx`, `webapp/src/styles/globals.css`,
+this changelog.
+
+- The jetpack is now a proper advanced rig: a big tank with an
+  accent stripe and gauge light, a valve cap, and a flared nozzle,
+  drawn over his back so it is fully visible.
+- Natural thrust: a layered plume (orange outer, yellow mid, hot
+  white core) that trails opposite his velocity every frame - the
+  jetpack mirrors to whichever side is his back, and when a
+  backward direction would cross the tank it flattens to trail
+  straight behind instead.
+- Fierce determined expression in flight: angled brows, focused
+  eyes and a wide confident grin (replaces the old wide-eyed open
+  mouth); the bobbing idle animation is off while he is piloting.
+- The route now boosts straight up first, cruises across the top,
+  carves down the left side, sweeps low and climbs to the link -
+  and his body leans into the direction of travel instead of the
+  old gravity-pull bank (which pointed the wrong way on leftward
+  moves). Flight lengthened to 4.6s.
+- Checks: webapp build passes.

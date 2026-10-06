@@ -2,34 +2,30 @@ import { useEffect, useState } from 'react';
 
 // Shared little buddy. Three looks:
 // - "normal": dot eyes + smile, blinking (the load-time nudge)
-// - "jet": jetpack strapped on, wide excited eyes and open mouth
-//          (used for the flight after a theme change)
+// - "jet": big advanced jetpack (tank, gauge, flared nozzle) with a
+//          layered thrust plume that trails naturally behind him,
+//          and a fierce determined face - he flies himself, he is
+//          not being pulled
 // - "cute": happy arc eyes, open smile, blush cheeks (landed look)
 export function ThemeBuddy({ variant = 'normal' }) {
   const jet = variant === 'jet';
   const cute = variant === 'cute';
   return (
     <svg className="theme-nudge-buddy" width="32" height="32" viewBox="0 0 48 48" aria-hidden="true">
-      {jet && (
-        <g className="theme-jetpack">
-          <rect x="1" y="17" width="9" height="15" rx="4.5" fill="var(--surface-3)" stroke="var(--border-strong)" strokeWidth="1.5" />
-          <rect x="3" y="13.5" width="5" height="4" rx="1.5" fill="var(--border-strong)" />
-          <g className="theme-jet-flame">
-            <path d="M2.5 32 C 3 39.5, 8 39.5, 7.5 32 Z" fill="var(--warn)" />
-            <path d="M3.9 32 C 4.2 36.5, 6.3 36.5, 6.6 32 Z" fill="var(--yellow)" />
-          </g>
+      {!jet && (
+        <g className="theme-nudge-arm">
+          <path d="M31 15 C 34 9, 34 5, 33 2" stroke="currentColor" strokeWidth="5" strokeLinecap="round" fill="none" />
+          <circle cx="33" cy="3" r="4" fill="currentColor" />
         </g>
       )}
-      <g className="theme-nudge-arm">
-        <path d="M31 15 C 34 9, 34 5, 33 2" stroke="currentColor" strokeWidth="5" strokeLinecap="round" fill="none" />
-        <circle cx="33" cy="3" r="4" fill="currentColor" />
-      </g>
       <circle cx="22" cy="27" r="15" fill="var(--accent)" />
       {jet ? (
         <>
-          <circle cx="17" cy="23.5" r="2.9" fill="var(--on-red)" />
-          <circle cx="27" cy="23.5" r="2.9" fill="var(--on-red)" />
-          <ellipse cx="22" cy="31.5" rx="4" ry="3.4" fill="var(--on-red)" />
+          <circle cx="17" cy="25" r="2.6" fill="var(--on-red)" />
+          <circle cx="27" cy="25" r="2.6" fill="var(--on-red)" />
+          <path d="M12.8 19.6 L19.2 22.6" stroke="var(--on-red)" strokeWidth="2.6" strokeLinecap="round" />
+          <path d="M31.2 19.6 L24.8 22.6" stroke="var(--on-red)" strokeWidth="2.6" strokeLinecap="round" />
+          <path d="M16.5 30.6 L27.5 30.6 C 27 36.5, 17 36.5, 16.5 30.6 Z" fill="var(--on-red)" />
         </>
       ) : cute ? (
         <>
@@ -47,6 +43,22 @@ export function ThemeBuddy({ variant = 'normal' }) {
           </g>
           <path d="M17 31.5 q5 4.5 10 0" stroke="var(--on-red)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
         </>
+      )}
+      {jet && (
+        <g className="theme-jetpack" data-jetpack>
+          <rect x="0" y="13" width="12" height="22" rx="6" fill="var(--surface-3)" stroke="var(--border-strong)" strokeWidth="1.5" />
+          <rect x="3" y="9.5" width="6" height="4.5" rx="2" fill="var(--border-strong)" />
+          <rect x="2" y="20" width="8" height="3" rx="1.5" fill="var(--accent)" />
+          <circle cx="6" cy="16.5" r="1.7" fill="var(--accent)" />
+          <path d="M0.5 35 L5.5 35 L6.5 39 L-0.5 39 Z" fill="var(--border-strong)" />
+          <g data-exhaust transform="rotate(0 3 39)">
+            <g className="theme-jet-flame">
+              <path d="M3 39 C 1 51, 8 51, 6 39 Z" fill="var(--warn)" />
+              <path d="M3.7 39 C 2.4 47, 6.6 47, 5.3 39 Z" fill="var(--yellow)" />
+              <path d="M4.3 39 C 3.7 43.5, 5.3 43.5, 4.7 39 Z" fill="#fff" opacity="0.85" />
+            </g>
+          </g>
+        </g>
       )}
     </svg>
   );
