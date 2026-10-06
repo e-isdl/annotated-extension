@@ -6,7 +6,11 @@ const PANEL = "var(--audio-panel, var(--surface))";   // same inset color as the
 const PLAYED = "var(--text)";
 const UNPLAYED = "var(--border)";
 const MUTED = "var(--text-3)";
-const BARS = 56;
+const DEFAULT_BARS = 56;
+
+
+/** Peaks computed from real files, shared across mounts so feed + detail decode once. */
+const peaksCache = new Map<string, number[]>();
 
 
 const fmt = (s: number) => {
@@ -15,34 +19,60 @@ const fmt = (s: number) => {
 };
 
 
-/** Deterministic, smooth-looking placeholder waveform (used until real peaks load, or if they can't). */
-function fakePeaks(seed: string, n: number): number[] {
-  let h = 0;
-  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) | 0;
-  const rnd = () => ((h = (h * 1664525 + 1013904223) | 0) >>> 0) / 4294967296;
-  let v = 0.5;
-  return Array.from({ length: n }, (_, i) => {
-    v = 0.55 * v + 0.45 * rnd();
-    const env = 0.55 + 0.45 * Math.sin((i / n) * Math.PI * 3 + 1);
-    return Math.max(0.14, Math.min(1, v * env * 1.5));
-  });
+/** Flat bars shown while real peaks load: clearly pending, never fake data. */
+function loadingPeaks(n: number): number[] {
+  return Array.from({ length: n }, () => 0.08);
 }
 
 
 /** Real peaks from the file (falls back silently, e.g. on CORS errors). */
+function decodeBuffer(buf: ArrayBuffer): Promise<AudioBuffer> {
+  const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+  const ctx: AudioContext = new Ctx();
+  try {
+    const maybePromise = (ctx.decodeAudioData as any)(buf);
+    if (maybePromise && typeof maybePromise.then === "function") {
+      return (maybePromise as Promise<AudioBuffer>).finally(() => {
+        try { ctx.close(); } catch {}
+      }) as Promise<AudioBuffer>;
+    }
+  } catch {}
+  // Legacy callback form (older Safari).
+  return new Promise<AudioBuffer>((resolve, reject) => {
+    try {
+      (ctx.decodeAudioData as any)(
+        buf,
+        (decoded: AudioBuffer) => { try { ctx.close(); } catch {} resolve(decoded); },
+        (err: unknown) => { try { ctx.close(); } catch {} reject(err); },
+      );
+    } catch (err) {
+      try { ctx.close(); } catch {}
+      reject(err);
+    }
+  });
+}
+
+
 async function realPeaks(src: string, n: number): Promise<number[]> {
-  const buf = await (await fetch(src)).arrayBuffer();
-  const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-  const data = (await ctx.decodeAudioData(buf)).getChannelData(0);
-  ctx.close();
+  const cached = peaksCache.get(src);
+  if (cached && cached.length === n) return cached;
+  const res = await fetch(src, { mode: "cors" });
+  if (!res.ok) throw new Error(`audio fetch ${res.status}`);
+  const buf = await res.arrayBuffer();
+  if (!buf.byteLength) throw new Error("audio empty");
+  const data = (await decodeBuffer(buf)).getChannelData(0);
   const step = Math.floor(data.length / n) || 1;
   const peaks = Array.from({ length: n }, (_, i) => {
     let sum = 0;
-    for (let j = i * step; j < (i + 1) * step && j < data.length; j++) sum += data[j] * data[j];
-    return Math.sqrt(sum / step);
+    let count = 0;
+    for (let j = i * step; j < (i + 1) * step && j < data.length; j++) { sum += data[j] * data[j]; count += 1; }
+    return Math.sqrt(sum / Math.max(1, count));
   });
   const max = Math.max(...peaks) || 1;
-  return peaks.map((p) => Math.max(0.14, p / max));
+  // Square-root dynamics: quiet passages stay visible, loud ones don't clip.
+  const shaped = peaks.map((p) => Math.max(0.05, Math.sqrt(Math.max(0, p / max))));
+  peaksCache.set(src, shaped);
+  return shaped;
 }
 
 
@@ -51,25 +81,27 @@ async function realPeaks(src: string, n: number): Promise<number[]> {
 /**
  * Minimal voice-note style player for audio commentary.
  * Place it at the very top of the post body, above the source title/embed.
- * `compact` = feed version.
+ * `compact` = feed version. `bars` tunes waveform resolution.
+ * `durationHint` shows a length before metadata loads.
  */
-export function AudioPlayer({ src, compact = false }: { src: string; compact?: boolean }) {
+export function AudioPlayer({ src, compact = false, bars = DEFAULT_BARS, durationHint = 0 }: { src: string; compact?: boolean; bars?: number; durationHint?: number }) {
   const audio = useRef<HTMLAudioElement>(null);
   const wave = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
-  const [dur, setDur] = useState(0);
+  const [dur, setDur] = useState(durationHint || 0);
   const [failed, setFailed] = useState(false);
-  const [peaks, setPeaks] = useState<number[]>(() => fakePeaks(src, BARS));
+  const [peaks, setPeaks] = useState<number[]>(() => loadingPeaks(bars));
 
 
   useEffect(() => {
     let live = true;
-    setPeaks(fakePeaks(src, BARS));
-    realPeaks(src, BARS).then((p) => live && setPeaks(p)).catch(() => {});
+    setPeaks(loadingPeaks(bars));
+    setDur(durationHint || 0);
+    realPeaks(src, bars).then((p) => live && setPeaks(p)).catch(() => {});
     return () => { live = false; };
-  }, [src]);
+  }, [src, bars, durationHint]);
 
 
   // One media item at a time.
@@ -191,7 +223,7 @@ export function AudioPlayer({ src, compact = false }: { src: string; compact?: b
             key={i}
             style={{
               flex: 1, height: 4 + p * (waveH - 4), borderRadius: 2,
-              background: (i + 0.5) / BARS <= pct ? PLAYED : UNPLAYED,
+              background: (i + 0.5) / peaks.length <= pct ? PLAYED : UNPLAYED,
             }}
           />
         ))}

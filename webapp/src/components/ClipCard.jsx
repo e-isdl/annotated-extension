@@ -37,6 +37,9 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   const expandCommentary = (event) => { event.preventDefault(); event.stopPropagation(); setCommentaryExpanded(true); };
   const expandQuote = (event) => { event.preventDefault(); event.stopPropagation(); setQuoteExpanded(true); };
   const audioUrl = annotation?.audio_url;
+  const isPodcast = clip.source_type === 'podcast';
+  const episodeAudio = isPodcast ? clip.audio_url : null;
+  const episodeDuration = Number(clip.duration) || 0;
   const isYouTube = clip.source_type === 'youtube';
   const youtubeTitle = clip.source_title || clip.title;
   const sourceTitle = isYouTube || isXPostUrl(clip.source_url) ? null : clip.source_title || clip.title;
@@ -263,6 +266,14 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
             <AudioPlayer src={audioUrl} compact />
           </div>
         )}
+        {episodeAudio && (
+          <div className="post-audio post-audio-episode" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
+            <p className="podcast-episode-caption">
+              Episode recording{episodeDuration > 0 ? ` · ${formatTime(episodeDuration)}` : ''}
+            </p>
+            <AudioPlayer src={episodeAudio} compact bars={48} durationHint={episodeDuration} />
+          </div>
+        )}
         {isYouTube && youtubeTitle && youtubeTitle !== commentary && <p className="post-source-title">{youtubeTitle}</p>}
 
         {clip.source_type === 'text' ? (
@@ -318,7 +329,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
               <p ref={quoteRef} className={quoteClassName}>{clip.source_preview_text}</p>
             ) : showQuote && (clip.article_text || clip.source_excerpt || clip.transcript) ? (
               <p ref={quoteRef} className={quoteClassName}>“{stripWrappingQuotes(clip.source_type === 'youtube' ? cleanTranscript(clip.article_text || clip.source_excerpt || clip.transcript) : (clip.article_text || clip.source_excerpt || clip.transcript))}”</p>
-            ) : showQuote && (
+            ) : showQuote && !episodeAudio && (
               <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
             )}
             {showQuote && !quoteExpanded && quoteOverflowing && (

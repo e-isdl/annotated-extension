@@ -1142,6 +1142,56 @@ async function getYouTubeChaptersExpanded() {
       sendResponse({ ok: true });
       return true;
     }
+    if (message.type === 'PODCAST_STATE') {
+      // Episode transport state for the panel (Spotify and other audio
+      // pages). Prefers a playing element, else the longest usable one.
+      const pick = () => {
+        const els = Array.from(document.querySelectorAll('audio'));
+        if (!els.length) return null;
+        const playing = els.find((a) => { try { return !a.paused && !a.ended; } catch (e) { return false; } });
+        if (playing) return playing;
+        const withDur = els.filter((a) => { try { return Number.isFinite(a.duration) && a.duration > 0; } catch (e) { return false; } });
+        if (withDur.length) {
+          withDur.sort((a, b) => b.duration - a.duration);
+          return withDur[0];
+        }
+        return els[0];
+      };
+      const audio = pick();
+      if (!audio) {
+        sendResponse({ ok: false });
+        return true;
+      }
+      let time = 0;
+      let duration = 0;
+      let paused = true;
+      try { time = Number(audio.currentTime) || 0; } catch (e) {}
+      try { duration = Number(audio.duration) || 0; } catch (e) {}
+      try { paused = !!audio.paused; } catch (e) {}
+      sendResponse({ ok: true, paused, time, duration });
+      return true;
+    }
+    if (message.type === 'PODCAST_TOGGLE') {
+      // Spotify's own play/pause control first (routes through its player),
+      // else drive the audio element directly.
+      let toggled = false;
+      try {
+        const btn = document.querySelector('[data-testid="control-button-playpause"]');
+        if (btn) { btn.click(); toggled = true; }
+      } catch (e) {}
+      if (!toggled) {
+        try {
+          const audio = document.querySelector('audio');
+          if (audio) {
+            if (audio.paused) { const p = audio.play(); if (p && p.catch) p.catch(() => {}); }
+            else audio.pause();
+            toggled = true;
+          }
+        } catch (e) {}
+      }
+      sendResponse({ ok: toggled });
+      return true;
+    }
   };
   chrome.runtime.onMessage.addListener(window.__annotatedMessageHandler);
 }

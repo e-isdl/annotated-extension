@@ -136,6 +136,8 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .read-more-toggle { display: inline-block; margin: 4px 0 0; padding: 0; border: 0; background: none; color: var(--text-muted); font: 500 13px/1.4 var(--ui-font); cursor: pointer; }
 .read-more-toggle:hover { color: var(--text-primary); }
 .post-audio { margin: 10px 0; }
+.podcast-episode-caption { margin: 2px 2px 8px; color: var(--text-muted); font-size: 12px; font-weight: 600; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.source-media-podcast { display: flex; flex-direction: column; }
 .post-source-title { margin: 10px 2px 9px; color: var(--text-primary); font-size: 14px; font-weight: 550; line-height: 1.4; }
 .post-text-body { margin: 4px 2px 0; color: var(--text-secondary); font: 400 14px/1.6 var(--reading-font, inherit); white-space: pre-wrap; word-break: break-word; }
 .post-text-body-detail { margin: 14px 0 4px; font-size: 16px; }

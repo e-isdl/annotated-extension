@@ -394,8 +394,11 @@ export default function ClipPage() {
             {showEmbed ? 'View recording' : 'View embed'}
           </button>
         )}
-        {clip.source_type === 'podcast' && (
-          <div className="source-media"><AudioPlayer src={clip.audio_url} /></div>
+        {clip.source_type === 'podcast' && clip.audio_url && (
+          <div className="source-media source-media-podcast">
+            <p className="podcast-episode-caption">Episode recording</p>
+            <AudioPlayer src={clip.audio_url} bars={96} durationHint={Number(clip.duration) || 0} />
+          </div>
         )}
         {!isX && clip.source_type === 'article' && clip.article_text && (
           <div className="source-article-body"><p>{clip.article_text}</p></div>

@@ -1,6 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
+function fmtTime(s) {
+  const n = Math.max(0, Math.floor(s || 0));
+  return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+}
+
 // Spotify (and most web players) encrypt their streams, and the extension
 // holds no tab-capture permission by design, so episode audio is captured
 // through the system share picker: pick the Spotify tab and share its tab
@@ -16,26 +21,94 @@ export default function PodcastClipper({ pageInfo, onReady }) {
   const [error, setError] = useState('');
   const [seconds, setSeconds] = useState(0);
   const [level, setLevel] = useState(0);
+  const [epKnown, setEpKnown] = useState(false);
+  const [epPaused, setEpPaused] = useState(true);
+  const [epTime, setEpTime] = useState(0);
+  const [epDur, setEpDur] = useState(0);
+  const [epHeld, setEpHeld] = useState(false);
   const mediaRef = useRef(null);
   const streamRef = useRef(null);
   const timerRef = useRef(null);
+  const epPollRef = useRef(0);
   const chunksRef = useRef([]);
   const analyserRef = useRef(null);
   const levelRafRef = useRef(0);
   const levelTimeRef = useRef(0);
   const maxLevelRef = useRef(0);
   const audioUrlRef = useRef(null);
+  const recordingRef = useRef(false);
   const episodeTitle = pageInfo?.data?.title || '';
 
   useEffect(() => () => {
     clearInterval(timerRef.current);
+    clearInterval(epPollRef.current);
     cancelAnimationFrame(levelRafRef.current);
-    if (mediaRef.current?.state === 'recording') {
+    if (mediaRef.current?.state === 'recording' || mediaRef.current?.state === 'paused') {
       try { mediaRef.current.stop(); } catch (e) {}
     }
     stopStreamTracks();
     if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
   }, []);
+
+  // Episode transport: poll the tab's audio state so the panel gets
+  // Play/Pause like the video clipper, and so a paused episode pauses
+  // the recording instead of baking silence into the clip.
+  useEffect(() => {
+    let alive = true;
+    const poll = async () => {
+      let res = null;
+      try {
+        if (typeof chrome === 'undefined' || !chrome.tabs) return;
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab?.id) return;
+        res = await chrome.tabs.sendMessage(tab.id, { type: 'PODCAST_STATE' });
+      } catch (e) {
+        res = null;
+      }
+      if (!alive) return;
+      if (!res || !res.ok) {
+        setEpKnown(false);
+        return;
+      }
+      setEpKnown(true);
+      const paused = !!res.paused;
+      setEpPaused(paused);
+      if (typeof res.time === 'number') setEpTime(res.time);
+      if (typeof res.duration === 'number') setEpDur(res.duration);
+      // Couple the take to the episode: pause the recorder while the
+      // episode is paused, resume when it plays again.
+      try {
+        const r = mediaRef.current;
+        if (recordingRef.current && r) {
+          if (paused && r.state === 'recording') {
+            r.pause();
+            setEpHeld(true);
+          } else if (!paused && r.state === 'paused') {
+            r.resume();
+            setEpHeld(false);
+          }
+        } else if (!recordingRef.current) {
+          setEpHeld(false);
+        }
+      } catch (e) {}
+    };
+    poll();
+    epPollRef.current = setInterval(poll, 1000);
+    return () => {
+      alive = false;
+      clearInterval(epPollRef.current);
+    };
+  }, []);
+
+  const toggleEpisode = async () => {
+    try {
+      if (typeof chrome === 'undefined' || !chrome.tabs) return;
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return;
+      const res = await chrome.tabs.sendMessage(tab.id, { type: 'PODCAST_TOGGLE' });
+      if (res?.ok) setEpPaused((p) => !p);
+    } catch (e) {}
+  };
 
   const stopStreamTracks = () => {
     try { streamRef.current?.getTracks().forEach((t) => t.stop()); } catch (e) {}
@@ -52,6 +125,7 @@ export default function PodcastClipper({ pageInfo, onReady }) {
     setProcessing(false);
     setSeconds(0);
     setLevel(0);
+    setEpHeld(false);
     setError('');
   };
 
@@ -174,8 +248,12 @@ export default function PodcastClipper({ pageInfo, onReady }) {
     }
     watchLevel(stream);
     setRecording(true);
+    recordingRef.current = true;
+    setEpHeld(false);
     setSeconds(0);
     timerRef.current = setInterval(() => {
+      // Paused spans (episode paused) cost no budget.
+      if (mediaRef.current && mediaRef.current.state === 'paused') return;
       setSeconds((s) => {
         if (s + 1 >= 90) {
           stopRecording();
@@ -191,6 +269,8 @@ export default function PodcastClipper({ pageInfo, onReady }) {
     stopLevelWatch();
     stopStreamTracks();
     setRecording(false);
+    recordingRef.current = false;
+    setEpHeld(false);
     setProcessing(true);
     try {
       const blob = new Blob(chunksRef.current, { type: mime });
@@ -217,7 +297,9 @@ export default function PodcastClipper({ pageInfo, onReady }) {
 
   const stopRecording = () => {
     clearInterval(timerRef.current);
-    if (mediaRef.current?.state === 'recording') {
+    recordingRef.current = false;
+    setEpHeld(false);
+    if (mediaRef.current?.state === 'recording' || mediaRef.current?.state === 'paused') {
       try { mediaRef.current.stop(); } catch (e) { setRecording(false); }
     } else {
       stopLevelWatch();
@@ -242,6 +324,7 @@ export default function PodcastClipper({ pageInfo, onReady }) {
         source_type: 'podcast',
         title: episodeTitle,
         audio_url: publicUrl,
+        duration: seconds,
       });
     } catch (uploadError) {
       setError(uploadError.message || 'Audio upload failed. Please try again.');
@@ -261,6 +344,20 @@ export default function PodcastClipper({ pageInfo, onReady }) {
           <p className="text-sm text-text-muted text-center line-clamp-2" title={episodeTitle}>{episodeTitle}</p>
         ) : null}
 
+        {epKnown && (
+          <div className="pod-player" aria-label="Episode controls">
+            <button type="button" className="pod-play" onClick={toggleEpisode} aria-label={epPaused ? 'Play episode' : 'Pause episode'}>
+              {epPaused ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor" /></svg>
+              )}
+            </button>
+            <span className="pod-time">{fmtTime(epTime)}{epDur > 0 ? ` / ${fmtTime(epDur)}` : ''}</span>
+            <span className="text-xs text-text-muted">{epPaused ? 'Paused' : 'Playing'}</span>
+          </div>
+        )}
+
         {!recording && !recorded && !processing && (
           <>
             <p className="text-xs text-text-muted text-center">
@@ -279,6 +376,9 @@ export default function PodcastClipper({ pageInfo, onReady }) {
               <div className="pod-level-fill" style={{ width: `${Math.round(Math.min(1, level * 2.5) * 100)}%` }} />
             </div>
             <p className="text-xs text-text-muted mt-1">Capturing the Spotify tab. Keep it playing.</p>
+            {epHeld && (
+              <p className="text-xs text-text-muted mt-1">Episode paused. Recording waits for it.</p>
+            )}
           </div>
         )}
         {processing && <p className="text-xs text-text-muted">Checking the recording...</p>}

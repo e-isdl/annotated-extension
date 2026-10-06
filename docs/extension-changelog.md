@@ -2302,6 +2302,64 @@ this changelog.
 
 ---
 
+## Podcast feed cards play the episode, waveforms are real
+
+**Files touched:** `src/components/PodcastClipper.jsx`,
+`webapp/src/components/AudioPlayer.tsx`,
+`webapp/src/components/ClipCard.jsx`, `webapp/src/pages/ClipPage.jsx`,
+`webapp/src/styles/globals.css`, this changelog.
+
+- Extension sends the recorded length as `duration` (flows into
+  `p_duration`, so cards know runtimes without probing metadata).
+- Feed podcast cards get an episode block: caption with runtime plus a
+  compact player. The "open the source" placeholder no longer shows
+  when episode audio exists.
+- Detail page gets the episode block with a 96-bar player.
+- Waveform honesty: peaks are decoded from the real file and cached
+  across mounts (feed + detail decode once), with a Safari callback
+  fallback and explicit CORS fetch. While loading, bars render flat
+  (clearly pending) instead of fake variance. Dynamics reshaped with
+  square-root scaling and a lower floor so quiet clips read correctly.
+- Checks: webapp + extension builds pass; `npm test` 45/46
+  (pre-existing transcript failure).
+- Local commit only - NOT pushed. Chrome-verify: feed card plays the
+  episode inline with duration, detail waveform matches the audio.
+
+---
+
+## Release v6 (manifest 2.3.20)
+
+- Ships everything since v5: episode transport in the panel (Play/Pause
+  + time, recording follows episode pause), tab-audio-only podcast
+  capture, feed episode blocks with inline player and runtime, real
+  cached waveforms (96 bars detail, 48 feed, no fake variance) with
+  Safari fallback, Spotify show-page routing on both detectors, helper
+  copy naming the Full Video Timeline.
+- Webapp source pushed (Cloudflare rebuilds from it).
+- Pushed to master. Released as v6 with annotated-extension.zip.
+
+---
+
+## Podcast: episode transport in the panel, recording follows pause
+
+**Files touched:** `content.js`, `src/components/PodcastClipper.jsx`,
+this changelog.
+
+- New tab messages `PODCAST_STATE` (playing state, time, duration from
+  the page audio element) and `PODCAST_TOGGLE` (Spotify play/pause
+  button first, audio element fallback).
+- Panel polls episode state every second and shows Play/Pause plus
+  time like the video clipper. Pausing the episode mid-take pauses the
+  recorder (paused spans cost no 90s budget and bake no silence in);
+  playing resumes it, with an "Episode paused. Recording waits" note.
+- Checks: `npm run build` passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Local commit only - NOT pushed. Chrome-verify on Spotify: panel
+  Play/Pause drives the episode, pausing mid-take freezes the timer
+  and resumes cleanly.
+
+---
+
 ## Tweet video search scoped to the post, fit loop bounded
 
 **Files touched:** `src/components/TweetClipper.jsx`, this changelog.
