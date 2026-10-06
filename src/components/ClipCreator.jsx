@@ -11,6 +11,7 @@ import { createExtensionPost, updateClipVideoUrl } from '../lib/postPublishing';
 import { listDrafts, deleteDraft } from '../lib/drafts';
 import DraftsScreen from './DraftsScreen';
 import { pageIdentity } from '../lib/pageInfo';
+import { THEMES, isThemeId, themeLabel } from '../lib/themes';
 
 const MAX_CLIP_BYTES = 15 * 1024 * 1024;
 const UPLOAD_TIMEOUT_MS = 180000;
@@ -70,16 +71,37 @@ export default function ClipCreator({ pageInfo, session }) {
   const [clipData, setClipData] = useState(null);
   const [publishedClip, setPublishedClip] = useState(null);
   const [embedRequest, setEmbedRequest] = useState(0);
-  const [theme, setTheme] = useState(() => (document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'));
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem('annotated-theme', next); } catch {}
+  const [theme, setTheme] = useState(() => {
+    const current = document.documentElement.dataset.theme;
+    return isThemeId(current) ? current : 'light';
+  });
+  const applyTheme = (id) => {
+    if (!isThemeId(id)) return;
+    setTheme(id);
+    document.documentElement.dataset.theme = id;
+    try { localStorage.setItem('annotated-theme', id); } catch {}
+    setThemeMenuOpen(false);
   };
 
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const avatarMenuRef = useRef(null);
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef(null);
+  useEffect(() => {
+    if (!themeMenuOpen) return;
+    const onPointerDown = (event) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target)) setThemeMenuOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setThemeMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [themeMenuOpen]);
   useEffect(() => {
     if (!avatarMenuOpen) return;
     const onPointerDown = (event) => {
@@ -433,19 +455,52 @@ export default function ClipCreator({ pageInfo, session }) {
               <span className="draft-count">{drafts.length > 99 ? '99+' : drafts.length}</span>
             )}
           </button>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-            title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
-            className="flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-[var(--bg)]"
-          >
-            {theme === 'dark' ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41"/></svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <div className="relative" ref={themeMenuRef}>
+            <button
+              type="button"
+              onClick={() => setThemeMenuOpen((open) => !open)}
+              aria-label={`Theme: ${themeLabel(theme)}. Change theme`}
+              aria-haspopup="menu"
+              aria-expanded={themeMenuOpen}
+              title={`Theme: ${themeLabel(theme)}`}
+              className="flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-[var(--bg)]"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                <circle cx="12" cy="12" r="3.2" fill="currentColor" />
+              </svg>
+            </button>
+            {themeMenuOpen && (
+              <div role="menu" aria-label="Themes" className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-border bg-bg-surface shadow-lg py-1.5 z-50">
+                <p className="px-4 pt-1 pb-1.5 text-[11px] font-semibold text-text-muted">Theme</p>
+                {THEMES.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={theme === item.id}
+                    onClick={() => applyTheme(item.id)}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-left hover:bg-bg-raised transition-colors focus-visible:outline-none focus-visible:bg-bg-raised"
+                  >
+                    <span className="flex flex-none" aria-hidden="true">
+                      {item.swatches.map((color) => (
+                        <span key={color} className="w-4 h-4 rounded-full border border-black/20 -ml-1.5 first:ml-0" style={{ background: color }} />
+                      ))}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-semibold text-text-primary leading-tight">{item.label}</span>
+                      <span className="block text-[11px] text-text-muted leading-tight">{item.hint}</span>
+                    </span>
+                    {theme === item.id && (
+                      <svg className="ml-auto flex-none text-text-primary" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M4 12.5l5 5L20 6.5" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
             )}
-          </button>
+          </div>
           <button
             type="button"
             onClick={() => setAvatarMenuOpen((open) => !open)}

@@ -21,6 +21,7 @@
   --ok: #0E8A4A;
   --warn: #B26A00;
   --focus: #111114;
+  --ui-font: 'Inter', -apple-system, sans-serif;
   --r-btn: 12px;
   --r-card: 16px;
 }
@@ -49,4 +50,141 @@
   --ok: #3DDC84;
   --warn: #FFB020;
   --focus: #FFE14D;
+}
+
+
+/* Iconic themes, same set as the webapp. Light and Dark above are frozen. */
+
+[data-theme="synthwave"] {
+  color-scheme: dark;
+  --bg: #170834;
+  --card: #26104F;
+  --surface: #26104F;
+  --surface-2: #351B6E;
+  --surface-3: #44278A;
+  --border: #3D2280;
+  --border-strong: #7A48D8;
+  --text: #FFF0FB;
+  --text-2: #E6C6F7;
+  --text-3: #C9A8F2;
+  --red: #FF73BC;
+  --red-btn: #FF3E9F;
+  --red-btn-hover: #FF6CB8;
+  --on-red: #1A0638;
+  --red-soft: rgba(255, 62, 159, .16);
+  --yellow: #FFE45E;
+  --yellow-soft: rgba(255, 228, 94, .78);
+  --on-yellow: #111114;
+  --ok: #3DF2A0;
+  --warn: #FFA64D;
+  --focus: #22E5F5;
+  --ui-font: 'Exo 2', 'Reddit Sans', Inter, system-ui, sans-serif;
+}
+
+
+[data-theme="tokyo"] {
+  color-scheme: dark;
+  --bg: #0F1226;
+  --card: #181B38;
+  --surface: #181B38;
+  --surface-2: #222650;
+  --surface-3: #2E3366;
+  --border: #2F3572;
+  --border-strong: #5360B8;
+  --text: #D6DDFF;
+  --text-2: #B0BBF2;
+  --text-3: #97A3EE;
+  --red: #7AA2F7;
+  --red-btn: #7AA2F7;
+  --red-btn-hover: #94B3FA;
+  --on-red: #0F1226;
+  --red-soft: rgba(122, 162, 247, .16);
+  --yellow: #F5D76E;
+  --yellow-soft: rgba(245, 215, 110, .78);
+  --on-yellow: #111114;
+  --ok: #9ECE6A;
+  --warn: #FF9E64;
+  --focus: #7DCFFF;
+  --ui-font: 'Zen Kaku Gothic New', 'Reddit Sans', Inter, system-ui, sans-serif;
+}
+
+
+[data-theme="terminal"] {
+  color-scheme: dark;
+  --bg: #010603;
+  --card: #06140A;
+  --surface: #06140A;
+  --surface-2: #0B2112;
+  --surface-3: #11301B;
+  --border: #17502A;
+  --border-strong: #25913F;
+  --text: #C9FFDA;
+  --text-2: #86EAA6;
+  --text-3: #62C47E;
+  --red: #00FF66;
+  --red-btn: #00FF66;
+  --red-btn-hover: #5CFF95;
+  --on-red: #00140A;
+  --red-soft: rgba(0, 255, 102, .13);
+  --yellow: #FFD21F;
+  --yellow-soft: rgba(255, 210, 31, .78);
+  --on-yellow: #111114;
+  --ok: #7CFF9E;
+  --warn: #FFB000;
+  --focus: #FFB000;
+  --ui-font: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+
+[data-theme="gruvbox"] {
+  color-scheme: dark;
+  --bg: #1F1A15;
+  --card: #2B231B;
+  --surface: #2B231B;
+  --surface-2: #382E23;
+  --surface-3: #483A2C;
+  --border: #4A3B2B;
+  --border-strong: #8C7655;
+  --text: #F9EDC8;
+  --text-2: #DCC9A0;
+  --text-3: #C9B38D;
+  --red: #FF9B3D;
+  --red-btn: #FE8019;
+  --red-btn-hover: #FF9A3C;
+  --on-red: #1F1A15;
+  --red-soft: rgba(254, 128, 25, .16);
+  --yellow: #FABD2F;
+  --yellow-soft: rgba(250, 189, 47, .78);
+  --on-yellow: #111114;
+  --ok: #B8BB26;
+  --warn: #D79921;
+  --focus: #83A598;
+  --ui-font: 'IBM Plex Sans', 'Reddit Sans', Inter, system-ui, sans-serif;
+}
+
+
+[data-theme="dracula"] {
+  color-scheme: dark;
+  --bg: #1D1E2A;
+  --card: #2A2C3E;
+  --surface: #2A2C3E;
+  --surface-2: #363951;
+  --surface-3: #444866;
+  --border: #474B73;
+  --border-strong: #7B84C2;
+  --text: #F8F8F2;
+  --text-2: #D6D9F0;
+  --text-3: #BBC1EA;
+  --red: #D2B2FF;
+  --red-btn: #BD93F9;
+  --red-btn-hover: #CFA8FF;
+  --on-red: #1D1E2A;
+  --red-soft: rgba(189, 147, 249, .16);
+  --yellow: #F1FA8C;
+  --yellow-soft: rgba(241, 250, 140, .78);
+  --on-yellow: #111114;
+  --ok: #50FA7B;
+  --warn: #FFB86C;
+  --focus: #8BE9FD;
+  --ui-font: 'Manrope', 'Reddit Sans', Inter, system-ui, sans-serif;
 }

@@ -2659,3 +2659,27 @@ this changelog.
   the visual size of other themes under the wider mono face.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Themes in the extension side panel
+
+**Files touched:** `src/styles/tokens.css`, `src/styles/panel.css`,
+`src/lib/themes.js` (new), `src/main.jsx`,
+`src/components/ClipCreator.jsx`, `sidepanel.html`, this changelog.
+
+- Same five themes (80s Retro, Tokyo Night, Terminal, Gruvbox,
+  Dracula) appended to the panel tokens; Light/Dark untouched.
+  Panel body now reads `--ui-font`, so each theme brings its own
+  typeface. No backdrops, rain, or cursor extras in the narrow
+  panel: colors and type only.
+- Sun/moon header toggle replaced with a palette dropdown (swatches,
+  hints, active check, outside-click + Escape). Boot allowlisted.
+  Panel Fonts link extended with the theme families.
+- Deliberately separate choice from the webapp (different origins,
+  different storage). No inline boot script possible under MV3
+  extension-page CSP, so first paint behavior is unchanged.
+- Checks: extension build passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Committed + pushed; dist rebuilt in place (panel loads from
+  dist, reload it on chrome://extensions).
