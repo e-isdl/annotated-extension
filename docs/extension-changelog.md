@@ -2830,3 +2830,24 @@ this changelog.
   podcast clipper, and drift masked out of the content column.
 - Checks: root build passes; release zip built from `dist` (9 files).
 - v7 published on GitHub with `annotated-extension.zip`.
+---
+
+## Buddy flies to the GitHub link, releases URL on the rail
+
+**Files touched:** `webapp/src/components/ThemeFlyer.jsx` (new),
+`webapp/src/components/ThemeNudge.jsx`, `webapp/src/components/Navbar.jsx`,
+`webapp/src/components/RightRail.jsx`, `webapp/src/App.jsx`,
+`webapp/src/styles/globals.css`, this changelog.
+
+- On an actual theme change the buddy launches from the theme
+  button and flies across the screen (1.3s eased glide, no
+  teleporting) to the right-rail GitHub link, lands beside it and
+  pops a bubble: "Download the extension here!" - clicking it opens
+  the releases page. Docked buddy fades after 15s; pages without
+  the rail dock him to the bottom-right corner.
+- The load-time "Try themes!" nudge steps aside when a theme
+  change fires so the two never overlap; the shared buddy SVG now
+  lives in `ThemeNudge` and is reused by the flyer.
+- The rail "GitHub" link now points at
+  `https://github.com/e-isdl/annotated-extension/releases`.
+- Checks: webapp build passes.

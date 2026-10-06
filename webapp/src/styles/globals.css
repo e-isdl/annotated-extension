@@ -262,6 +262,13 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 @keyframes nudge-blink { 0%, 91%, 100% { transform: scaleY(1); } 94% { transform: scaleY(.12); } }
 @media (min-width: 640px) { .theme-nudge { display: inline-flex; } }
 @media (prefers-reduced-motion: reduce) { .theme-nudge, .theme-nudge-buddy, .theme-nudge-arm, .theme-nudge-eyes { animation: none; } }
+/* Same buddy on a trip: launches from the theme button after a theme
+   change, flies across the screen and lands by the GitHub link. */
+.theme-flyer { position: fixed; z-index: 70; display: inline-flex; align-items: center; text-decoration: none; transition: transform 1.3s cubic-bezier(.36,1.25,.5,1), opacity .45s ease; }
+.theme-flyer-leave { opacity: 0; }
+.theme-flyer-bubble { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); padding: 6px 11px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-primary); font-size: 12px; font-weight: 650; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,.35); animation: nudge-pop .35s cubic-bezier(.2,1.4,.4,1) both; }
+.theme-flyer-bubble::after { content: ""; position: absolute; left: -5px; top: 50%; width: 9px; height: 9px; background: var(--surface-2); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); transform: translateY(-50%) rotate(45deg); border-radius: 0 0 2px 0; }
+@media (prefers-reduced-motion: reduce) { .theme-flyer { transition: none; } }
 .post-timestamp-row { display: flex; align-items: center; gap: 7px; margin: 10px 0 0; }
 .post-actions, .detail-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 0; }
 .post-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 5px 11px; border: 0; border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: color .15s, background .15s; }

@@ -188,7 +188,7 @@ export default function RightRail() {
             <span className="rail-footer-updated">Extension updated October 6, 5:20 PM</span>
           </span>
         )}
-        <a href="https://github.com/e-isdl/annotated-extension" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+        <a href="https://github.com/e-isdl/annotated-extension/releases" data-github-link target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </footer>
     </aside>
   );

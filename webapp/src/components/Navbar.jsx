@@ -221,11 +221,13 @@ export default function Navbar() {
 
   const applyTheme = (id) => {
     if (!isThemeId(id)) return;
+    const changed = id !== theme;
     setTheme(id);
     document.documentElement.dataset.theme = id;
     syncThemeMeta(id);
     try { localStorage.setItem('annotated-theme', id); } catch {}
     setShowThemes(false);
+    if (changed) window.dispatchEvent(new CustomEvent('annotated:theme-changed', { detail: { id } }));
   };
 
 
@@ -261,6 +263,7 @@ export default function Navbar() {
           <div className="relative" ref={themeRef}>
             <button
               type="button"
+              data-theme-button
               onClick={() => setShowThemes((value) => !value)}
               aria-label={`Theme: ${themeLabel(theme)}. Change theme`}
               aria-haspopup="menu"
