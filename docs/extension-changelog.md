@@ -2530,7 +2530,14 @@ this changelog.
 
 ---
 
-## Theme orders: five distinct websites, light/dark frozen
+## Terminal text readability bump
+
+**Files touched:** `webapp/src/styles/tokens.css`, this changelog.
+
+- Terminal theme text steps brightened toward mint
+  (text/text-2/text-3 up one notch each). Terminal block only.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
 
 **Files touched:** `webapp/src/styles/tokens.css`,
 `webapp/src/styles/globals.css`, `webapp/index.html`,
