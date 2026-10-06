@@ -2921,3 +2921,11 @@ this changelog.
 - Bolder determined expression: heavier brows touching larger eyes, wider grin; tail pops in on dock (delayed, springy).
 - Files: webapp/src/components/ThemeFlyer.jsx, webapp/src/components/ThemeNudge.jsx, webapp/src/styles/globals.css buddy block.
 - Checks: webapp build passes.
+### Buddy revert to the simple glider, with puppy manners
+
+- Brought back the original buddy: plain round face, no jetpack, no winding journey - after a theme change he glides in a straight line from the theme button to the GitHub releases link over 2.4s.
+- On page refresh he pops up under the theme button saying "Hi!" (then back to "Try themes!"); steps aside on a real theme change and never returns until the page is refreshed.
+- After landing he says "hello!", huffs like a puppy (quick body bob + panting mouth), waves his arm excitedly, happy face - for exactly 15 seconds.
+- He then fades out and stays gone until the page is refreshed; only one flight per page load (later theme changes do not bring him back).
+- Removed the jetpack, spark trail, thrust plume, flight pill copy and all flight-path machinery (ThemeNudge/ThemeFlyer/globals.css buddy block reverted to the simple originals plus the new behaviors).
+- Checks: webapp build passes.
