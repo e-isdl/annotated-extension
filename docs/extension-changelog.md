@@ -2935,3 +2935,10 @@ this changelog.
 - Docked buddy now jumps up and down with squash-and-stretch, happy face, still waving - replaced the huffing/panting.
 - Removed "hello!" and "Hi!" everywhere: the button buddy says only "Try themes!" (original wording).
 - Checks: webapp build passes.
+### Buddy rides inside the pill, docked flush under the link
+
+- The flying buddy now rides inside a "Try themes!"-style pill (buddy left, "Try the extension" right, tail on top) instead of a separate bubble.
+- The pill glides from the theme button to the GitHub link, lands flush with the link's right edge so the tail points straight up at "GitHub", measured after render for accurate placement.
+- At the dock the whole pill jumps up and down with squash-and-stretch while the buddy waves (happy face); pill pops in on launch.
+- Removed the old separate bubble element entirely.
+- Checks: webapp build passes.
