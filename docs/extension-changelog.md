@@ -2648,3 +2648,14 @@ this changelog.
   token stays defined, unconsumed.)
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Terminal titles sized to match 80s retro
+
+**Files touched:** `webapp/src/styles/globals.css`, this changelog.
+
+- Terminal-only: feed/detail/page headings stepped down to match
+  the visual size of other themes under the wider mono face.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).

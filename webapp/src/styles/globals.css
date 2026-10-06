@@ -130,6 +130,9 @@ html[data-theme="synthwave"] .navbar-logo-text { text-shadow: 0 0 14px rgba(255,
 .feed-page, .section-page, .create-page, .detail-page { width: 100%; }
 .feed-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 5px 0 17px; }
 .feed-heading h1, .section-title { margin: 0; color: var(--text-primary); font-size: clamp(21px, 2.5vw, 26px); font-weight: 650; letter-spacing: -.025em; }
+html[data-theme="terminal"] .feed-heading h1, html[data-theme="terminal"] .section-title { font-size: clamp(19px, 2.2vw, 23px); }
+html[data-theme="terminal"] .post-annotation-preview { font-size: 17px; }
+html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .feed-transcript-toggle { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 10px; flex-shrink: 0; }
 .feed-heading p, .section-subtitle { margin: 6px 0 0; color: var(--text-muted); font-size: 13px; line-height: 1.55; }
 .section-title { margin: 10px 0 8px; }
