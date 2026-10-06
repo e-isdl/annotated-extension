@@ -138,8 +138,7 @@ html[data-theme="synthwave"] .navbar-logo-text { text-shadow: 0 0 14px rgba(255,
 .feed-tab:hover, .profile-tab:hover { color: var(--text-primary); }
 .feed-tab-active, .profile-tab-active { background: var(--active-bg); color: var(--active-text); }
 .feed-list { display: flex; flex-direction: column; gap: 10px; }
-.post-card { padding: 14px; overflow: hidden; border: 1px solid var(--card-border); border-radius: 14px; background: var(--card); transition: border-color .16s, background .16s, box-shadow .16s; }
-.post-card:hover { border-color: var(--card-border-hover); box-shadow: var(--card-hover-shadow); }
+.post-card { padding: 14px; overflow: hidden; border: 1px solid var(--card-border); border-radius: 14px; background: var(--card); }
 .post-card-linked { position: relative; }
 .post-card-link { position: absolute; inset: 0; z-index: 0; }
 .post-card-linked > :not(.post-card-link) { position: relative; z-index: 1; }

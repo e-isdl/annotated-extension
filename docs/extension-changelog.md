@@ -2619,3 +2619,15 @@ this changelog.
   overlay at z-index 1, photos/video/embeds paint just above it.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Card hover glow removed
+
+**Files touched:** `webapp/src/styles/globals.css`, this changelog.
+
+- `.post-card:hover` deleted: no more border light-up or glow on
+  hover. Borders stay static. (The now-unused `--card-hover-shadow`
+  token stays defined, unconsumed.)
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
