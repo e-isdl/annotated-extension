@@ -2683,3 +2683,26 @@ this changelog.
   transcript failure).
 - Committed + pushed; dist rebuilt in place (panel loads from
   dist, reload it on chrome://extensions).
+
+---
+
+## Theme effects in the extension panel
+
+**Files touched:** `src/styles/tokens.css`, `src/styles/panel.css`,
+`src/components/ClipCreator.jsx`, this changelog.
+
+- Panel tokens gain the effect set (backdrop, overlay, button
+  gradient/glow, text glow, themed scrollbar, display font) with
+  `:root` defaults equal to today's values; the five theme blocks
+  carry the same effect values as the webapp. Light/Dark untouched.
+- Panel wiring: token-driven backdrop + text glow on body, overlay
+  layer with rain on all three line themes (two-layer keyframe pins
+  the terminal vignette), gradient glow buttons, display type on
+  headings/titles/logo/buttons, themed scrollbar. Photos and video
+  paint above the overlay; reduced-motion gates kept.
+- One deliberate call: button hover stays opacity-only (a gradient
+  hover swap would have altered Light/Dark).
+- Checks: extension build passes; `npm test` 45/46 (pre-existing
+  transcript failure).
+- Committed + pushed; dist rebuilt in place (reload the panel on
+  chrome://extensions).

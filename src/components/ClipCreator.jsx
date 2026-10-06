@@ -437,7 +437,7 @@ export default function ClipCreator({ pageInfo, session }) {
       <header className="flex items-center justify-between h-14 px-5 border-b border-border-subtle shrink-0">
         <div className="flex items-center gap-2.5">
           <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-accent text-white font-bold text-sm select-none">A</span>
-          <span className="font-bold text-[18px] tracking-tight text-text-primary">Annotated</span>
+          <span className="font-bold text-[18px] tracking-tight text-text-primary panel-logo-text">Annotated</span>
         </div>
         <div className="flex items-center gap-2 relative" ref={avatarMenuRef}>
           <button

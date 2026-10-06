@@ -1,3 +1,15 @@
+:root {
+  --btn-bg: var(--red-btn);
+  --btn-bg-hover: var(--red-btn-hover);
+  --glow: none;
+  --text-glow: none;
+  --bg-image: none;
+  --overlay: none;
+  --scroll-thumb: var(--border);
+  --display-font: inherit;
+}
+
+
 :root, [data-theme="light"] {
   color-scheme: light;
   --bg: #F2EEE1;
@@ -79,6 +91,13 @@
   --warn: #FFA64D;
   --focus: #22E5F5;
   --ui-font: 'Exo 2', 'Reddit Sans', Inter, system-ui, sans-serif;
+  --display-font: 'Orbitron', 'Exo 2', sans-serif;
+  --btn-bg: linear-gradient(135deg, #FF2E93, #FF8A3D);
+  --btn-bg-hover: linear-gradient(135deg, #FF5CAB, #FFA15E);
+  --glow: 0 0 20px rgba(255, 62, 159, .55);
+  --bg-image: radial-gradient(120% 55% at 50% 112%, rgba(255, 138, 61, .75) 0%, rgba(255, 62, 159, .45) 30%, rgba(255, 62, 159, 0) 62%), linear-gradient(180deg, #170834 0%, #27104F 60%, #3B1068 100%);
+  --overlay: repeating-linear-gradient(104deg, rgba(255, 62, 159, .06) 0 1px, transparent 1px 9px);
+  --scroll-thumb: #6A3CC4;
 }
 
 
@@ -106,6 +125,13 @@
   --warn: #FF9E64;
   --focus: #7DCFFF;
   --ui-font: 'Zen Kaku Gothic New', 'Reddit Sans', Inter, system-ui, sans-serif;
+  --display-font: 'Zen Kaku Gothic New', 'Reddit Sans', sans-serif;
+  --btn-bg: linear-gradient(135deg, #7AA2F7, #BB9AF7);
+  --btn-bg-hover: linear-gradient(135deg, #94B3FA, #CDB4FA);
+  --glow: 0 0 18px rgba(122, 162, 247, .50);
+  --bg-image: radial-gradient(55% 38% at 12% -4%, rgba(122, 162, 247, .30), transparent 70%), radial-gradient(45% 35% at 92% 6%, rgba(247, 118, 142, .20), transparent 70%), radial-gradient(70% 40% at 50% 112%, rgba(125, 207, 255, .16), transparent 70%);
+  --overlay: repeating-linear-gradient(104deg, rgba(190, 205, 255, .045) 0 1px, transparent 1px 9px);
+  --scroll-thumb: #4A56A8;
 }
 
 
@@ -133,6 +159,14 @@
   --warn: #FFB000;
   --focus: #FFB000;
   --ui-font: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --display-font: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --btn-bg: #00FF66;
+  --btn-bg-hover: #5CFF95;
+  --glow: 0 0 12px rgba(0, 255, 102, .55);
+  --text-glow: 0 0 6px rgba(0, 255, 102, .40);
+  --bg-image: radial-gradient(110% 60% at 50% -10%, rgba(0, 255, 102, .14), transparent 65%);
+  --overlay: repeating-linear-gradient(104deg, rgba(0, 255, 102, .05) 0 1px, transparent 1px 9px), radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .55) 100%);
+  --scroll-thumb: #1E7A3A;
 }
 
 
@@ -160,6 +194,13 @@
   --warn: #D79921;
   --focus: #83A598;
   --ui-font: 'IBM Plex Sans', 'Reddit Sans', Inter, system-ui, sans-serif;
+  --display-font: 'Fraunces', Georgia, serif;
+  --btn-bg: #FE8019;
+  --btn-bg-hover: #FF9A3C;
+  --glow: 3px 3px 0 rgba(0, 0, 0, .55);
+  --bg-image: radial-gradient(70% 45% at 8% -8%, rgba(254, 128, 25, .18), transparent 65%), radial-gradient(55% 40% at 100% 100%, rgba(184, 187, 38, .10), transparent 65%);
+  --overlay: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/></svg>");
+  --scroll-thumb: #8C7655;
 }
 
 
@@ -187,4 +228,10 @@
   --warn: #FFB86C;
   --focus: #8BE9FD;
   --ui-font: 'Manrope', 'Reddit Sans', Inter, system-ui, sans-serif;
+  --display-font: 'Playfair Display', Georgia, serif;
+  --btn-bg: linear-gradient(135deg, #BD93F9, #FF79C6);
+  --btn-bg-hover: linear-gradient(135deg, #CFA8FF, #FF9AD5);
+  --glow: 0 0 22px rgba(189, 147, 249, .50);
+  --bg-image: radial-gradient(60% 42% at 88% -6%, rgba(255, 121, 198, .24), transparent 65%), radial-gradient(55% 45% at 0% 100%, rgba(189, 147, 249, .24), transparent 65%);
+  --scroll-thumb: #6A74B5;
 }
