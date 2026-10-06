@@ -4,10 +4,11 @@ import { ThemeBuddy } from './ThemeNudge';
 const RELEASES = 'https://github.com/e-isdl/annotated-extension/releases';
 
 // After a theme change, the buddy launches from the theme button and
-// flies across the screen to the GitHub link, lands next to it and
-// says "Download the extension here!". Clicking it opens the
-// releases page. One flight per trigger; falls back to the
-// bottom-right corner on pages without the right rail.
+// flies across the screen to the GitHub link, lands just below it
+// pointing up at it with a cute happy face, and says "Download the
+// extension here!". Clicking it opens the releases page. One flight
+// per trigger; falls back to the bottom-right corner on pages
+// without the right rail.
 export default function ThemeFlyer() {
   const [flight, setFlight] = useState(null);
   const busyRef = useRef(false);
@@ -27,8 +28,8 @@ export default function ThemeFlyer() {
       const link = document.querySelector('[data-github-link]');
       if (link) {
         const l = link.getBoundingClientRect();
-        if (l.width > 0 && l.left > 0 && l.top > 56 && l.bottom < window.innerHeight) {
-          end = { x: Math.round(l.left + l.width / 2 - 18), y: Math.round(l.top - 48) };
+        if (l.width > 0 && l.left > 0 && l.top > 56 && l.bottom + 64 < window.innerHeight) {
+          end = { x: Math.round(l.left + l.width / 2 - 18), y: Math.round(l.bottom + 10) };
         }
       }
       if (!end) end = { x: window.innerWidth - 64, y: window.innerHeight - 76 };
@@ -67,7 +68,7 @@ export default function ThemeFlyer() {
       aria-label="Download the extension here"
     >
       {docked && <span className="theme-flyer-bubble">Download the extension here!</span>}
-      <ThemeBuddy />
+      {docked ? <ThemeBuddy cute /> : <ThemeBuddy />}
     </a>
   );
 }

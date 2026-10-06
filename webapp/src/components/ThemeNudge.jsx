@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 
-// Shared little buddy: round face, blinking eyes, arm waving up at
-// whatever it is pointing at.
-export function ThemeBuddy() {
+// Shared little buddy: round face, waving arm, blinking eyes. The
+// `cute` variant is the landed look - happy arc eyes, open smile and
+// blush cheeks.
+export function ThemeBuddy({ cute = false }) {
   return (
     <svg className="theme-nudge-buddy" width="32" height="32" viewBox="0 0 48 48" aria-hidden="true">
       <g className="theme-nudge-arm">
@@ -10,11 +11,23 @@ export function ThemeBuddy() {
         <circle cx="33" cy="3" r="4" fill="currentColor" />
       </g>
       <circle cx="22" cy="27" r="15" fill="var(--accent)" />
-      <g className="theme-nudge-eyes">
-        <circle cx="17" cy="24" r="2.3" fill="var(--on-red)" />
-        <circle cx="27" cy="24" r="2.3" fill="var(--on-red)" />
-      </g>
-      <path d="M17 31.5 q5 4.5 10 0" stroke="var(--on-red)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
+      {cute ? (
+        <>
+          <path d="M14 24.5 q3.5 -5 7 0" stroke="var(--on-red)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
+          <path d="M24 24.5 q3.5 -5 7 0" stroke="var(--on-red)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
+          <path d="M16 30 q6.5 6.5 13 0 Z" fill="var(--on-red)" />
+          <circle cx="12" cy="29.5" r="2.6" fill="var(--on-red)" opacity="0.25" />
+          <circle cx="33" cy="29.5" r="2.6" fill="var(--on-red)" opacity="0.25" />
+        </>
+      ) : (
+        <>
+          <g className="theme-nudge-eyes">
+            <circle cx="17" cy="24" r="2.3" fill="var(--on-red)" />
+            <circle cx="27" cy="24" r="2.3" fill="var(--on-red)" />
+          </g>
+          <path d="M17 31.5 q5 4.5 10 0" stroke="var(--on-red)" strokeWidth="2.3" fill="none" strokeLinecap="round" />
+        </>
+      )}
     </svg>
   );
 }

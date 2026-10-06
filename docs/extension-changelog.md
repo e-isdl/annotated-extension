@@ -2851,3 +2851,16 @@ this changelog.
 - The rail "GitHub" link now points at
   `https://github.com/e-isdl/annotated-extension/releases`.
 - Checks: webapp build passes.
+---
+
+## Buddy lands below the GitHub link, cute face
+
+**Files touched:** `webapp/src/components/ThemeFlyer.jsx`,
+`webapp/src/components/ThemeNudge.jsx`, this changelog.
+
+- The flyer now docks just below the GitHub link instead of above
+  it, arm pointing up at the link.
+- Docked look is a new "cute" buddy variant: happy arc eyes, open
+  smile and blush cheeks; the normal blinking face is kept for the
+  load nudge and for the flight.
+- Checks: webapp build passes.
