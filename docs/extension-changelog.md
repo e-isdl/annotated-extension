@@ -2801,3 +2801,32 @@ this changelog.
 - Checks: root build and webapp build pass; built CSS contains no
   `theme-backdrop` rules and no `themes/` asset.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Theme nudge buddy and extension-updated line
+
+**Files touched:** `webapp/src/components/ThemeNudge.jsx` (new),
+`webapp/src/components/Navbar.jsx`, `webapp/src/components/RightRail.jsx`,
+`webapp/src/styles/globals.css`, this changelog.
+
+- A small animated buddy pops under the navbar theme button on every
+  full page load (homepage refresh included): blinks, bobs, points
+  up at the button, says "Try themes!". Clicking it opens the theme
+  menu; it hides itself when the menu opens and auto-dismisses after
+  14s. Shown from 640px up, respects reduced motion.
+- The RightRail footer now reads "Extension updated October 6,
+  5:20 PM" under "Get the extension".
+- Checks: webapp build passes.
+---
+
+## Release v7: themes in the side panel, podcast trimmer
+
+**Files touched:** `manifest.json` (2.3.20 -> 2.3.21), this changelog.
+
+- Ships everything since v6: seven themes with a picker in the
+  side panel (rain/drift effects, per-theme fonts and glows), the
+  podcast trimmer in the clipper, Spotify show pages routing to the
+  podcast clipper, and drift masked out of the content column.
+- Checks: root build passes; release zip built from `dist` (9 files).
+- v7 published on GitHub with `annotated-extension.zip`.
