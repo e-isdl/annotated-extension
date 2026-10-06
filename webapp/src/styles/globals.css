@@ -73,9 +73,12 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
 .navbar-logo-text { font-family: var(--display-font); }
 @media (prefers-reduced-motion: no-preference) {
   html[data-theme="tokyo"] body::after { animation: rain .9s linear infinite; }
+  html[data-theme="synthwave"] body::after { animation: rain .9s linear infinite; }
+  html[data-theme="terminal"] body::after { animation: rain-terminal .9s linear infinite; }
   html[data-theme="terminal"] .navbar-logo-text::after { content: "_"; animation: blink 1s steps(1) infinite; }
 }
 @keyframes rain { to { background-position: -40px 90px; } }
+@keyframes rain-terminal { to { background-position: -40px 90px, 0% 0%; } }
 @keyframes blink { 50% { opacity: 0; } }
 html[data-theme="tokyo"] .navbar-logo-text::after { content: " 東京夜"; font-size: 11px; opacity: .7; }
 html[data-theme="terminal"] .navbar-logo-text::after { content: "_"; }

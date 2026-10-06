@@ -2605,3 +2605,17 @@ this changelog.
   never sit on media. Menus, dialogs and toasts unaffected.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Rain everywhere, media stays clean
+
+**Files touched:** `webapp/src/styles/globals.css`, this changelog.
+
+- 80s and terminal overlays drift on the same rain loop as Tokyo.
+  Terminal uses a two-layer keyframe so its vignette stays pinned
+  while only the lines move.
+- Media exclusion confirmed across tokyo, synthwave and terminal:
+  overlay at z-index 1, photos/video/embeds paint just above it.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
