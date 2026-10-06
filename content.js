@@ -35,11 +35,14 @@ function detectPageInfo() {
   }
 
   // Spotify serves audio through encrypted MSE with no plain <audio src>,
-  // so its pages need an explicit branch (the generic audio check below
-  // never fires there and they fell through to the article clipper).
-  // Shows (/show) list episodes; episodes (/episode) are a single one.
-  const spotifyMatch = String(url || '').match(/open\.spotify\.com\/(episode|show)\/([A-Za-z0-9]+)/);
-  if (spotifyMatch) {
+  // so ANY Spotify page opens the recorder (episode, show, album, track,
+  // playlist). Articles never apply here.
+  const spotifyMatch = String(url || '').match(/open\.spotify\.com\/([A-Za-z0-9_-]+)(?:\/([A-Za-z0-9]+))?/);
+  const spotifyKind = spotifyMatch[1] || '';
+  const spotifyId = spotifyMatch[2] || null;
+  if (spotifyKind === 'intl') {
+    // Localized marketing path (/intl/...), not playable content: fall through.
+  } else {
     let title = '';
     try { title = document.querySelector('meta[property="og:title"]')?.content || ''; } catch (e) {}
     if (!title) {
@@ -48,9 +51,10 @@ function detectPageInfo() {
     if (!title) title = String(document.title || '').replace(/\s*-\s*Spotify\s*$/, '').trim();
     info.type = 'podcast';
     info.data = {
-      episodeId: spotifyMatch[1] === 'episode' ? spotifyMatch[2] : null,
-      showId: spotifyMatch[1] === 'show' ? spotifyMatch[2] : null,
-      title: title || 'Spotify podcast',
+      episodeId: spotifyKind === 'episode' ? spotifyId : null,
+      showId: spotifyKind === 'show' ? spotifyId : null,
+      kind: spotifyKind || 'page',
+      title: title || 'Spotify',
       duration: 0,
       provider: 'spotify',
     };

@@ -2722,3 +2722,19 @@ this changelog.
   (pre-existing transcript failure).
 - Committed + pushed; dist rebuilt in place (reload the panel on
   chrome://extensions).
+
+---
+
+## Shibuya photo behind Tokyo theme, any-Spotify routing
+
+**Files touched:** `webapp/public/themes/tokyo-night.jpg` (new, 301KB),
+`webapp/src/styles/tokens.css`, `content.js`,
+`src/lib/pageDetector.js`, this changelog.
+
+- Tokyo `--bg-image` gains the rainy-Shibuya photo (optimized JPEG)
+  under an .80/.86 theme-tinted veil with the aurora glows kept on
+  top. Fixed attachment, full-bleed behind cards.
+- Any `open.spotify.com` page (album, track, playlist included)
+  opens the recorder; `/intl/` marketing paths still fall through.
+- Checks: webapp + extension builds pass.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
