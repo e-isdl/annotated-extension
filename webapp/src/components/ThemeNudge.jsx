@@ -7,6 +7,12 @@ import { useEffect, useState } from 'react';
 //          and a fierce determined face - he flies himself, he is
 //          not being pulled
 // - "cute": happy arc eyes, open smile, blush cheeks (landed look)
+//
+// Jet nesting (do not flatten - attribute vs CSS transforms must not fight):
+//   [data-jetpack]  mirror / turn-around (attribute, set per frame)
+//   [data-exhaust]  plume direction rotate(rot 3 39) (attribute, set per frame)
+//   [data-thrust]   plume length scale around the nozzle (attribute, set per frame)
+//   .theme-jet-flame  flicker (CSS animation)
 export function ThemeBuddy({ variant = 'normal' }) {
   const jet = variant === 'jet';
   const cute = variant === 'cute';
@@ -21,11 +27,13 @@ export function ThemeBuddy({ variant = 'normal' }) {
       <circle cx="22" cy="27" r="15" fill="var(--accent)" />
       {jet ? (
         <>
-          <circle cx="17" cy="25" r="2.6" fill="var(--on-red)" />
-          <circle cx="27" cy="25" r="2.6" fill="var(--on-red)" />
-          <path d="M12.8 19.6 L19.2 22.6" stroke="var(--on-red)" strokeWidth="2.6" strokeLinecap="round" />
-          <path d="M31.2 19.6 L24.8 22.6" stroke="var(--on-red)" strokeWidth="2.6" strokeLinecap="round" />
-          <path d="M16.5 30.6 L27.5 30.6 C 27 36.5, 17 36.5, 16.5 30.6 Z" fill="var(--on-red)" />
+          {/* bolder, fewer shapes so the scowl reads at 32px: heavy brows that
+              run into the eyes, one wide grin */}
+          <circle cx="17" cy="26" r="2.9" fill="var(--on-red)" />
+          <circle cx="27" cy="26" r="2.9" fill="var(--on-red)" />
+          <path d="M11.8 19.2 L19.6 23" stroke="var(--on-red)" strokeWidth="3.4" strokeLinecap="round" />
+          <path d="M32.2 19.2 L24.4 23" stroke="var(--on-red)" strokeWidth="3.4" strokeLinecap="round" />
+          <path d="M16.5 31.2 L27.5 31.2 C 27 36.8, 17 36.8, 16.5 31.2 Z" fill="var(--on-red)" />
         </>
       ) : cute ? (
         <>
@@ -52,10 +60,15 @@ export function ThemeBuddy({ variant = 'normal' }) {
           <circle cx="6" cy="16.5" r="1.7" fill="var(--accent)" />
           <path d="M0.5 35 L5.5 35 L6.5 39 L-0.5 39 Z" fill="var(--border-strong)" />
           <g data-exhaust transform="rotate(0 3 39)">
-            <g className="theme-jet-flame">
-              <path d="M3 39 C 1 51, 8 51, 6 39 Z" fill="var(--warn)" />
-              <path d="M3.7 39 C 2.4 47, 6.6 47, 5.3 39 Z" fill="var(--yellow)" />
-              <path d="M4.3 39 C 3.7 43.5, 5.3 43.5, 4.7 39 Z" fill="#fff" opacity="0.85" />
+            <g data-thrust>
+              {/* soft heat glow at the nozzle exit (theme colors, low opacity) */}
+              <circle cx="3" cy="40" r="6.5" fill="var(--warn)" opacity="0.14" />
+              <circle cx="3" cy="40" r="3.6" fill="var(--yellow)" opacity="0.28" />
+              <g className="theme-jet-flame">
+                <path d="M3 39 C 1 51, 8 51, 6 39 Z" fill="var(--warn)" />
+                <path d="M3.7 39 C 2.4 47, 6.6 47, 5.3 39 Z" fill="var(--yellow)" />
+                <path d="M4.3 39 C 3.7 43.5, 5.3 43.5, 4.7 39 Z" fill="#fff" opacity="0.85" />
+              </g>
             </g>
           </g>
         </g>

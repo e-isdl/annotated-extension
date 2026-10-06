@@ -2910,3 +2910,14 @@ this changelog.
   old gravity-pull bank (which pointed the wrong way on leftward
   moves). Flight lengthened to 4.6s.
 - Checks: webapp build passes.
+### Buddy flight quality pass (Sonnet) — theme-change flight
+
+- Flight speed is now a thrust clock, not a symmetric ease: burst launch (first 10%), long steady cruise, gentle arrival (last 20%), with a power surge on the final pull-up segment so the climb feels powered.
+- Banking is curvature-based: the buddy slows through tight waypoints and speeds up on straights, so turns read as real flight instead of constant-velocity sliding.
+- Whole-body pitch along the path (climb nose-up, dive nose-down, clamped to ±52°) that levels out for the dock; turn-around is a smooth mirrored scale flip instead of a snap.
+- Launch coil-and-pop: brief crouch, squash-and-stretch burst, decayed by ~420ms; landing squash on the docked pill with the bob resuming after 0.55s.
+- Exhaust plume length now follows thrust level (crouch, launch burst, cruise, surge, taper) and rotates with the body frame; added heat glow at the nozzle exit under the plume.
+- New pooled spark trail: up to 18 world-space dots behind the nozzle during launch burst and cruise, stopping on approach; hidden under reduced motion.
+- Bolder determined expression: heavier brows touching larger eyes, wider grin; tail pops in on dock (delayed, springy).
+- Files: webapp/src/components/ThemeFlyer.jsx, webapp/src/components/ThemeNudge.jsx, webapp/src/styles/globals.css buddy block.
+- Checks: webapp build passes.

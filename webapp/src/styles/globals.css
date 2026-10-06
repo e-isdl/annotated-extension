@@ -263,20 +263,28 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 @media (min-width: 640px) { .theme-nudge { display: inline-flex; } }
 @media (prefers-reduced-motion: reduce) { .theme-nudge, .theme-nudge-buddy, .theme-nudge-arm, .theme-nudge-eyes { animation: none; } }
 /* Same buddy on a trip: launches from the theme button after a theme
-   change, takes a long slow winding flight with his jetpack, then
+   change, takes a long winding flight with his jetpack, then
    lands below the GitHub link as a pill (text + buddy, tail pointing
    up at the link) — the same look as the "Try themes!" nudge. */
 .theme-flyer { position: fixed; z-index: 70; display: inline-flex; align-items: center; text-decoration: none; }
 .theme-flyer-start, .theme-flyer-fly { transition: none; }
-.theme-flyer-start .theme-nudge-buddy, .theme-flyer-fly .theme-nudge-buddy { animation: none; }
+.theme-flyer-start .theme-nudge-buddy, .theme-flyer-fly .theme-nudge-buddy { animation: none; will-change: transform; }
 .theme-flyer-docked { transition: transform .45s ease; }
 .theme-flyer-leave { opacity: 0; transition: transform .45s ease, opacity .45s ease; }
 .theme-flyer-pill { position: relative; display: inline-flex; align-items: center; gap: 7px; max-width: 190px; padding: 5px 6px 5px 12px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-primary); font-size: 12px; font-weight: 650; line-height: 1.3; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.35); animation: nudge-pop .35s cubic-bezier(.2,1.4,.4,1) both; }
-.theme-flyer-pill::after { content: ""; position: absolute; top: -5px; right: 22px; width: 9px; height: 9px; background: var(--surface-2); border-left: 1px solid var(--border); border-top: 1px solid var(--border); border-radius: 2px 0 0 0; transform: rotate(45deg); }
+.theme-flyer-pill::after { content: ""; position: absolute; top: -5px; right: 22px; width: 9px; height: 9px; background: var(--surface-2); border-left: 1px solid var(--border); border-top: 1px solid var(--border); border-radius: 2px 0 0 0; transform: rotate(45deg); animation: theme-tail .28s cubic-bezier(.2,1.6,.4,1) .3s both; }
 .theme-flyer:hover .theme-flyer-pill { border-color: var(--border-strong); }
 .theme-jet-flame { transform-box: fill-box; transform-origin: top center; animation: jet-flicker .13s ease-in-out infinite alternate; }
 @keyframes jet-flicker { from { transform: scaleY(.7) scaleX(.92); } to { transform: scaleY(1.18); } }
-@media (prefers-reduced-motion: reduce) { .theme-flyer, .theme-flyer-pill, .theme-jet-flame { transition: none; animation: none; } }
+/* Landing settle: a small squash as he touches down, then the idle bob returns;
+   the tail pops in a beat after the pill (anticipation). */
+.theme-flyer-pill .theme-nudge-buddy { transform-origin: 50% 90%; animation: theme-land .55s cubic-bezier(.3,1.3,.5,1) both, nudge-bob 1.6s ease-in-out .55s infinite; }
+@keyframes theme-land { 0% { transform: scale(1.14, .82); } 35% { transform: scale(.93, 1.1); } 65% { transform: scale(1.03, .98); } 100% { transform: none; } }
+@keyframes theme-tail { from { opacity: 0; transform: rotate(45deg) scale(0); } to { opacity: 1; transform: rotate(45deg) scale(1); } }
+/* Spark trail: pooled dots left behind in world space (positioned by rAF). */
+.theme-flyer-trail { position: fixed; inset: 0; z-index: 69; pointer-events: none; }
+.theme-flyer-spark { position: absolute; left: 0; top: 0; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--warn); opacity: 0; will-change: transform, opacity; }
+@media (prefers-reduced-motion: reduce) { .theme-flyer, .theme-flyer-pill, .theme-jet-flame { transition: none; animation: none; } .theme-flyer-pill::after, .theme-flyer-pill .theme-nudge-buddy { animation: none; } .theme-flyer-trail { display: none; } }
 .post-timestamp-row { display: flex; align-items: center; gap: 7px; margin: 10px 0 0; }
 .post-actions, .detail-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 0; }
 .post-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 5px 11px; border: 0; border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: color .15s, background .15s; }
