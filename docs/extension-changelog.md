@@ -2749,3 +2749,19 @@ this changelog.
   tap away with its Home heading. Clean URLs follow the new default.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Tokyo photo via real element, not CSS
+
+**Files touched:** `webapp/src/components/ThemeBackdrop.jsx` (new),
+`webapp/src/App.jsx`, `webapp/src/styles/globals.css`,
+`webapp/src/styles/tokens.css`, this changelog.
+
+- Gradients from the same rule painted while the `url()` layer in
+  it never did, so the photo now rides a real fixed `<img>` (which
+  provably loads) with the veil + glows in a div above it and rain
+  above that. Dead `url()` layer removed from the token.
+- Theme-keyed map (Tokyo only for now), follows theme switches live.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
