@@ -316,7 +316,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
             else setImageFailed(true);
           }} />
         </button>
-        ) : (
+        ) : episodeAudio && !hasMedia && !(sourceImage && !imageFailed) ? null : (
         <div className={`source-preview${hasMedia ? ' source-preview-loop' : ''}`}>
           {!xOverlay && (
           <div className="source-preview-copy">

@@ -2344,6 +2344,24 @@ this changelog.
 
 ---
 
+## Tighter podcast cards, muted dark blues
+
+**Files touched:** `webapp/src/components/ClipCard.jsx`,
+`webapp/src/styles/globals.css`, `webapp/src/styles/tokens.css`,
+this changelog.
+
+- Podcast cards with episode audio skip the redundant source-preview
+  block (domain link + repeated title + 132px min-height box), so the
+  card collapses to episode block plus actions. Episode block spacing
+  tightened.
+- Dark tokens desaturated toward neutral: background, cards, surfaces,
+  borders and secondary text keep the premium dark feel with much less
+  blue. Light theme untouched.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
 ## Webapp dark theme goes blue-black
 
 **Files touched:** `webapp/src/styles/tokens.css`, this changelog.
