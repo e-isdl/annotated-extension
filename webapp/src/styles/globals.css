@@ -27,7 +27,13 @@
   * { box-sizing: border-box; }
   html { background: var(--bg-base); scroll-behavior: smooth; }
   body { margin: 0; padding: 0; background: var(--bg-image), var(--bg-base); background-attachment: fixed; color: var(--text-primary); font-family: var(--ui-font); text-shadow: var(--text-glow); -webkit-font-smoothing: antialiased; }
-  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9999; background: var(--overlay); }
+  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1; background: var(--overlay); }
+  /* Scanline overlays sit above cards and text but never above photos or
+     video: media in line-overlay themes paints just above the overlay
+     while menus, dialogs and toasts (z-index 20+) stay on top. */
+  html[data-theme="synthwave"] :is(img, video, iframe),
+  html[data-theme="tokyo"] :is(img, video, iframe),
+  html[data-theme="terminal"] :is(img, video, iframe) { position: relative; z-index: 2; }
   button, input, textarea, select { font: inherit; }
   button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 *:focus:not(:focus-visible) { outline: none; }

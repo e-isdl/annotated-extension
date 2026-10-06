@@ -2589,3 +2589,19 @@ this changelog.
   only.
 - Checks: webapp build passes.
 - Pushed to master with this entry (Cloudflare rebuilds from source).
+
+---
+
+## Tokyo-type lines everywhere, overlay below media
+
+**Files touched:** `webapp/src/styles/tokens.css`,
+`webapp/src/styles/globals.css`, this changelog.
+
+- 80s + terminal scanlines rebuilt as faint diagonal wide-spaced
+  lines (pink / phosphor tints), ending the horizontal scroll
+  shimmer. Terminal keeps its vignette.
+- Overlay layer dropped to z-index 1; photos, video and embeds in
+  the three line-overlay themes paint just above it, so scanlines
+  never sit on media. Menus, dialogs and toasts unaffected.
+- Checks: webapp build passes.
+- Pushed to master with this entry (Cloudflare rebuilds from source).
