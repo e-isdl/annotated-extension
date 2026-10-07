@@ -3068,3 +3068,9 @@ this changelog.
 - Rail-less pages use a 920px main column instead of 1100px so media no longer balloons.
 - Following feed renders cards exactly like Home, including inline autoplay.
 - Checks: webapp build passes.
+### Sidebar cleanup, Trending topics, Trending annotators
+
+- Sidebar Discover list is now For You, Feed (renamed from Home, same route), Explore, Saved, Drafts. Top and New items removed, Discover label removed, nav font bumped 13 to 15px.
+- New Trending topics rail card (most active communities, 24h, with See all to Explore) between Trending today and annotators.
+- Top annotators renamed to Trending annotators (30-day window with all-time fallback), usernames without the @.
+- Checks: webapp build passes.

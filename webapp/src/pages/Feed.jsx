@@ -73,7 +73,7 @@ export default function Feed({ sortOverride = null }) {
       <section className="feed-heading modern-feed-heading">
         <div>
           <div className="flex items-center gap-2">
-            <h1>{sort === 'best' ? 'Home' : activeSort.label}</h1>
+            <h1>{sort === 'best' ? 'Feed' : activeSort.label}</h1>
             {usingDemo && <span className="demo-badge">DEMO FEED</span>}
           </div>
         </div>

@@ -107,7 +107,7 @@ html[data-theme="tokyo"] body::before {
 .community-sidebar { position: sticky; top: 72px; min-height: calc(100vh - 72px); padding: 28px 16px 24px 0; border-right: 1px solid var(--border-soft); }
 .sidebar-section { margin-bottom: 25px; }
 .sidebar-label { margin: 0 0 9px 10px; }
-.sidebar-link, .community-link { display: flex; align-items: center; gap: 10px; border-radius: var(--radius-pill); padding: 9px 11px; color: var(--text-secondary); font-size: 13px; text-decoration: none; transition: background .15s, color .15s; }
+.sidebar-link, .community-link { display: flex; align-items: center; gap: 10px; border-radius: var(--radius-pill); padding: 9px 11px; color: var(--text-secondary); font-size: 15px; text-decoration: none; transition: background .15s, color .15s; }
 .sidebar-link:hover, .community-link:hover { background: var(--surface-3); color: var(--text-primary); }
 .sidebar-link-active { background: var(--active-bg); color: var(--active-text); }
 .sidebar-icon { width: 18px; color: var(--text-muted); font-size: 16px; text-align: center; }

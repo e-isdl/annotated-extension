@@ -7,9 +7,7 @@ import CommunityAvatar from './CommunityAvatar';
 
 const NAV_ITEMS = [
   { label: 'For You', path: '/for-you', icon: '✧', sort: null },
-  { label: 'Home', path: '/', icon: '⌂', sort: null },
-  { label: 'Top', path: '/popular', icon: '✦', sort: 'top' },
-  { label: 'New', path: '/latest', icon: '◷', sort: 'new' },
+  { label: 'Feed', path: '/', icon: '⌂', sort: null },
   { label: 'Explore', path: '/explore', icon: '⌕' },
   { label: 'Saved', path: '/saved', icon: '▱' },
   { label: 'Drafts', path: '/drafts', icon: '✎' },
@@ -70,7 +68,6 @@ export default function AppSidebar() {
   return (
     <aside className="community-sidebar">
       <div className="sidebar-section">
-        <p className="sidebar-label">Discover</p>
         <nav className="flex flex-col gap-1">
           {NAV_ITEMS.map((item) => <Link key={item.label} to={item.path} className={`sidebar-link ${isActive(item) ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">{item.icon}</span>{item.label}{item.label === 'Drafts' && draftCount > 0 && <span className="sidebar-count">{draftCount > 99 ? '99+' : draftCount}</span>}</Link>)}
         </nav>
