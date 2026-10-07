@@ -3079,3 +3079,10 @@ this changelog.
 - Route changes now scroll to top before paint (was after), so the sidebar and rail never flash mid-jump.
 - Trending cards render fixed-height skeletons while loading instead of popping in late and shifting the rail.
 - Checks: webapp build passes.
+### Word Clipped pill, rail discovery cards, smaller columns, extension 2.3.22
+
+- Word clip pill now reads "Word Clipped"; popover body explains sentence-based clipping.
+- Saved/focused column and feed column both 640px; sidebars widened to fill (280px nav, 340px rail) with bigger type.
+- Right rail: Communities, Trending today (3 rows, dividers, thumbs, See all to /trending), Trending topics, Trending annotators (rank/avatar/user/points, own-row tint, sparse-board invite, See all to /trending-annotators), extension footer last. New /trending and /trending-annotators pages.
+- Extension 2.3.22 released; webapp footer reads Extension updated October 7, 6:00 PM.
+- Checks: root build and webapp build both pass.

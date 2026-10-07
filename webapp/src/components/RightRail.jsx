@@ -185,15 +185,6 @@ export default function RightRail() {
         </section>
       )}
 
-      <footer className="rail-footer">
-        {!postRef && (
-          <span className="rail-get-extension">
-            <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
-            <span className="rail-footer-updated">Extension updated October 6, 5:20 PM</span>
-          </span>
-        )}
-        <a href="https://github.com/e-isdl/annotated-extension/releases" data-github-link target="_blank" rel="noopener noreferrer">GitHub ↗</a>
-      </footer>
       {showDiscovery && (
         <>
           <TrendingToday />
@@ -201,6 +192,15 @@ export default function RightRail() {
           <TopAnnotators />
         </>
       )}
+      <footer className="rail-footer">
+        {!postRef && (
+          <span className="rail-get-extension">
+            <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
+            <span className="rail-footer-updated">Extension updated October 7, 6:00 PM</span>
+          </span>
+        )}
+        <a href="https://github.com/e-isdl/annotated-extension/releases" data-github-link target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </footer>
     </aside>
   );
 }

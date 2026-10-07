@@ -2106,12 +2106,12 @@ export default function YouTubeClipper({
                     aria-expanded={clipInfoOpen}
                     aria-label="About this word clip"
                   >
-                    word clipped
+                    Word Clipped
                   </button>
                   {clipInfoOpen && (
                     <span className="word-clipped-pop" role="dialog" aria-label="About this word clip">
                       <span className="word-clipped-pop-title">Clip set with Word clipper.</span>
-                      <span className="word-clipped-pop-text">It starts where your word was spoken. Move the handles to adjust it.</span>
+                      <span className="word-clipped-pop-text">You clip by sentences. The clip starts and ends with the sentences you chose.</span>
                     </span>
                   )}
                 </span>
