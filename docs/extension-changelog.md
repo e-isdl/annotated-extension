@@ -3123,3 +3123,10 @@ this changelog.
 - Page shell is now symmetric side tracks with a 920px feed dead-center at every width (measured 0px off at 1911/1440/1280, no overlap, no horizontal scroll); sidebars pin to equal 32px outer margins.
 - Trending today removed; trending topics are real keywords linking to search, with a full /trending-topics page; Top annotators renamed to Trending annotators with its own /trending-annotators page.
 - Checks: webapp build passes; layout rects verified in headless Chrome.
+### Smaller feed, larger sidebars, page rails
+
+- Center feed is 680px again with 340px sidebars pinned to equal 32px outer margins, symmetric at every width; drift overlay mask follows the narrower feed; Explore keeps a wide 920px center for its 3-column community grid.
+- Trending topics redesigned as ranked rows with multi-word demo topics (AI safety debates, SpaceX Starship launch, NBA playoffs race) when live keywords are empty.
+- Explore centers with People to follow moved to the right rail; Saved and Profile content is capped at 640px with discovery rails; Profile header fixed so the avatar overlaps the banner by half and name/Edit sit below it.
+- Community pages get a full right rail: About, rules (hidden when empty), top annotators in the community, related communities, extension footer last; rail is sticky with its own scroll and no divider line.
+- Checks: webapp build passes; bundle markers verified (topic-row, 680px, demo topics, community rail).

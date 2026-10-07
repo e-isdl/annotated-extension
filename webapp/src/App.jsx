@@ -52,7 +52,8 @@ function ScrollToTop() {
 function AppShell() {
   const location = useLocation();
   const isFeedSurface = location.pathname === '/' || location.pathname === '/for-you' || location.pathname === '/popular' || location.pathname === '/latest' || location.pathname.startsWith('/c/');
-  const hasRightRail = isFeedSurface || location.pathname.startsWith('/post/') || location.pathname.startsWith('/clip/') || location.pathname.startsWith('/@');
+  const isRailPage = location.pathname === '/explore' || location.pathname === '/saved' || location.pathname.startsWith('/u/');
+  const hasRightRail = isFeedSurface || isRailPage || location.pathname.startsWith('/post/') || location.pathname.startsWith('/clip/') || location.pathname.startsWith('/@');
 
   return (
     <div className={`app-shell ${hasRightRail ? '' : 'app-shell-focused'}`}>

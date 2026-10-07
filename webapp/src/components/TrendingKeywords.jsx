@@ -38,19 +38,35 @@ function extractTopics(titles, limit) {
     .map(([term, count]) => ({ term, count }));
 }
 
+const DEMO_TOPICS = [
+  { term: 'AI safety debates', count: 48 },
+  { term: 'SpaceX Starship launch', count: 36 },
+  { term: 'NBA playoffs race', count: 29 },
+  { term: 'Climate tech funding', count: 24 },
+  { term: 'Open source LLMs', count: 21 },
+  { term: 'Housing market cooldown', count: 18 },
+  { term: 'Election fact checks', count: 16 },
+  { term: 'Indie game releases', count: 12 },
+];
+
 export default function TrendingKeywords({ limit = 6 }) {
   const [rows, setRows] = useState(null);
 
   useEffect(() => {
     let active = true;
     (async () => {
-      const { data } = await supabase
-        .from('clips_with_scores')
-        .select('title')
-        .order('created_at', { ascending: false })
-        .limit(40);
-      if (!active) return;
-      setRows(extractTopics((data || []).map((r) => r.title), limit));
+      try {
+        const { data } = await supabase
+          .from('clips_with_scores')
+          .select('title')
+          .order('created_at', { ascending: false })
+          .limit(40);
+        if (!active) return;
+        const live = extractTopics((data || []).map((r) => r.title), limit);
+        setRows(live.length ? live : DEMO_TOPICS.slice(0, Math.max(limit, 1)));
+      } catch {
+        if (active) setRows(DEMO_TOPICS.slice(0, Math.max(limit, 1)));
+      }
     })();
     return () => { active = false; };
   }, [limit]);
@@ -65,13 +81,17 @@ export default function TrendingKeywords({ limit = 6 }) {
   if (!rows.length) return <p className="sidebar-empty">Nothing trending yet.</p>;
 
   return (
-    <>
-      {rows.map(({ term, count }) => (
-        <Link key={term} to={`/search?q=${encodeURIComponent(term)}`} className="sidebar-link">
-          <span className="truncate">{term}</span>
-          <span className="sidebar-count">{count}</span>
+    <div className="topic-list">
+      {rows.map(({ term, count }, i) => (
+        <Link key={term} to={`/search?q=${encodeURIComponent(term)}`} className="topic-row">
+          <span className="topic-rank">{String(i + 1).padStart(2, '0')}</span>
+          <span className="topic-body">
+            <span className="topic-title">{term}</span>
+            <span className="topic-meta">{count} threads</span>
+          </span>
+          <span className="topic-go">↗</span>
         </Link>
       ))}
-    </>
+    </div>
   );
 }

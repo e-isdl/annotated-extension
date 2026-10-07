@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import CommunityAvatar from '../components/CommunityAvatar';
-import PeopleToFollow from '../components/PeopleToFollow';
 
 export default function ExplorePage() {
   const [communities, setCommunities] = useState([]);
@@ -24,7 +23,7 @@ export default function ExplorePage() {
   }, []);
 
   return (
-    <div className="section-page">
+    <div className="section-page explore-page">
       <p className="eyebrow">Explore</p>
       <h1 className="section-title">Find your corner of the conversation.</h1>
       <p className="section-subtitle">Communities are where source material turns into a shared point of view.</p>
@@ -32,6 +31,7 @@ export default function ExplorePage() {
       <div className="explore-layout">
         <div>
           <div className="explore-grid">
+
             {communities.map((community) => {
               const postCount = community.postCount ?? 0;
               return (
@@ -61,7 +61,6 @@ export default function ExplorePage() {
             <Link to="/create" className="btn-primary">Create a thread ↗</Link>
           </div>
         </div>
-        <PeopleToFollow limit={10} />
       </div>
     </div>
   );

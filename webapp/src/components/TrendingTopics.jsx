@@ -8,9 +8,7 @@ export default function TrendingTopics() {
         <p className="sidebar-label mb-0">Trending topics</p>
         <Link to="/trending-topics" className="rail-seeall">See all</Link>
       </div>
-      <nav className="flex flex-col gap-1">
-        <TrendingKeywords limit={6} />
-      </nav>
+      <TrendingKeywords limit={6} />
     </div>
   );
 }
