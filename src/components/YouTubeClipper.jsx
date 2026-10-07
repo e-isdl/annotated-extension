@@ -590,6 +590,24 @@ export default function YouTubeClipper({
         res = await sendToActiveTab({ type: 'YT_CHAPTERS' });
       }
       if (res && res.ok && Array.isArray(res.chapters) && res.chapters.length) {
+        if (res.videoId && res.videoId !== videoId) {
+          // The tab answered from the previous video's DOM (SPA navigation
+          // race). Retry briefly for the new page; never cache another
+          // video's chapters under this id.
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 700));
+            if (!still()) return;
+            let retry = null;
+            try { retry = await sendToActiveTab({ type: 'YT_CHAPTERS' }); } catch (e) { retry = null; }
+            if (retry && retry.ok && Array.isArray(retry.chapters) && retry.chapters.length
+              && (!retry.videoId || retry.videoId === videoId)) {
+              chapterCacheRef.current.set(videoId, retry.chapters);
+              if (still()) setChapters(retry.chapters);
+              return;
+            }
+          }
+          return;
+        }
         chapterCacheRef.current.set(videoId, res.chapters);
         if (still()) setChapters(res.chapters);
         return;

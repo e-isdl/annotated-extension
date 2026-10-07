@@ -358,10 +358,14 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .theme-flyer-docked .theme-flyer-pill { animation: nudge-pop .35s cubic-bezier(.2,1.4,.4,1) both; }
 .theme-flyer-docked .theme-nudge-buddy { animation: nudge-jump .55s ease-in-out .35s infinite; }
 .theme-flyer-docked .theme-nudge-arm { animation: nudge-wave .6s ease-in-out .35s infinite; }
+/* Docked above the link: tail hangs down at it and the arm points down. */
+.theme-flyer-above .theme-flyer-pill::after { top: auto; bottom: -5px; border-left: 0; border-top: 0; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-radius: 0 0 2px 0; }
+@keyframes nudge-point-down { 0%, 100% { transform: rotate(130deg); } 50% { transform: rotate(160deg); } }
+.theme-flyer-above .theme-nudge-arm { animation: nudge-point-down .6s ease-in-out .35s infinite; }
 .theme-flyer-docked .theme-nudge-tail { animation-duration: .22s; }
 @keyframes nudge-jump { 0% { transform: translateY(0) scaleY(1); animation-timing-function: cubic-bezier(.3,.6,.4,1); } 12% { transform: translateY(1px) scaleY(.94); } 55% { transform: translateY(-9px) scaleY(1.06); animation-timing-function: ease-in; } 90% { transform: translateY(0) scaleY(.96); } 100% { transform: translateY(0) scaleY(1); } }
 @keyframes nudge-wave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-34deg); } }
-@media (prefers-reduced-motion: reduce) { .theme-nudge, .theme-nudge-buddy, .theme-nudge-arm, .theme-nudge-eyes, .theme-nudge-tail, .theme-flyer-docked .theme-flyer-pill, .theme-flyer-docked .theme-nudge-buddy, .theme-flyer-docked .theme-nudge-arm { animation: none; } .theme-flyer { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .theme-nudge, .theme-nudge-buddy, .theme-nudge-arm, .theme-nudge-eyes, .theme-nudge-tail, .theme-flyer-docked .theme-flyer-pill, .theme-flyer-docked .theme-nudge-buddy, .theme-flyer-docked .theme-nudge-arm, .theme-flyer-above .theme-nudge-arm { animation: none; } .theme-flyer { transition: none; } .theme-flyer-above .theme-nudge-arm { transform: rotate(145deg); } }
 .post-timestamp-row { display: flex; align-items: center; gap: 7px; margin: 10px 0 0; }
 .post-actions, .detail-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 0; }
 .post-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 5px 11px; border: 0; border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: color .15s, background .15s; }

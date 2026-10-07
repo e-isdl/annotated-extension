@@ -1139,11 +1139,18 @@ async function getYouTubeChaptersExpanded() {
     if (message.type === 'YT_CHAPTERS') {
       (async () => {
         try {
+          // Tag the page's own video id so the panel can tell a mid-navigation
+          // (stale-DOM) answer apart from the requested video's chapters.
+          let pageVideoId = '';
+          try {
+            const u = new URL(location.href);
+            pageVideoId = u.searchParams.get('v') || ((u.pathname.match(/^\/shorts\/([^/?]+)/) || [])[1] || '');
+          } catch (e) {}
           let chapters = getYouTubeChapters();
           if (!chapters.length) {
             chapters = (await getYouTubeChaptersExpanded()) || [];
           }
-          sendResponse({ ok: true, chapters });
+          sendResponse({ ok: true, chapters, videoId: pageVideoId });
         } catch (e) {
           try { sendResponse({ ok: true, chapters: [] }); } catch (e2) {}
         }

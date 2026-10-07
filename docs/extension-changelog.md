@@ -3172,3 +3172,8 @@ this changelog.
 
 - The flyer is fixed-positioned inside the zoomed app root, so takeoff, target and dock math now divide viewport measurements by --k; at 125 percent zoom (k equals 1) the math is identical to before.
 - Checks: webapp build passes; bundle markers verified (zoomK conversion).
+### Buddy parks above, chapters re-verify on switch
+
+- Theme buddy docks above the releases link with the pill tail hanging down at it and his arm pointing down; landing re-aim and zoom math carried over.
+- Chapter answers carry the page video id; a mid-navigation stale answer retries instead of caching the wrong video chapters.
+- Checks: webapp build passes; root suite 46/46; bundle markers verified.

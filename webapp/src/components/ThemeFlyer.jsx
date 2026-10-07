@@ -4,12 +4,12 @@ import { ThemeBuddy } from './BuddyArt';
 const RELEASES = 'https://github.com/e-isdl/annotated-extension/releases';
 
 // After a theme change the buddy alone glides from the theme button
-// to the GitHub releases link. Only once he lands does the "Try the
-// extension" pill appear around him - flush under the link, tail
-// pointing up at it - and he jumps up and down inside it, smiling,
-// for 15 seconds. Then he is gone until the page is refreshed. One
-// flight per page load; falls back to the bottom-right corner
-// without the right rail.
+// to the GitHub releases link and parks ABOVE it. Only once he lands
+// does the "Try the extension" pill appear around him - tail hanging
+// down at the link, arm pointing down at it - and he jumps up and
+// down inside it, smiling, for 15 seconds. Then he is gone until the
+// page is refreshed. One flight per page load; falls back to the
+// bottom-right corner without the right rail.
 // The dock is re-aimed at landing time (and the buddy faces his travel
 // direction mid-flight) so scrolling mid-flight never leaves him
 // pointing at empty space.
@@ -31,16 +31,18 @@ function zoomK() {
 
 function linkTarget(k) {
   const l = readLinkRect();
-  if (!l || !(l.top > 56) || !(l.bottom + 64 < window.innerHeight)) return null;
-  return { right: Math.round(l.right / k), bottom: Math.round(l.bottom / k) };
+  // Needs room above for the parked pill plus its gap.
+  if (!l || !(l.top - 70 > 56) || !(l.bottom <= window.innerHeight)) return null;
+  return { right: Math.round(l.right / k), top: Math.round(l.top / k) };
 }
 
-function dockEnd(target, pillWidth, k) {
+function dockEnd(target, pillW, pillH, k) {
   const px = (n) => n / k;
-  const w = pillWidth || 0;
+  const w = pillW || 0;
+  const h = pillH || 0;
   let end;
   if (target) {
-    end = { x: target.right - w, y: target.bottom + px(10) };
+    end = { x: target.right - w, y: target.top - h - px(10) };
   } else {
     end = { x: window.innerWidth / k - w - px(24), y: window.innerHeight / k - px(76) };
   }
@@ -73,7 +75,7 @@ export default function ThemeFlyer() {
       const target = linkTarget(k);
 
       busyRef.current = true; // stays true: one flight per page load
-      setFlight({ start, target, end: null, pillW: 0, k, phase: 'start' });
+      setFlight({ start, target, end: null, pillW: 0, pillH: 0, k, phase: 'start' });
       timers.push(window.setTimeout(() => setFlight((f) => (f ? { ...f, phase: 'fly' } : f)), 70));
       // Re-aim at landing time: the link may have moved (scroll/resize)
       // since takeoff, so measure again instead of trusting the old rect.
@@ -81,7 +83,7 @@ export default function ThemeFlyer() {
         if (!f) return f;
         const kk = f.k || zoomK();
         const fresh = linkTarget(kk);
-        return { ...f, target: fresh, end: dockEnd(fresh, f.pillW, kk), phase: 'docked' };
+        return { ...f, target: fresh, end: dockEnd(fresh, f.pillW, f.pillH, kk), phase: 'docked' };
       }), 2500));
       timers.push(window.setTimeout(() => setFlight((f) => (f ? { ...f, phase: 'leave' } : f)), 17500));
       timers.push(window.setTimeout(() => { setFlight(null); clearAll(); }, 18000));
@@ -99,8 +101,9 @@ export default function ThemeFlyer() {
     const m = rootRef.current.querySelector('.theme-flyer-measure');
     if (!m) return;
     const w = m.offsetWidth;
-    const end = dockEnd(flight.target, w, flight.k || zoomK());
-    setFlight((f) => (f && !f.end ? { ...f, end, pillW: w } : f));
+    const h = m.offsetHeight;
+    const end = dockEnd(flight.target, w, h, flight.k || zoomK());
+    setFlight((f) => (f && !f.end ? { ...f, end, pillW: w, pillH: h } : f));
   }, [flight]);
 
   if (!flight) return null;
@@ -118,7 +121,7 @@ export default function ThemeFlyer() {
       href={RELEASES}
       target="_blank"
       rel="noopener noreferrer"
-      className={`theme-flyer theme-flyer-${flight.phase}`}
+      className={`theme-flyer theme-flyer-${flight.phase}${docked && flight.target ? ' theme-flyer-above' : ''}`}
       style={{
         left: flight.start.x,
         top: flight.start.y,
