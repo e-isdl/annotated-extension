@@ -3035,3 +3035,7 @@ this changelog.
 
 - ArticleClipper used useRef without importing it, crashing the panel on every article page load. One-line import fix.
 - Checks: root build passes.
+### Highlight fully shuts off with the panel
+
+- Closing or hiding the side panel now clears yellow paint and disarms the armed tab immediately; reopening re-arms if still clipping. Nothing can yellow in the background anymore.
+- Checks: root build passes. Reload the extension to pick this up.

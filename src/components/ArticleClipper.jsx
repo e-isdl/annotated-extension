@@ -33,6 +33,37 @@ export default function ArticleClipper({ pageInfo, onReady }) {
     };
   }, []);
 
+  // Panel hidden (closed/minimized) = clipping over: clear paint on the
+  // armed tab so nothing yellows in the background. Re-arm on return.
+  useEffect(() => {
+    const sendArmTo = async (tabId, armed) => {
+      try {
+        if (tabId) await chrome.tabs.sendMessage(tabId, { type: 'ANNOTATED_HIGHLIGHT_ARM', armed }).catch(() => null);
+      } catch {}
+    };
+    const clearTab = async (tabId) => {
+      try {
+        if (tabId) await chrome.tabs.sendMessage(tabId, { type: 'CLEAR_HIGHLIGHT' }).catch(() => null);
+      } catch {}
+    };
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        const id = armedTabRef.current;
+        armedTabRef.current = null;
+        if (id) clearTab(id);
+      } else {
+        (async () => {
+          try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab?.id) { armedTabRef.current = tab.id; await sendArmTo(tab.id, true); }
+          } catch {}
+        })();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
   useEffect(() => {
     if (data.selectedText && data.selectedText !== selectedText) {
       setSelectedText(data.selectedText);
