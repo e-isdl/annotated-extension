@@ -301,6 +301,9 @@ export default function YouTubeClipper({
   const [chaptersOpen, setChaptersOpen] = useState(false);
   const [chaptersLoading, setChaptersLoading] = useState(false);
   const chapterCacheRef = useRef(new Map());
+  // Which video the displayed chapters belong to. Any divergence between
+  // this and the active video means stale state: clear and rescrape.
+  const chaptersForRef = useRef('');
   const [playMode, setPlayMode] = useState('embed');
   useEffect(() => {
     try {
@@ -556,6 +559,7 @@ export default function YouTubeClipper({
     if (!videoId) return;
     const cached = chapterCacheRef.current.get(videoId);
     if (cached) {
+      chaptersForRef.current = videoId;
       setChapters(cached);
       return;
     }
@@ -587,14 +591,20 @@ export default function YouTubeClipper({
             if (retry && retry.ok && Array.isArray(retry.chapters) && retry.chapters.length
               && (!retry.videoId || retry.videoId === videoId)) {
               chapterCacheRef.current.set(videoId, retry.chapters);
-              if (still()) setChapters(retry.chapters);
+              if (still()) {
+                chaptersForRef.current = videoId;
+                setChapters(retry.chapters);
+              }
               return;
             }
           }
           return;
         }
         chapterCacheRef.current.set(videoId, res.chapters);
-        if (still()) setChapters(res.chapters);
+        if (still()) {
+          chaptersForRef.current = videoId;
+          setChapters(res.chapters);
+        }
         return;
       }
       for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -616,7 +626,10 @@ export default function YouTubeClipper({
         if (out.videoId && out.videoId !== videoId) continue;
         if (Array.isArray(out.chapters) && out.chapters.length) {
           chapterCacheRef.current.set(videoId, out.chapters);
-          if (still()) setChapters(out.chapters);
+          if (still()) {
+            chaptersForRef.current = videoId;
+            setChapters(out.chapters);
+          }
           return;
         }
       }
@@ -629,6 +642,7 @@ export default function YouTubeClipper({
   useEffect(() => {
     activeVideoRef.current = data.videoId;
     setChapters([]);
+    chaptersForRef.current = '';
     setChaptersOpen(false);
     setWordConfirm(null);
     setClipInfoOpen(false);
@@ -677,7 +691,7 @@ export default function YouTubeClipper({
     setSheetSearch('');
     setSheetClosing(false);
     setChaptersOpen(true);
-    if (!chapters.length && !chaptersLoading) loadChapters();
+    if ((chaptersForRef.current !== activeVideoRef.current || !chapters.length) && !chaptersLoading) loadChapters();
   };
 
   const closeSheet = () => {
@@ -733,6 +747,7 @@ export default function YouTubeClipper({
     selectedHandleRef.current = null;
     setSelectedHandle(null);
     setChapters([]);
+    chaptersForRef.current = '';
     setChaptersOpen(false);
     setSheetSearch('');
     setWordConfirm(null);
@@ -758,6 +773,15 @@ export default function YouTubeClipper({
   const applyPlayerState = (res) => {
     if (typeof res.videoId === 'string' && res.videoId && res.videoId !== activeVideoRef.current) {
       handleVideoChange(res);
+      return;
+    }
+    // Self-healing invariant: displayed chapters must belong to the active
+    // video. If they diverged through any path, drop them and rescrape.
+    if (typeof res.videoId === 'string' && res.videoId && chaptersForRef.current
+      && res.videoId !== chaptersForRef.current && chapters.length > 0) {
+      chaptersForRef.current = '';
+      setChapters([]);
+      loadChapters(res.videoId);
       return;
     }
     const now = performance.now();

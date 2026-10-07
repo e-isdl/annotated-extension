@@ -3194,3 +3194,7 @@ this changelog.
 
 - Any video change wipes the whole chapter cache and scrapes again from zero; marker wait extended. Nothing is ever served from another page.
 - Checks: root suite 46/46; extension build passes.
+### Chapters self-heal on mismatch
+
+- Displayed chapters track which video they belong to; any divergence from the active video clears them and rescrapes on the next poll tick, no matter which path went stale.
+- Checks: root suite 46/46; extension build passes.
