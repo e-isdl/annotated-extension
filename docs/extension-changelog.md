@@ -3186,3 +3186,7 @@ this changelog.
 
 - Rendered chapter markers are authoritative with retries; description timestamp lines only count from 0:00, killing sponsor-link false lists that changed between visits.
 - Checks: root suite 46/46; extension build passes.
+### Markers-only chapters
+
+- Description timestamp scraping removed everywhere: rendered chapter markers are the only source, so phantom lists can no longer appear or change between visits. No markers means no chapters.
+- Checks: root suite 46/46; extension build passes.

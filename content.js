@@ -766,7 +766,7 @@ function ytChapterSeconds(text) {
 // sponsor timestamp, over-duration entry) must not kill the whole list.
 // Description-scraped lines only count when they start at 0:00, which is
 // YouTube's own rule for treating timestamps as chapters.
-function ytCleanChapters(items, maxT, requireZeroStart) {
+function ytCleanChapters(items, maxT) {
   if (!Array.isArray(items) || !items.length) return null;
   const seen = new Set();
   const good = [];
@@ -780,7 +780,6 @@ function ytCleanChapters(items, maxT, requireZeroStart) {
   });
   good.sort((a, b) => a.t - b.t);
   if (good.length < 3) return null;
-  if (requireZeroStart && good[0].t !== 0) return null;
   return good;
 }
 
@@ -790,20 +789,6 @@ function ytVideoDuration() {
     if (Number.isFinite(d) && d > 0) return d;
   } catch (e) {}
   return 0;
-}
-
-function ytParseChapterLines(text) {
-  const parsed = [];
-  String(text || '').split('\n').forEach((rawLine) => {
-    const line = String(rawLine || '').trim();
-    const m = line.match(/^((?:\d+:)?[0-5]?\d:[0-5]\d)\s+(.+?)\s*$/);
-    if (!m) return;
-    const t = ytChapterSeconds(m[1]);
-    const title = String(m[2] || '').trim().replace(/^[-–—•·|>]+/, '').trim().slice(0, 140);
-    if (t === null || !title) return;
-    parsed.push({ t, title });
-  });
-  return parsed;
 }
 
 function ytDomChapters() {
@@ -826,22 +811,9 @@ function ytDomChapters() {
   return items;
 }
 
-function ytPageTextChapters() {
-  // NOTE: window.ytInitialPlayerResponse / player getPlayerResponse() are page
-  // JS and invisible from this isolated world, so read rendered DOM text only.
-  const texts = [];
-  try { texts.push(document.querySelector('meta[name="description"]')?.content || ''); } catch (e) {}
-  try {
-    document.querySelectorAll('#description-inline-expander, #description yt-formatted-string, #description').forEach((el) => {
-      try { if (el.innerText) texts.push(el.innerText); } catch (e) {}
-    });
-  } catch (e) {}
-  return ytParseChapterLines(texts.join('\n'));
-}
-
-// Rendered chapter markers are authoritative. Description timestamp lines
-// are a last resort only: they vary between visits (truncated text,
-// sponsor links) and must start at 0:00 to count as chapters at all.
+// Rendered chapter markers are the ONLY source. Description timestamp
+// lines are never chapters: they vary between visits (truncated text,
+// sponsor links) and produced phantom lists. No markers means no chapters.
 async function getYouTubeChapters() {
   const maxT = ytVideoDuration();
   for (let attempt = 0; attempt < 4; attempt += 1) {
@@ -853,10 +825,6 @@ async function getYouTubeChapters() {
       try { await new Promise((resolve) => setTimeout(resolve, 700)); } catch (e) {}
     }
   }
-  try {
-    const cleaned = ytCleanChapters(ytPageTextChapters(), maxT, true);
-    if (cleaned) return cleaned.slice(0, 200);
-  } catch (e) {}
   return [];
 }
 
@@ -882,8 +850,7 @@ async function getYouTubeChaptersExpanded() {
       const cleaned = ytCleanChapters(ytDomChapters(), maxT);
       if (cleaned) return cleaned.slice(0, 200);
     } catch (e) {}
-    const cleaned = ytCleanChapters(ytPageTextChapters(), maxT, true);
-    return cleaned ? cleaned.slice(0, 200) : null;
+    return null;
   } catch (e) {
     return null;
   } finally {

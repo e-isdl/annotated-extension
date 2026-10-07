@@ -228,34 +228,9 @@ function readChaptersMainWorld(args) {
       if (live) roots.push(live);
     } catch (e) {}
     for (const r of roots) scan(r, 0);
-    // shortDescription carries the author's own chapter list ("0:00 Intro").
-    // Harvest it directly: the isolated content script cannot see page JS.
-    // Description lines only count when they start at 0:00, otherwise they
-    // are sponsor timestamps, not chapters.
-    const descChapters = [];
-    const descSeen = new Set();
-    const parseDescLines = (text) => {
-      String(text || '').split('\n').forEach((rawLine) => {
-        const line = String(rawLine || '').trim();
-        const m = line.match(/^((?:\d+:)?[0-5]?\d:[0-5]\d)\s+(.+?)\s*$/);
-        if (!m) return;
-        const t = parseT(m[1]);
-        const title = String(m[2] || '').trim().replace(/^[-–—•·|>]+/, '').trim();
-        if (t == null || !title || descSeen.has(t)) return;
-        descSeen.add(t);
-        descChapters.push({ t, title });
-      });
-    };
-    roots.forEach((r) => {
-      try {
-        const sd = r && r.videoDetails && r.videoDetails.shortDescription;
-        if (sd) parseDescLines(sd);
-      } catch (e) {}
-    });
-    descChapters.sort((a, b) => a.t - b.t);
-    if (descChapters.length >= 3 && descChapters[0].t === 0) {
-      descChapters.forEach((c) => push(c.t, c.title));
-    }
+    // NOTE: shortDescription timestamp lines are deliberately NOT harvested:
+    // they vary between visits and produced phantom chapter lists.
+    // Structured marker renderers above are the only source.
     out.sort((a, b) => a.t - b.t);
     const inRange = out.filter((c, i) => (i === 0 || c.t > out[i - 1].t) && (!(maxT > 0) || c.t < maxT));
     const chapters = inRange.slice(0, 200);
