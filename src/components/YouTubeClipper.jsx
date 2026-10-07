@@ -365,6 +365,7 @@ export default function YouTubeClipper({
   // Per-frame / per-drag scratch: readout throttle, cap-hit latch, snap latch.
   const frameRef = useRef({ lastReadout: 0, capped: false, snapKey: '' });
   const [wordClipperOpen, setWordClipperOpen] = useState(false);
+  const [wordConfirm, setWordConfirm] = useState(null);
   const [segments, setSegments] = useState(null);
   const [wordLoading, setWordLoading] = useState(false);
   const [wordError, setWordError] = useState('');
@@ -1319,9 +1320,28 @@ export default function YouTubeClipper({
       if (startSec !== snap.s) lockWindowTo(startSec);
       ytSeek(startSec);
       viewRef.current = { ...viewRef.current, s: startSec, e: endSec };
+      // Confirmation moment: show what the words became so closing the
+      // panel feels like finishing something, not rewinding.
+      try {
+        const ws = Math.max(0, Math.min(wordStart, words.length - 1));
+        const we = Math.max(ws, Math.min(wordEnd, words.length - 1));
+        const picked = words.length ? words.slice(ws, we + 1).map((w) => w.text).join(' ').trim() : '';
+        setWordConfirm({
+          s: startSec,
+          e: endSec,
+          n: words.length ? we - ws + 1 : 0,
+          preview: picked.slice(0, 90),
+        });
+      } catch {}
     }
     wordSnapRef.current = null;
   };
+
+  useEffect(() => {
+    if (!wordConfirm) return undefined;
+    const t = window.setTimeout(() => setWordConfirm(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [wordConfirm]);
 
   const canContinue = rec.state === 'done' || playMode === 'embed';
   const locked = rec.state === 'recording' || rec.state === 'done';
@@ -2011,6 +2031,16 @@ export default function YouTubeClipper({
       )}
 
       <div className={`tl-group${ytAd || isLive ? ' is-disabled' : ''}${locked ? ' rec-lock' : ''}`}>
+        {wordConfirm && (
+          <div className="word-confirm" role="status">
+            <div className="word-confirm-head">
+              <span className="word-confirm-title">Clipped from your words</span>
+              <button type="button" className="word-confirm-x" onClick={() => setWordConfirm(null)} aria-label="Dismiss">×</button>
+            </div>
+            <p className="word-confirm-range">{formatShort(wordConfirm.s)} – {formatShort(wordConfirm.e)}{wordConfirm.n > 0 ? ` · ${wordConfirm.n} word${wordConfirm.n === 1 ? '' : 's'}` : ''}</p>
+            {wordConfirm.preview && <p className="word-confirm-quote">“{wordConfirm.preview}{wordConfirm.preview.length >= 90 ? '…' : ''}”</p>}
+          </div>
+        )}
         {ytAd && <div className="tl-ad" role="status">Ad playing</div>}
         {!ytAd && isLive && <div className="tl-ad" role="status">{"Live stream: clipping isn't available"}</div>}
         {chapters.length > 0 && chapNow && (
@@ -2081,7 +2111,7 @@ export default function YouTubeClipper({
             />
           </div>
             <div className="tl-cardfoot">
-              <span className="tl-pill">
+              <span className={`tl-pill${wordConfirm ? ' tl-pill-flash' : ''}`}>
                 <span className="tl-pill-ic" aria-hidden="true">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M10.2 13.8a4.2 4.2 0 0 0 5.9 0l3-3a4.2 4.2 0 0 0-5.9-5.9l-1.1 1.1" />

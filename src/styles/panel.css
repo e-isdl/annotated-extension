@@ -172,6 +172,21 @@ html[data-theme="synthwave"] .panel-logo-text { text-shadow: 0 0 14px rgba(255, 
 .tl-pill-k { font-weight: 500; color: var(--text-2); }
 .tl-pill-r { font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
 .tl-pill-d { font-weight: 700; color: var(--red); font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+.tl-pill-flash { animation: tl-pill-flash 1.6s ease; }
+@keyframes tl-pill-flash {
+  0%, 100% { box-shadow: 0 4px 10px -6px rgba(0,0,0,.3); }
+  20%, 60% { box-shadow: 0 0 0 3px var(--red-soft), 0 4px 14px -4px rgba(0,0,0,.35); }
+  40%, 80% { box-shadow: 0 4px 10px -6px rgba(0,0,0,.3); }
+}
+/* Confirmation shown after word-clip Continue: what the words became. */
+.word-confirm { position: relative; border: 1px solid var(--border-strong); background: var(--surface-2); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; animation: word-confirm-in .3s cubic-bezier(.2,1.4,.4,1) both; }
+.word-confirm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.word-confirm-title { font-family: var(--display-font); font-size: 13px; font-weight: 700; color: var(--text); }
+.word-confirm-x { border: 0; background: none; color: var(--text-3); font-size: 16px; line-height: 1; padding: 2px 4px; cursor: pointer; }
+.word-confirm-x:hover { color: var(--text); }
+.word-confirm-range { margin: 2px 0 0; font-size: 13px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.word-confirm-quote { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-2); font-style: italic; }
+@keyframes word-confirm-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
 .tl-barlabel { font-size: 12px; font-weight: 600; color: var(--text-2); letter-spacing: 0.02em; }
 .tl-barlabel span { font-weight: 400; color: var(--text-3); }
 .tl-group.is-disabled .tl-bar { pointer-events: none; }
@@ -227,6 +242,7 @@ input.tl-chip.is-editing { width: 84px; background: var(--bg); color: var(--text
 @media (prefers-reduced-motion: reduce) {
   .chapter-sheet-panel { animation: none; }
   .chapter-sheet.is-closing .chapter-sheet-panel { animation: none; }
+  .word-confirm, .tl-pill-flash { animation: none; }
 }
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes sheet-down { from { transform: translateY(0); } to { transform: translateY(100%); } }
