@@ -134,8 +134,8 @@ html[data-theme="tokyo"] body::before {
 .community-sidebar { position: sticky; top: 72px; justify-self: start; width: min(328px, 100%); max-height: calc(100vh / var(--k) - 72px); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; padding: 28px 16px 24px 0; }
 /* Divider lines live on the full-height grid cells, not the sticky inner
    boxes, so they run header-bottom to viewport-bottom on every page. */
-.sidebar-cell { align-self: stretch; min-height: calc(100dvh / var(--k) - var(--header-h)); border-right: 1px solid var(--border-soft); }
-.rail-cell { align-self: stretch; min-height: calc(100dvh / var(--k) - var(--header-h)); border-left: 1px solid var(--border-soft); }
+.sidebar-cell { align-self: stretch; min-height: calc(100dvh / var(--k) - var(--header-h)); }
+.rail-cell { align-self: stretch; min-height: calc(100dvh / var(--k) - var(--header-h)); }
 /* Zoom root: header and body shell scale together so the 125% reference
    design renders at the same physical size at 110%, 100% and 90% zoom.
    Below 1640px --k is 1 and these rules are no-ops. */
@@ -176,8 +176,7 @@ html[data-theme="tokyo"] body::before {
 .sidebar-note { display: flex; gap: 10px; margin: 32px 10px 0; padding-top: 14px; border-top: 1px solid var(--border-soft); color: var(--text-muted); }
 .sidebar-note p { margin: 0; font-size: 11px; line-height: 1.5; }
 .right-rail { position: sticky; top: 72px; justify-self: end; width: min(328px, 100%); align-self: start; display: flex; flex-direction: column; gap: 16px; padding: 28px 0 24px 16px; }
-/* Community rail: cards separate the rail, no divider line beside it. */
-.app-shell:has(.community-page) .rail-cell { border-left: 0; }
+/* Community rail keeps its flush alignment. */
 .app-shell:has(.community-page) .right-rail { padding-left: 0; }
 .create-prompt, .rail-card { padding: 17px; border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--card); }
 .create-prompt { background: var(--surface-2); }
