@@ -230,6 +230,10 @@ function readChaptersMainWorld(args) {
     for (const r of roots) scan(r, 0);
     // shortDescription carries the author's own chapter list ("0:00 Intro").
     // Harvest it directly: the isolated content script cannot see page JS.
+    // Description lines only count when they start at 0:00, otherwise they
+    // are sponsor timestamps, not chapters.
+    const descChapters = [];
+    const descSeen = new Set();
     const parseDescLines = (text) => {
       String(text || '').split('\n').forEach((rawLine) => {
         const line = String(rawLine || '').trim();
@@ -237,7 +241,9 @@ function readChaptersMainWorld(args) {
         if (!m) return;
         const t = parseT(m[1]);
         const title = String(m[2] || '').trim().replace(/^[-–—•·|>]+/, '').trim();
-        if (t != null) push(t, title);
+        if (t == null || !title || descSeen.has(t)) return;
+        descSeen.add(t);
+        descChapters.push({ t, title });
       });
     };
     roots.forEach((r) => {
@@ -246,6 +252,10 @@ function readChaptersMainWorld(args) {
         if (sd) parseDescLines(sd);
       } catch (e) {}
     });
+    descChapters.sort((a, b) => a.t - b.t);
+    if (descChapters.length >= 3 && descChapters[0].t === 0) {
+      descChapters.forEach((c) => push(c.t, c.title));
+    }
     out.sort((a, b) => a.t - b.t);
     const inRange = out.filter((c, i) => (i === 0 || c.t > out[i - 1].t) && (!(maxT > 0) || c.t < maxT));
     const chapters = inRange.slice(0, 200);

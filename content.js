@@ -764,7 +764,9 @@ function ytChapterSeconds(text) {
 
 // Lossy chapter cleanup: one malformed line (duplicate time, out-of-order
 // sponsor timestamp, over-duration entry) must not kill the whole list.
-function ytCleanChapters(items, maxT) {
+// Description-scraped lines only count when they start at 0:00, which is
+// YouTube's own rule for treating timestamps as chapters.
+function ytCleanChapters(items, maxT, requireZeroStart) {
   if (!Array.isArray(items) || !items.length) return null;
   const seen = new Set();
   const good = [];
@@ -778,7 +780,16 @@ function ytCleanChapters(items, maxT) {
   });
   good.sort((a, b) => a.t - b.t);
   if (good.length < 3) return null;
+  if (requireZeroStart && good[0].t !== 0) return null;
   return good;
+}
+
+function ytVideoDuration() {
+  try {
+    const d = Number(document.querySelector('video.html5-main-video, #movie_player video, video')?.duration);
+    if (Number.isFinite(d) && d > 0) return d;
+  } catch (e) {}
+  return 0;
 }
 
 function ytParseChapterLines(text) {
@@ -828,18 +839,22 @@ function ytPageTextChapters() {
   return ytParseChapterLines(texts.join('\n'));
 }
 
-function getYouTubeChapters() {
-  let maxT = 0;
+// Rendered chapter markers are authoritative. Description timestamp lines
+// are a last resort only: they vary between visits (truncated text,
+// sponsor links) and must start at 0:00 to count as chapters at all.
+async function getYouTubeChapters() {
+  const maxT = ytVideoDuration();
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const cleaned = ytCleanChapters(ytDomChapters(), maxT);
+      if (cleaned) return cleaned.slice(0, 200);
+    } catch (e) {}
+    if (attempt < 3) {
+      try { await new Promise((resolve) => setTimeout(resolve, 700)); } catch (e) {}
+    }
+  }
   try {
-    const d = Number(document.querySelector('video.html5-main-video, #movie_player video, video')?.duration);
-    if (Number.isFinite(d) && d > 0) maxT = d;
-  } catch (e) {}
-  try {
-    const cleaned = ytCleanChapters(ytDomChapters(), maxT);
-    if (cleaned) return cleaned.slice(0, 200);
-  } catch (e) {}
-  try {
-    const cleaned = ytCleanChapters(ytPageTextChapters(), maxT);
+    const cleaned = ytCleanChapters(ytPageTextChapters(), maxT, true);
     if (cleaned) return cleaned.slice(0, 200);
   } catch (e) {}
   return [];
@@ -862,12 +877,12 @@ async function getYouTubeChaptersExpanded() {
     try { more.click(); } catch (e) { return null; }
     expandedHere = true;
     await new Promise((resolve) => setTimeout(resolve, 900));
-    let maxT = 0;
+    const maxT = ytVideoDuration();
     try {
-      const d = Number(document.querySelector('video.html5-main-video, #movie_player video, video')?.duration);
-      if (Number.isFinite(d) && d > 0) maxT = d;
+      const cleaned = ytCleanChapters(ytDomChapters(), maxT);
+      if (cleaned) return cleaned.slice(0, 200);
     } catch (e) {}
-    const cleaned = ytCleanChapters(ytDomChapters().concat(ytPageTextChapters()), maxT);
+    const cleaned = ytCleanChapters(ytPageTextChapters(), maxT, true);
     return cleaned ? cleaned.slice(0, 200) : null;
   } catch (e) {
     return null;
@@ -1146,7 +1161,7 @@ async function getYouTubeChaptersExpanded() {
             const u = new URL(location.href);
             pageVideoId = u.searchParams.get('v') || ((u.pathname.match(/^\/shorts\/([^/?]+)/) || [])[1] || '');
           } catch (e) {}
-          let chapters = getYouTubeChapters();
+          let chapters = await getYouTubeChapters();
           if (!chapters.length) {
             chapters = (await getYouTubeChaptersExpanded()) || [];
           }

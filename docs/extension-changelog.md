@@ -3182,3 +3182,7 @@ this changelog.
 - Word-clip confirmation and Word Clipped tag stay until the clip range moves or the video changes; playback alone never clears them.
 - Extension 2.3.23.
 - Checks: root suite 46/46; extension build passes.
+### Chapters prefer real markers
+
+- Rendered chapter markers are authoritative with retries; description timestamp lines only count from 0:00, killing sponsor-link false lists that changed between visits.
+- Checks: root suite 46/46; extension build passes.
