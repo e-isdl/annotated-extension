@@ -632,6 +632,7 @@ export default function YouTubeClipper({
     setChaptersOpen(false);
     setWordConfirm(null);
     setClipInfoOpen(false);
+    chapterCacheRef.current.clear();
     loadChapters(data.videoId);
   }, [data.videoId]);
 
@@ -719,7 +720,6 @@ export default function YouTubeClipper({
     const D = typeof res.duration === 'number' && res.duration > 0 && isFinite(res.duration)
       ? Math.floor(res.duration)
       : tlDuration();
-    const previousId = activeVideoRef.current;
     activeVideoRef.current = res.videoId;
     setDuration(D);
     setDurKnown(true);
@@ -737,7 +737,9 @@ export default function YouTubeClipper({
     setSheetSearch('');
     setWordConfirm(null);
     setClipInfoOpen(false);
-    chapterCacheRef.current.delete(previousId);
+    // Any navigation invalidates every cached chapter list: a new scrape
+    // runs for the new video, nothing is ever served from another page.
+    chapterCacheRef.current.clear();
     prevTRef.current = t;
     ytTimeRef.current = t;
     lastTRef.current = t;

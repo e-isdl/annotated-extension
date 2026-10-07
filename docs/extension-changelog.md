@@ -3190,3 +3190,7 @@ this changelog.
 
 - Description timestamp scraping removed everywhere: rendered chapter markers are the only source, so phantom lists can no longer appear or change between visits. No markers means no chapters.
 - Checks: root suite 46/46; extension build passes.
+### Chapters rescrape on every navigation
+
+- Any video change wipes the whole chapter cache and scrapes again from zero; marker wait extended. Nothing is ever served from another page.
+- Checks: root suite 46/46; extension build passes.

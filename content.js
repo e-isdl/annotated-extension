@@ -816,12 +816,12 @@ function ytDomChapters() {
 // sponsor links) and produced phantom lists. No markers means no chapters.
 async function getYouTubeChapters() {
   const maxT = ytVideoDuration();
-  for (let attempt = 0; attempt < 4; attempt += 1) {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
     try {
       const cleaned = ytCleanChapters(ytDomChapters(), maxT);
       if (cleaned) return cleaned.slice(0, 200);
     } catch (e) {}
-    if (attempt < 3) {
+    if (attempt < 5) {
       try { await new Promise((resolve) => setTimeout(resolve, 700)); } catch (e) {}
     }
   }
