@@ -2966,3 +2966,8 @@ this changelog.
 - The transcript find box now matches multi-word phrases and whole sentences: the query is split into atomic tokens (lowercased, apostrophes folded, split on punctuation) so "real world engineering" finds "Real-World Engineering" and "dont stop" finds "don't stop". Single-word substring search still works as before; every word of a matched phrase highlights.
 - Double-clicking a word inside a find match selects the whole matched phrase (capped at the 90s clip limit), and its text is attached to the clip as the transcript.
 - Checks: find-matcher unit checks pass (13/13: phrases, sentences, punctuation, apostrophes, hyphens, overlaps, cap math); extension build passes.
+### Stronger theme shimmer, moonlight logo in Tokyo Night
+
+- The animated scanline shimmer (body overlay) is now clearly visible where allowed: 80s Retro pink .06 -> .13, Tokyo Night pale blue .045 -> .10, Terminal green .05 -> .11. Light, dark, gruvbox and dracula untouched.
+- Tokyo Night logo glows like moonlight: the mark wears a pale three-layer halo that slowly breathes (4.5s, disabled under reduced motion) and the wordmark carries a moonlit text-shadow - matching the existing per-theme logo treatments (synthwave neon, terminal cursor).
+- Checks: webapp build passes.
