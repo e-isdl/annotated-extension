@@ -2971,3 +2971,8 @@ this changelog.
 - The animated scanline shimmer (body overlay) is now clearly visible where allowed: 80s Retro pink .06 -> .13, Tokyo Night pale blue .045 -> .10, Terminal green .05 -> .11. Light, dark, gruvbox and dracula untouched.
 - Tokyo Night logo glows like moonlight: the mark wears a pale three-layer halo that slowly breathes (4.5s, disabled under reduced motion) and the wordmark carries a moonlit text-shadow - matching the existing per-theme logo treatments (synthwave neon, terminal cursor).
 - Checks: webapp build passes.
+### Tokyo Night moonlight becomes a corner wash
+
+- Replaced the tight neon-like glow on the logo mark with a still, soft moonlight wash over the whole top-left corner (body::before, above the navbar but below menus, pointer-events none): a brighter heart near the corner melting into a wide faint falloff, so the logo reads as the light source.
+- Removed the breathing halo animation, the mark glow and the wordmark glow entirely; the mark is back to plain accent.
+- Checks: webapp build passes.

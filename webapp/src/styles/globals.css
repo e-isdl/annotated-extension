@@ -85,22 +85,21 @@ nav input { min-height: 38px; border: 0 !important; border-radius: var(--radius-
   html[data-theme="synthwave"] body::after { animation: rain .9s linear infinite; }
   html[data-theme="terminal"] body::after { animation: rain-terminal .9s linear infinite; }
   html[data-theme="terminal"] .navbar-logo-text::after { content: "_"; animation: blink 1s steps(1) infinite; }
-  html[data-theme="tokyo"] .navbar-logo-mark { animation: moon-breathe 4.5s ease-in-out infinite; }
 }
 @keyframes rain { to { background-position: -40px 90px; } }
 @keyframes rain-terminal { to { background-position: -40px 90px, 0% 0%; } }
 @keyframes blink { 50% { opacity: 0; } }
-@keyframes moon-breathe {
-  0%, 100% { box-shadow: 0 0 6px rgba(224, 232, 255, .85), 0 0 16px rgba(122, 162, 247, .60), 0 0 40px rgba(122, 162, 247, .32); }
-  50% { box-shadow: 0 0 8px rgba(224, 232, 255, 1), 0 0 24px rgba(122, 162, 247, .80), 0 0 58px rgba(122, 162, 247, .46); }
-}
 html[data-theme="tokyo"] .navbar-logo-text::after { content: " 東京夜"; font-size: 11px; opacity: .7; }
 html[data-theme="terminal"] .navbar-logo-text::after { content: "_"; }
 html[data-theme="synthwave"] .navbar-logo-text { text-shadow: 0 0 14px rgba(255, 62, 159, .8); }
-/* Tokyo Night: moonlight shining from the logo - a pale halo breathing
-   around the mark and a moonlit glow on the wordmark. */
-html[data-theme="tokyo"] .navbar-logo-mark { box-shadow: 0 0 6px rgba(224, 232, 255, .85), 0 0 16px rgba(122, 162, 247, .60), 0 0 40px rgba(122, 162, 247, .32); }
-html[data-theme="tokyo"] .navbar-logo-text { text-shadow: 0 0 10px rgba(190, 205, 255, .75), 0 0 28px rgba(122, 162, 247, .45); }
+/* Tokyo Night: moonlight washing the whole top-left corner, shining
+   from the logo's corner. Still and soft - moonlight does not move. */
+html[data-theme="tokyo"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 30; pointer-events: none;
+  background:
+    radial-gradient(280px 200px at 0 0, rgba(226, 233, 255, .16) 0%, rgba(226, 233, 255, 0) 70%),
+    radial-gradient(680px 460px at 0 0, rgba(174, 194, 243, .10) 0%, rgba(160, 182, 238, 0) 70%);
+}
 
 .app-shell { display: grid; grid-template-columns: 240px minmax(0, 800px) 300px; gap: 20px; align-items: start; width: min(1400px, calc(100% - 48px)); margin: 0 auto; }
 .app-shell-focused { grid-template-columns: 240px minmax(0, 800px); justify-content: center; }
