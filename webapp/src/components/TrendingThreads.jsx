@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { postHref } from '../lib/links';
 
-// Most upvoted threads of the last 24 hours. Parent provides the card/page shell.
-export default function TrendingThreads({ limit = 3 }) {
+// Most upvoted threads of the last 24 hours. plain renders sidebar-link
+// rows for the right rail; default renders rich rows for the full page.
+export default function TrendingThreads({ limit = 3, plain = false }) {
   const [rows, setRows] = useState(null);
 
   useEffect(() => {

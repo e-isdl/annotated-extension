@@ -6,6 +6,7 @@ import ClipCard from '../components/ClipCard';
 import FollowButton from '../components/FollowButton';
 import Avatar from '../components/Avatar';
 import { postHref } from '../lib/links';
+import { findSamplePerson, formatCount } from '../lib/samplePeople';
 
 const TABS = [
   { label: 'Posts', value: 'clips' },
@@ -19,6 +20,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const location = useLocation();
   const [profile, setProfile] = useState(null);
+  const [isDemo, setIsDemo] = useState(false);
   const [activeTab, setActiveTab] = useState(routeTab === 'comments' ? 'comments' : 'clips');
   const [loading, setLoading] = useState(true);
   const [clips, setClips] = useState([]);
@@ -62,6 +64,25 @@ export default function Profile() {
         profileData = data;
       }
 
+      // Sample famous people get a demo profile (no DB row, no posts).
+      if (!profileData) {
+        const demo = findSamplePerson(handle);
+        if (demo) {
+          setProfile({
+            id: `demo-${demo.handle.toLowerCase()}`,
+            handle: demo.handle,
+            display_name: demo.name,
+            avatar_url: demo.pfp,
+          });
+          setIsDemo(true);
+          setClips([]);
+          setFollowerCount(demo.followers);
+          setFollowingCount(demo.following);
+          setLoading(false);
+          return;
+        }
+      }
+
       if (profileData) {
         setProfile(profileData);
 
@@ -93,9 +114,9 @@ export default function Profile() {
   const isOwner = viewerId && profile?.id === viewerId;
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || isDemo) return;
     loadTab(activeTab);
-  }, [activeTab, profile, isOwner]);
+  }, [activeTab, profile, isOwner, isDemo]);
 
   useEffect(() => {
     setActiveTab(routeTab === 'comments' ? 'comments' : 'clips');
@@ -247,9 +268,11 @@ export default function Profile() {
           </div>
         </div>
         <div className="profile-header-actions">
-          {isOwner ? <button type="button" className="btn-ghost" onClick={openProfileEditor}>Edit profile</button> : <FollowButton profileId={profile.id} />}
+          {isOwner ? <button type="button" className="btn-ghost" onClick={openProfileEditor}>Edit profile</button> : isDemo ? null : <FollowButton profileId={profile.id} />}
         </div>
       </div>
+
+      {isDemo && <p className="demo-wall">DEMO</p>}
 
       {editingProfile && <div className="profile-edit-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditingProfile(false); }}>
         <section className="profile-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-edit-title">
@@ -284,8 +307,8 @@ export default function Profile() {
 
       <div className="profile-stats">
         <span><strong>{clips.length}</strong> posts</span>
-        <span>{followerCount} followers</span>
-        <span>{followingCount} following</span>
+        <span>{formatCount(followerCount)} followers</span>
+        <span>{formatCount(followingCount)} following</span>
       </div>
 
       <div className="profile-tabs">

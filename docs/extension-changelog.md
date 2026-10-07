@@ -3113,3 +3113,8 @@ this changelog.
 - Trending today and Top annotators render as flat sidebar-styled sections in the right rail again; left sidebar is nav plus communities only.
 - Trending topics removed everywhere.
 - Checks: webapp build passes.
+### Demo profiles, topics back, crash fixes
+
+- Sample big guys open real demo profile pages (millions of followers, big DEMO banner, no follow button); their rows link internally.
+- Trending topics section is back with sample data and (demo) tags on it and Top annotators; plain-string crash and CSS debris fixed.
+- Checks: webapp build passes; home feed loads clean with zero errors.

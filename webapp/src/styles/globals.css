@@ -106,12 +106,13 @@ html[data-theme="tokyo"] body::before {
 .app-main { min-width: 0; padding: 28px 0 72px; }
 .community-sidebar { position: sticky; top: 72px; max-height: calc(100vh - 72px); overflow-y: auto; scrollbar-width: thin; padding: 28px 16px 24px 0; border-right: 1px solid var(--border-soft); }
 .explore-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; align-items: start; }
+.explore-layout > :first-child { border-right: 1px solid var(--border-soft); padding-right: 20px; }
 .explore-people { padding: 17px; border-radius: var(--radius-md); background: var(--surface-2); position: sticky; top: 88px; }
 .explore-people-title { margin: 0 0 2px; color: var(--text-primary); font-size: 16px; }
 .explore-people-sub { margin: 0 0 6px; color: var(--text-secondary); font-size: 12px; }
 .explore-people .sidebar-link { font-size: 13px; padding: 8px 10px; border-radius: 10px; }
 .explore-people .sidebar-link + .sidebar-link { border-top: 1px solid var(--border-soft); }
-@media (max-width: 900px) { .explore-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) { .explore-layout { grid-template-columns: minmax(0, 1fr); } .explore-layout > :first-child { border-right: 0; padding-right: 0; } }
 .sidebar-section { margin-bottom: 25px; }
 .sidebar-label { margin: 0 0 9px 10px; }
 .sidebar-link, .community-link { display: flex; align-items: center; gap: 10px; border-radius: var(--radius-pill); padding: 10px 12px; color: var(--text-secondary); font-size: 16px; text-decoration: none; transition: background .15s, color .15s; }
@@ -306,6 +307,7 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .post-action-last { margin-left: 0; }
 .post-action-saved { color: var(--accent-strong); }
 .demo-badge { padding: 3px 8px; border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--text-muted); font-size: 9px; letter-spacing: .06em; }
+.demo-wall { margin: 14px 0 0; padding: 10px; border: 1px dashed var(--border-strong); border-radius: 12px; text-align: center; font-size: 28px; font-weight: 800; letter-spacing: 0.12em; color: var(--text-muted); }
 .demo-note { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-muted); font-size: 11px; }
 .demo-note p { flex: 1; margin: 0; }
 .demo-note strong { color: var(--text-secondary); }
