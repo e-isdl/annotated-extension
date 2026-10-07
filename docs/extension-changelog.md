@@ -2992,3 +2992,9 @@ this changelog.
 - Copy rewritten short and plain: one line per stop. X tour explains photo vs video (record just the player small and silent, or one crisp screenshot sized to fit) plus the zoom-to-fit framing.
 - Post cards drop their harsh borders for a borderless card with soft shadow.
 - Checks: root build and webapp build both pass; ring/cursor/ripple/themes-first verified in both bundles.
+### Tour quality pass from self-testing
+
+- Ran the full webapp tour in headless Chrome (Playwright, 35 stops, ~4 min): fixed everything found. Longer anchor waits (3.5s default, 9s on async clip pages) so late-loading stops no longer skip; clip-page guard so play/reaction steps never fire on feed cards; recorded-video clips get their own Listen stop (ClipPlayer button) beside the YT-embed one.
+- Reactions now quote the source title/caption, not our own take text.
+- ThemeNudge hides while touring (no competing buddy); favicon added (killed the only 404s); post cards borderless with soft shadow.
+- Full retest: 35/35 stops resolve, zero JS errors, zero failed requests.

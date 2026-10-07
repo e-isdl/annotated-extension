@@ -271,7 +271,7 @@ export default function ClipPlayer({ src, onError, fallbackDuration, mutedAutopl
         </button>
       )}
       <div className="clip-player-bar">
-        <button type="button" className="clip-player-btn" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'}>
+        <button type="button" data-tour="web-clipplayer" className="clip-player-btn" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'}>
           {playing ? (
             <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor" />

@@ -165,7 +165,7 @@ function useTourEngine({ pick, perform, snapshot, restore }) {
       if (step.anchor) {
         el = await waitFor(
           () => { const e = find(step.anchor); return e && shown(e) ? e : null; },
-          step.wait ?? 2000,
+          step.wait ?? 3500,
           ok,
         );
         if (!ok()) return;

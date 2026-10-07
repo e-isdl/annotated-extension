@@ -102,7 +102,7 @@ function useTourEngine({ pick, perform }) {
       if (step.anchor) {
         el = await waitFor(
           () => { const e = find(step.anchor); return e && shown(e) ? e : null; },
-          step.wait ?? 2000,
+          step.wait ?? 3500,
           ok,
         );
         if (!ok()) return;
@@ -210,9 +210,13 @@ async function perform(step, el, { alive, store, tap }) {
     const card = document.querySelector(`[data-tour="web-postcard"][data-kind="${step.kind}"]`);
     if (!card) return 'skipped-no-card';
     const link = card.querySelector('.post-card-link');
-    if (!link) return 'skipped-no-link';
+    const href = link?.getAttribute('href');
+    if (!href) return 'skipped-no-link';
+    // Navigate by href, not click: card clicks are suppressed while a card
+    // video plays (autoplay), which would strand the tour on the feed.
     tap();
-    link.click();
+    window.history.pushState({}, '', href);
+    window.dispatchEvent(new PopStateEvent('popstate'));
     return 'opened';
   }
   if (a === 'goto-or-click') {
@@ -423,38 +427,48 @@ const STEPS = [
   { anchor: 'web-logo', place: 'below', title: 'Starting point',
     text: 'Starting from the feed, so every stop below exists.', action: 'click' },
   { anchor: { name: 'web-postcard', kind: 'article' }, place: 'auto', title: 'An article',
-    text: 'First, an article.', action: 'open-card', kind: 'article' },
-  { anchor: 'web-cliptitle', place: 'below', title: 'My reaction', cute: true,
+    text: 'First, an article.', wait: 9000,
+    action: 'open-card', kind: 'article' },
+  { anchor: 'web-cliptitle', skipIf: () => { const p = location.pathname; return !(p.includes('/post/') || p.includes('/clip/')); }, place: 'below', title: 'My reaction', cute: true,
+    wait: 9000,
     text: '\u201C{title}\u201D, sharp one. Articles clip by quote.' },
   { anchor: 'web-logo', place: 'below', title: 'Back to the feed',
     text: 'Back to the feed.', action: 'click' },
   { anchor: { name: 'web-postcard', kind: 'social' }, place: 'auto', title: 'An X post',
-    text: 'An X post, captured as video.', action: 'open-card', kind: 'social' },
-  { anchor: 'web-cliptitle', place: 'below', title: 'My reaction', cute: true,
+    text: 'An X post, captured as video.', wait: 9000,
+    action: 'open-card', kind: 'social' },
+  { anchor: 'web-cliptitle', skipIf: () => { const p = location.pathname; return !(p.includes('/post/') || p.includes('/clip/')); }, place: 'below', title: 'My reaction', cute: true,
+    wait: 9000,
     text: '\u201C{title}\u201D, spicy.' },
-  { anchor: 'web-comments-link', place: 'below', title: 'The discussion',
+  { anchor: 'web-comments-link', skipIf: () => { const p = location.pathname; return !(p.includes('/post/') || p.includes('/clip/')); }, place: 'below', title: 'The discussion', wait: 9000,
     text: 'The conversation lives in comments. Jumping down.',
     action: 'goto-or-click', gotoPath: X_COMMENT_PATH },
-  { anchor: 'web-comments', place: 'above', title: 'My reaction', cute: true,
+  { anchor: 'web-comments', skipIf: () => { const p = location.pathname; return !(p.includes('/post/') || p.includes('/clip/')); }, place: 'above', title: 'My reaction', cute: true,
+    wait: 9000,
     text: 'Good thread. Takes get tested here.' },
   { anchor: 'web-logo', place: 'below', title: 'Back to the feed',
     text: 'Back to the feed.', action: 'click' },
   { anchor: { name: 'web-postcard', kind: 'youtube' }, place: 'auto', title: 'A video',
-    text: 'A video. Opening it.', action: 'open-card', kind: 'youtube' },
-  { anchor: 'web-yt-play', place: 'above', title: 'Listen', cute: true,
+    text: 'A video. Opening it.', wait: 9000,
+    action: 'open-card', kind: 'youtube' },
+  { anchor: 'web-yt-play', skipIf: () => { const p = location.pathname; return !(p.includes('/post/') || p.includes('/clip/')); }, place: 'above', title: 'Listen', cute: true,
     text: 'This is how it sounds like. Ninety seconds max.',
-    action: 'pause-toggle', waitMs: 7000 },
-  { anchor: 'web-clip-source', place: 'below', title: 'Always linked',
+    action: 'pause-toggle', waitMs: 7000, wait: 9000 },
+  { anchor: 'web-clipplayer', skipIf: () => { const p = location.pathname; return !(p.includes('/post/') || p.includes('/clip/')); }, place: 'above', title: 'Listen', cute: true,
+    text: 'This is how it sounds like. Ninety seconds max.',
+    action: 'pause-toggle', waitMs: 7000, wait: 9000 },
+  { anchor: 'web-clip-source', skipIf: () => { const p = location.pathname; return !(p.includes('/post/') || p.includes('/clip/')); }, place: 'below', title: 'Always linked', wait: 9000,
     text: 'Every clip links its source.' },
-  { anchor: 'web-claim', place: 'below', title: 'Fair use has a button',
+  { anchor: 'web-claim', skipIf: () => { const p = location.pathname; return !(p.includes('/post/') || p.includes('/clip/')); }, place: 'below', title: 'Fair use has a button', wait: 9000,
     text: 'Every page carries File a claim.' },
   { anchor: 'web-logo', place: 'below', title: 'Back to the feed',
     text: 'Back to the feed.', action: 'click' },
   { anchor: { name: 'web-postcard', kind: 'podcast' }, place: 'auto', title: 'A podcast',
-    text: 'A podcast. Opening it.', action: 'open-card', kind: 'podcast' },
-  { anchor: 'web-ep-play', place: 'above', title: 'Listen', cute: true,
+    text: 'A podcast. Opening it.', wait: 9000,
+    action: 'open-card', kind: 'podcast' },
+  { anchor: 'web-ep-play', skipIf: () => { const p = location.pathname; return !(p.includes('/post/') || p.includes('/clip/')); }, place: 'above', title: 'Listen', cute: true,
     text: 'This is how it sounds like. Ninety seconds of audio.',
-    action: 'pause-toggle', waitMs: 7000 },
+    action: 'pause-toggle', waitMs: 7000, wait: 9000 },
   { anchor: 'web-logo', place: 'below', title: 'Back to the feed',
     text: 'Back to the feed.', action: 'click' },
   { anchor: { name: 'web-side', to: '/popular' }, place: 'below', title: 'Top takes',
@@ -491,8 +505,19 @@ function fillTitle(text) {
   if (!text || !text.includes('{title}')) return text;
   let title = '';
   try {
-    title = (document.querySelector('[data-tour="web-cliptitle"]')?.textContent || '').trim().replace(/\s+/g, ' ');
+    // React to the thing itself (source title), not our own take text.
+    title = (document.querySelector('.source-post-title')?.textContent || '').trim().replace(/\s+/g, ' ');
   } catch (e) { /* ignore */ }
+  if (!title) {
+    try {
+      title = (document.querySelector('.source-post-caption')?.textContent || '').trim().replace(/\s+/g, ' ');
+    } catch (e) { /* ignore */ }
+  }
+  if (!title) {
+    try {
+      title = (document.querySelector('[data-tour="web-cliptitle"]')?.textContent || '').trim().replace(/\s+/g, ' ');
+    } catch (e) { /* ignore */ }
+  }
   if (!title) {
     try { title = (document.title || '').replace(/\s*[|-].*$/, '').trim(); } catch (e) { /* ignore */ }
   }

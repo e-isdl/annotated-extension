@@ -276,8 +276,12 @@
   to { transform: scale(4.5); opacity: 0; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tour-buddy,
+/* the theme nudge steps aside while the tour owns the screen */
+html[data-tour-active] .theme-nudge {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {  .tour-buddy,
   .tour-buddy .tour-tail,
   .tour-buddy.is-cute .tour-arm,
   .tour-body {
