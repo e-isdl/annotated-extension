@@ -150,7 +150,7 @@ export default function RightRail() {
       {communities.length > 0 && takes.length === 0 && <section className="rail-card">
         <div className="flex items-center justify-between mb-4">
           <h2 className="rail-heading">Communities to explore</h2>
-          <Link to="/explore" className="text-[11px] text-accent-2 hover:text-accent-2">See all</Link>
+          <Link to="/explore" className="rail-seeall">See all</Link>
         </div>
         <div className="flex flex-col gap-3">
           {communities.slice(0, 3).map((item) => (

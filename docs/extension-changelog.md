@@ -3086,3 +3086,12 @@ this changelog.
 - Right rail: Communities, Trending today (3 rows, dividers, thumbs, See all to /trending), Trending topics, Trending annotators (rank/avatar/user/points, own-row tint, sparse-board invite, See all to /trending-annotators), extension footer last. New /trending and /trending-annotators pages.
 - Extension 2.3.22 released; webapp footer reads Extension updated October 7, 6:00 PM.
 - Checks: root build and webapp build both pass.
+### Feed column widened to 768px
+
+- Middle column 704 to 768px on all pages; sidebars unchanged.
+- Checks: webapp build passes.
+### Feed 768px, muted See-all pills
+
+- Middle column widened 704 to 768px on all pages.
+- All four right-rail See all links are now muted pill buttons.
+- Checks: webapp build passes.
