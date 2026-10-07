@@ -29,7 +29,10 @@ export default function TrendingThreads({ limit = 3 }) {
       </div>
     );
   }
-  if (!rows.length) return <p className="text-sm text-text-muted">Nothing trending yet.</p>;
+  if (!rows.length) {
+    if (plain) return <p className="sidebar-empty">Nothing trending yet.</p>;
+    return <p className="text-sm text-text-muted">Nothing trending yet.</p>;
+  }
 
   const thumbFor = (row) => {
     if (row.youtube_id) return `https://img.youtube.com/vi/${row.youtube_id}/hqdefault.jpg`;
@@ -37,9 +40,17 @@ export default function TrendingThreads({ limit = 3 }) {
   };
 
   return (
-    <div className="take-list">
+    <div className={plain ? undefined : 'take-list'}>
       {rows.map((row, i) => {
         const thumb = thumbFor(row);
+        if (plain) {
+          return (
+            <Link key={row.id} to={postHref(row)} className="sidebar-link">
+              <span className="sidebar-icon">{i + 1}</span>
+              <span className="truncate">{row.title || 'Untitled take'}</span>
+            </Link>
+          );
+        }
         return (
           <Link key={row.id} to={postHref(row)} className="take-item no-underline">
             <span className="take-rank">{i + 1}</span>

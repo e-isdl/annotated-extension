@@ -3108,3 +3108,8 @@ this changelog.
 - Trending today and Top annotators live in the right rail again (flat sidebar-styled sections); left sidebar is back to nav plus communities.
 - Explore page gains a designed People to follow card (sticky side column, real pfps, X links) instead of bare rows.
 - Checks: webapp build passes.
+### Right rail back to flat discovery sections
+
+- Trending today and Top annotators render as flat sidebar-styled sections in the right rail again; left sidebar is nav plus communities only.
+- Trending topics removed everywhere.
+- Checks: webapp build passes.
