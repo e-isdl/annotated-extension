@@ -2,14 +2,15 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { TourOverlay } from './TourBuddy';
 
 /* ====================================================================
-   Panel tour: engine + extension scripts. The engine drives the real UI
-   through data-tour anchors only (see tour-handoff.txt section 4).
+   Panel tour: slow automatic engine + extension scripts. The buddy
+   himself is the cursor: he glides to each stop, taps it, a ripple
+   blooms. No buttons, no dimming, no manual advancing. Esc stops it.
    RULE ZERO: never posts, saves, votes or submits anything. The NEVER
    list below is enforced in perform() - a step targeting one throws and
    its action is skipped.
    Clip-range restore is NOT possible through the DOM (no API exposes the
-   window mapping), so exit restores video time, take text and play mode;
-   the range stays where the tour left it, adjustable by hand.
+   window mapping): exit restores video time, take text and play mode; the
+   range stays where the tour left it, adjustable by hand.
    ==================================================================== */
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -55,7 +56,7 @@ async function typeInto(el, text, alive) {
   for (let i = 1; i <= text.length; i += 1) {
     if (!alive()) return false;
     setNative(el, text.slice(0, i));
-    await sleep(30 + Math.random() * 30);
+    await sleep(45 + Math.random() * 30);
   }
   return true;
 }
@@ -82,6 +83,7 @@ function firePointer(el, type, x, y) {
   }));
 }
 
+/* Tap a bar at a fraction of its width. */
 async function tapAt(el, frac) {
   const r = el.getBoundingClientRect();
   const x = r.left + Math.min(Math.max(frac, 0), 1) * r.width;
@@ -115,22 +117,30 @@ const NEVER = new Set([
   'art-continue', 'tw-continue', 'pod-continue',
 ]);
 
+/* Slow readable dwell per step: scales a little with copy length. */
+const dwellFor = (step) => {
+  if (step.dwell) return step.dwell;
+  const base = Math.min(Math.max(4500 + (step.text || '').length * 18, 4500), 8000);
+  if (step.action === 'type') return 3000;
+  if (step.action === 'pause-toggle') return 1500;
+  if (step.action === 'tap-seek') return 3200;
+  return base;
+};
+
 function useTourEngine({ pick, perform, snapshot, restore }) {
   const [active, setActive] = useState(false);
   const [presented, setPresented] = useState(false);
   const [steps, setSteps] = useState([]);
   const [idx, setIdx] = useState(0);
   const [rect, setRect] = useState(null);
-  const [busy, setBusyState] = useState(false);
+  const [tapKey, setTapKey] = useState(0);
   const [, bump] = useReducer((n) => n + 1, 0);
   const R = useRef({
-    token: 0, idx: -1, steps: [], active: false, busy: false,
+    token: 0, idx: -1, steps: [], active: false,
     anchor: null, snap: null, store: {},
   }).current;
   const hooks = useRef({});
   hooks.current = { pick, perform, snapshot, restore };
-
-  const setBusy = useCallback((v) => { R.busy = v; setBusyState(v); }, [R]);
 
   const stop = useCallback(async () => {
     if (!R.active) return;
@@ -138,16 +148,15 @@ function useTourEngine({ pick, perform, snapshot, restore }) {
     R.token += 1;
     R.active = false;
     R.anchor = null;
-    setActive(false); setPresented(false); setBusyState(false); R.busy = false; setRect(null);
+    setActive(false); setPresented(false); setRect(null);
     try { await hooks.current.restore?.(snap, store); } catch (e) { /* ignore */ }
   }, [R]);
 
-  const goTo = useCallback(async (start, dir) => {
+  const goTo = useCallback(async (start) => {
     R.token += 1;
     const t = R.token;
     const ok = () => R.active && R.token === t;
-    setBusy(true);
-    for (let j = start; j >= 0 && j < R.steps.length; j += dir) {
+    for (let j = start; j < R.steps.length; j += 1) {
       const step = R.steps[j];
       if (step.skipIf) {
         try { if (step.skipIf(R.store)) continue; } catch (e) { /* ignore */ }
@@ -156,7 +165,7 @@ function useTourEngine({ pick, perform, snapshot, restore }) {
       if (step.anchor) {
         el = await waitFor(
           () => { const e = find(step.anchor); return e && shown(e) ? e : null; },
-          dir > 0 ? (step.wait ?? 2000) : 400,
+          step.wait ?? 2000,
           ok,
         );
         if (!ok()) return;
@@ -166,29 +175,18 @@ function useTourEngine({ pick, perform, snapshot, restore }) {
       R.anchor = step.anchor || null;
       setIdx(j); setPresented(true); bump();
       el?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: reduced() ? 'auto' : 'smooth' });
-      if (step.action && dir > 0) {
-        setBusy(!step.interruptible);
-        if (!(await hold(700, ok))) return;
-        try { await hooks.current.perform(step, el, { alive: ok, store: R.store }); }
+      // Let the buddy glide in (1.5s) before he touches anything.
+      if (!(await hold(1600, ok))) return;
+      if (step.action) {
+        try { await hooks.current.perform(step, el, { alive: ok, store: R.store, tap: () => setTapKey((k) => k + 1) }); }
         catch (e) { console.warn('[tour]', e.message || e); }
         if (!ok()) return;
         bump();
       }
-      setBusy(false);
-      return;
+      if (!(await hold(dwellFor(step), ok))) return;
     }
-    if (dir > 0) stop(); else setBusy(false);
-  }, [R, setBusy, stop]);
-
-  const next = useCallback(() => {
-    if (!R.active || R.busy) return;
-    if (R.idx >= R.steps.length - 1) stop(); else goTo(R.idx + 1, 1);
-  }, [R, goTo, stop]);
-
-  const back = useCallback(() => {
-    if (!R.active || R.busy || R.idx <= 0) return;
-    goTo(R.idx - 1, -1);
-  }, [R, goTo]);
+    stop();
+  }, [R, stop]);
 
   const start = useCallback(() => {
     if (R.active) return;
@@ -196,8 +194,8 @@ function useTourEngine({ pick, perform, snapshot, restore }) {
     R.steps = list; R.idx = -1; R.store = {}; R.anchor = null;
     try { R.snap = hooks.current.snapshot?.() ?? null; } catch (e) { R.snap = null; }
     R.active = true;
-    setSteps(list); setIdx(0); setRect(null); setPresented(false); setActive(true);
-    goTo(0, 1);
+    setSteps(list); setIdx(0); setRect(null); setPresented(false); setTapKey(0); setActive(true);
+    goTo(0);
   }, [R, goTo]);
 
   const toggle = useCallback(() => (R.active ? stop() : start()), [R, start, stop]);
@@ -214,19 +212,17 @@ function useTourEngine({ pick, perform, snapshot, restore }) {
   }, [active]);
 
   /* While touring, trusted (real) input outside the tour UI is swallowed;
-     the engine's own synthetic events are untrusted and pass through. */
+     the engine's own synthetic events are untrusted and pass through.
+     Esc stops the tour. The T pill stays clickable. */
   useEffect(() => {
     if (!active) return undefined;
     const types = ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu', 'keydown', 'keyup', 'keypress'];
     const onEvt = (e) => {
       if (!e.isTrusted) return;
-      if (e.type === 'keydown') {
-        const k = e.key;
-        if (k === 'Escape' || k === 'ArrowRight' || k === 'ArrowLeft') {
-          e.preventDefault(); e.stopPropagation();
-          if (k === 'Escape') stop(); else if (k === 'ArrowRight') next(); else back();
-          return;
-        }
+      if (e.type === 'keydown' && e.key === 'Escape') {
+        e.preventDefault(); e.stopPropagation();
+        stop();
+        return;
       }
       if (e.target?.closest?.('[data-tour-ui]')) return;
       e.stopPropagation(); e.stopImmediatePropagation();
@@ -234,7 +230,7 @@ function useTourEngine({ pick, perform, snapshot, restore }) {
     };
     types.forEach((tt) => window.addEventListener(tt, onEvt, true));
     return () => types.forEach((tt) => window.removeEventListener(tt, onEvt, true));
-  }, [active, stop, next, back]);
+  }, [active, stop]);
 
   /* Re-measure the anchor every frame: follows scroll, resize, movement. */
   useEffect(() => {
@@ -258,12 +254,12 @@ function useTourEngine({ pick, perform, snapshot, restore }) {
 
   useEffect(() => () => { stop(); }, [stop]);
 
-  return { active, presented, steps, idx, rect, busy, next, back, stop, store: R.store };
+  return { active, presented, steps, idx, rect, tapKey, stop };
 }
 
 /* ---------------- actions ---------------- */
 
-async function perform(step, el, { alive }) {
+async function perform(step, el, { alive, tap }) {
   const n = nameOf(step.anchor);
   if (NEVER.has(n)) throw new Error(`[tour] blocked anchor: ${n}`);
   const a = step.action;
@@ -275,10 +271,12 @@ async function perform(step, el, { alive }) {
       const isEmbed = emb && (emb.getAttribute('aria-checked') === 'true' || emb.classList.contains('is-selected'));
       if (!isEmbed) return 'skipped-record-mode';
     }
+    tap();
     el.click();
     return 'clicked';
   }
   if (a === 'tap-seek') {
+    tap();
     for (const f of step.fracs || [0.5]) {
       if (!alive()) return 'aborted';
       await tapAt(el, f);
@@ -287,6 +285,7 @@ async function perform(step, el, { alive }) {
     return 'tapped';
   }
   if (a === 'tap-bar') {
+    tap();
     await tapAt(el, step.frac ?? 0.62);
     return 'tapped';
   }
@@ -303,6 +302,7 @@ async function perform(step, el, { alive }) {
   if (a === 'dblclick-current') {
     const cur = document.querySelector('.word-area span.is-current, [data-word-index].is-current');
     if (!cur) return 'skipped-no-match';
+    tap();
     dblclickEl(cur);
     return 'dblclicked';
   }
@@ -356,117 +356,121 @@ async function restore(snap) {
 /* ---------------- scripts: copy lives here, easy to edit ---------------- */
 
 const YT = [
+  { anchor: 'ext-flowhead', place: 'below', title: 'Hi there',
+    text: 'Hi, I am buddy. Sit back, I will show clipping end to end.' },
   { anchor: 'ext-flowhead', place: 'below', title: 'Meet your clipper',
-    text: 'This header always tells you what you are clipping. I will drive, you read along. Press Next, Esc stops me anytime.' },
+    text: 'This header always tells you what you are clipping.' },
   { anchor: 'yt-play', place: 'below', title: 'Preview first',
-    text: 'Play runs your current clip range, so you can hear what you have before you touch anything.' },
+    text: 'Play runs your clip range, so you hear what you have.' },
   { anchor: 'yt-scrub', place: 'above', title: 'The full timeline',
-    text: 'Every second of the video lives here. I tap to seek, watch the playhead jump.',
+    text: 'Every second lives here. I tap to seek, watch it jump.',
     action: 'tap-seek', fracs: [0.4, 0.65] },
   { anchor: 'yt-clipbar', place: 'above', title: 'The clipping window',
-    text: 'A locked 3 minute window rides with your moment. Drag the handles, or tap and the nearer one jumps over.',
+    text: 'A locked 3 minute window rides your moment. Tap moves a handle.',
     action: 'tap-bar', frac: 0.62 },
   { anchor: 'yt-clippill', place: 'below', title: 'Your clip, in a pill',
-    text: 'Start, end, length. Clips run 90 seconds max, downscaled to 240p.' },
+    text: 'Start, end, length. Ninety seconds max.' },
   { anchor: 'yt-chapters', place: 'below', title: 'Chapters',
-    text: 'Chapters jump you to a section in one click. Opening the list now.',
+    text: 'Chapters jump sections. Opening the list.',
     action: 'click' },
   { anchor: 'yt-chapter-row', place: 'below', title: 'Pick one',
-    text: 'First chapter, please. Picking it sets a 30 second clip and seeks the video there.',
+    text: 'First chapter. Thirty seconds, seeks itself.',
     action: 'click' },
   { anchor: 'yt-words', place: 'below', title: 'Word clipper',
-    text: 'Find moments by what was actually said. Opening it now.',
+    text: 'Find moments by spoken words. Opening it.',
     action: 'click' },
   { anchor: 'word-find', place: 'below', title: 'Search the transcript',
-    text: 'I read a word straight off your transcript and search it. Guaranteed match.',
+    text: 'I search a word from your transcript.',
     action: 'type-dom-word' },
   { anchor: 'word-area', place: 'above', title: 'There it is',
-    text: 'Lit up. Double-clicking grabs the whole phrase, not just the word.',
+    text: 'Lit up. Double-click grabs the whole phrase.',
     action: 'dblclick-current' },
   { anchor: 'word-continue', place: 'above', title: 'Fold it in',
-    text: 'Continue folds my words into the clip and seeks the video there.',
+    text: 'Continue folds my words into the clip.',
     action: 'click' },
   { anchor: 'yt-clippill', place: 'below', title: 'Locked in',
-    text: 'The window followed us here like it should. That pill is our clip.' },
+    text: 'The window followed us. That pill is our clip.' },
   { anchor: 'yt-record', place: 'above', title: 'Record mode',
-    text: 'Record saves real video with sound through tab capture. I select the mode so you see it. I never start a capture.',
+    text: 'Record saves real video. I select it, never capture.',
     action: 'click' },
   { anchor: 'yt-embed', place: 'above', title: 'Embed mode',
-    text: 'Embed plays straight from YouTube and posts right away. Back to Embed to finish.',
+    text: 'Embed plays from YouTube. Back to it.',
     action: 'click' },
   { anchor: 'yt-continue', place: 'above', title: 'Onward',
-    text: 'Continue carries the clip to your take. Clicking it now.',
+    text: 'Continue carries the clip to your take.',
     action: 'click' },
   { anchor: 'ann-take', place: 'above', title: 'Your take',
-    text: 'This is where you put your take. Typing it now, demo text only, wiped when we exit.',
+    text: 'This is where you put your take. Typing it, wiped after.',
     action: 'type', text2: 'this is where you put your take' },
   { anchor: 'ann-speak', place: 'above', title: 'Speak it',
-    text: 'Prefer talking? Speak it records a voice note instead of typing.' },
+    text: 'Or record a voice note instead.' },
   { anchor: 'ann-type', place: 'above', title: 'Pick a shape',
-    text: 'Reaction, fact check, explainer, hot take, question. The shape of your take.' },
+    text: 'Reaction, fact check, explainer, hot take, question.' },
   { anchor: 'ann-community', place: 'above', title: 'Pick a home',
-    text: 'Post it to a community, or none at all.' },
+    text: 'Post to a community, or none.' },
   { anchor: 'ann-save', place: 'above', title: 'Save draft',
-    text: 'Save draft keeps it private. I explain, I never click it.' },
+    text: 'Save draft stays private. I never click it.' },
   { anchor: 'ann-post', place: 'above', title: 'The red button',
-    text: 'Post annotation publishes for real. That one is always your call, never mine.' },
+    text: 'Post annotation publishes. Always your call, never mine.' },
   { anchor: 'ann-drafts', place: 'above', title: 'Drafts live here',
-    text: 'Unfinished work waits under View drafts. Opening the list, read only.',
+    text: 'Unfinished work waits here. Opening, read only.',
     action: 'click' },
-  { anchor: 'drafts-first', place: 'below', title: 'Each draft keeps everything',
-    text: 'Its clip, its take, its range. Continue would resume it, so I will not.' },
+  { anchor: 'drafts-first', place: 'below', title: 'Kept safe',
+    text: 'Each draft keeps clip, take and range. I will not resume it.' },
   { anchor: 'drafts-back', place: 'below', title: 'And back',
-    text: 'Back returns us to the form.',
+    text: 'Back to the form.',
     action: 'click' },
   { anchor: 'ann-take', place: 'above', title: 'Your turn', cute: true,
-    text: 'Tour over. Your take box is restored, the video is back where it was. Press T to replay me.' },
+    text: 'Done. All restored. Press T to replay me.' },
 ];
 
 const ARTICLE = [
-  { anchor: 'ext-flowhead', place: 'below', title: 'Articles clip by quote',
-    text: 'No timeline here. Highlight text on the page and it lands in the card below.' },
+  { anchor: 'ext-flowhead', place: 'below', title: 'Hi there',
+    text: 'Hi, I am buddy. Articles clip by quote, I will show you.' },
   { anchor: 'art-card', place: 'below', title: 'The quote card',
-    text: 'Up to 200 words, with a counter that warns you near the top.' },
+    text: 'Highlight page text, it lands here. Up to 200 words.' },
   { anchor: 'art-edit', place: 'below', title: 'Trim it',
-    text: 'Edit text opens the raw quote. Opening and closing it now.',
+    text: 'Edit opens the raw quote.',
     action: 'click' },
   { anchor: 'art-edit', place: 'below', title: 'And closed',
-    text: 'Done folds it back. Select text on the page to enable Continue.',
+    text: 'Done folds it back.',
     action: 'click' },
   { anchor: 'art-continue', place: 'above', title: 'Continue',
-    text: 'Continue to Annotate carries the quote to your take. I stop here.' },
+    text: 'Select text on the page to enable me. I stop here.' },
 ];
 
 const XPOST = [
-  { anchor: 'ext-flowhead', place: 'below', title: 'X posts clip by capture',
-    text: 'No timeline here either. The post is framed, then captured as video.' },
-  { anchor: 'tw-post', place: 'below', title: 'The post',
-    text: 'Your post, with its link, ready to capture.' },
-  { anchor: 'tw-preview', place: 'below', title: 'Preview',
-    text: 'Captured video loops here, silent, with a Retake if you flub it.' },
+  { anchor: 'ext-flowhead', place: 'below', title: 'Hi there',
+    text: 'Hi, I am buddy. X posts clip by capture, two flavors.' },
+  { anchor: 'tw-post', place: 'below', title: 'Frame it first',
+    text: 'First I zoom the page until the whole post fits.' },
+  { anchor: 'tw-post', place: 'below', title: 'Photo or video',
+    text: 'Video plays? I record just the player, small and silent. Photo only? One crisp screenshot, sized to fit.' },
+  { anchor: 'tw-preview', place: 'below', title: 'The loop',
+    text: 'A video becomes a small silent loop, with Retake.' },
   { anchor: 'tw-continue', place: 'above', title: 'Continue',
-    text: 'Continue carries it to annotation. I stop here.' },
+    text: 'Continue carries it on. I stop here.' },
 ];
 
 const PODCAST = [
-  { anchor: 'ext-flowhead', place: 'below', title: 'Podcasts capture audio',
-    text: 'Spotify and podcasts record the tab audio while it plays. This one needs your ears.' },
+  { anchor: 'ext-flowhead', place: 'below', title: 'Hi there',
+    text: 'Hi, I am buddy. Podcasts capture tab audio.' },
   { anchor: 'pod-capture', place: 'below', title: 'Capture',
-    text: 'Capture asks YOU to share the tab audio in a system picker. I cannot and will not touch that.' },
+    text: 'Capture asks YOU to share the tab. I never touch that picker.' },
   { anchor: 'pod-trim', place: 'below', title: 'Trim',
-    text: 'After capture you listen back and trim right here.' },
+    text: 'Then listen back and trim here.' },
   { anchor: 'pod-continue', place: 'above', title: 'Continue',
-    text: 'Then Continue to Annotate. I stop here.' },
+    text: 'Then Continue. I stop here.' },
 ];
 
 const AUTH = [
-  { anchor: 'auth-screen', place: 'below', title: 'Sign in first',
-    text: 'Sign up with X or Google, no passwords. I am useless until you are in, so this is a short tour.' },
+  { anchor: 'auth-screen', place: 'below', title: 'Hi there',
+    text: 'Sign up with X or Google, no passwords. Then press T again.' },
 ];
 
 const FALLBACK = [
   { anchor: 'ext-flowhead', place: 'below', title: 'No tour here',
-    text: 'Open a YouTube video, article, X post or podcast page and press T again.' },
+    text: 'Open a video, article, X post or podcast, then press T.' },
 ];
 
 function pick() {
@@ -480,22 +484,15 @@ function pick() {
 
 export default function PanelTour() {
   const engine = useTourEngine({ pick, perform, snapshot, restore });
-  const { active, presented, steps, idx, rect, busy, next, back, stop } = engine;
+  const { active, presented, steps, idx, rect, tapKey, stop } = engine;
   if (!active || !presented || !steps[idx]) return null;
   const step = steps[idx];
   return (
     <TourOverlay
       step={step}
       text={step.text}
-      idx={idx}
-      total={steps.length}
       rect={rect}
-      busy={busy}
-      canBack={idx > 0}
-      isLast={idx >= steps.length - 1}
-      onNext={next}
-      onBack={back}
-      onSkip={stop}
+      tapKey={tapKey}
     />
   );
 }

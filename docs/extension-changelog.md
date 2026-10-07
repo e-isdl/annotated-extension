@@ -2984,3 +2984,11 @@ this changelog.
 - RULE ZERO enforced: nothing posts, saves, votes or submits anywhere. Exit restores video time, take text and play mode. Clip-range restore is unavailable through the DOM (documented): range stays where the tour left it.
 - Tour anchors added via data-tour attributes across clippers, annotation, drafts, cards, players, comments, navbar, sidebar, feed, create and rail. Reduced-motion support throughout, theme vars only.
 - Checks: root build and webapp build both pass; tour engine/events/copy verified in both bundles.
+### Tour rework: slow auto-play, buddy cursor, no dim, themes first
+
+- The tour is now fully automatic and slow: no Back/Next/Skip buttons or dots, no background dimming. A soft ring marks the stop, the buddy himself glides to each button, taps it with a bounce and ripple, then moves on. Esc or the Tour pill stops it.
+- New Tour pill button (mini buddy + "Tour") in the extension header and the webapp navbar; the old bare-T is gone.
+- Webapp tour opens with themes: white, dark, 80s, tokyo, terminal at 3s+ each, settling on 80s. Theme flights stay suppressed while touring.
+- Copy rewritten short and plain: one line per stop. X tour explains photo vs video (record just the player small and silent, or one crisp screenshot sized to fit) plus the zoom-to-fit framing.
+- Post cards drop their harsh borders for a borderless card with soft shadow.
+- Checks: root build and webapp build both pass; ring/cursor/ripple/themes-first verified in both bundles.

@@ -1,6 +1,6 @@
-/* Guided tour (panel): buddy, spotlight bubble, T button. All colors come
-   from panel theme vars via --t-* so every theme renders correctly. */
-.tour-t-wrap,
+/* Guided tour (panel): buddy cursor, highlight ring, simple bubble, Tour pill.
+   All colors come from panel theme vars via --t-* so every theme renders. */
+.tour-t,
 .tour-root {
   --t-ui: var(--ui-font);
   --t-display: var(--display-font);
@@ -27,20 +27,54 @@
   overflow: hidden;
 }
 
-.tour-dim {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-}
-
-.tour-spot {
+/* soft highlight ring around the current stop - the page never dims */
+.tour-ring {
   position: absolute;
   box-sizing: border-box;
   border: 2px solid var(--t-accent);
-  border-radius: 12px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.58);
-  transition: top 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
-    width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  border-radius: 14px;
+  color: var(--t-accent);
+  box-shadow: 0 0 18px -2px currentColor;
+  transition: top 0.6s cubic-bezier(0.45, 0, 0.35, 1), left 0.6s cubic-bezier(0.45, 0, 0.35, 1),
+    width 0.6s cubic-bezier(0.45, 0, 0.35, 1), height 0.6s cubic-bezier(0.45, 0, 0.35, 1),
+    opacity 0.4s ease;
+}
+
+.tour-ring[data-on="0"] {
+  opacity: 0;
+}
+
+/* the buddy himself is the cursor: glides slowly to each stop */
+.tour-fly {
+  position: fixed;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  pointer-events: none;
+  transition: left 1.5s cubic-bezier(0.45, 0, 0.35, 1), top 1.5s cubic-bezier(0.45, 0, 0.35, 1),
+    opacity 0.4s ease;
+}
+
+.tour-fly[data-on="0"] {
+  opacity: 0;
+}
+
+.tour-fly.is-tap {
+  animation: tour-tap 0.5s ease;
+}
+
+/* expanding ring where the buddy taps */
+.tour-ripple {
+  position: fixed;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid var(--t-accent);
+  border-radius: 50%;
+  color: var(--t-accent);
+  box-shadow: 0 0 12px currentColor;
+  animation: tour-ripple 0.7s ease-out both;
+  pointer-events: none;
 }
 
 .tour-card {
@@ -48,9 +82,9 @@
   box-sizing: border-box;
   display: flex;
   gap: 10px;
-  width: min(348px, calc(100vw - 24px));
-  padding: 12px 14px 12px 10px;
-  pointer-events: auto;
+  width: min(300px, calc(100vw - 24px));
+  padding: 10px 12px 10px 8px;
+  pointer-events: none;
   color: var(--t-text);
   background: var(--t-surface);
   border: 1px solid var(--t-border-strong);
@@ -58,7 +92,7 @@
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
   font-size: 13px;
   line-height: 1.45;
-  transition: opacity 0.18s ease, left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 0.3s ease, left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .tour-card[data-ready="0"] {
@@ -113,12 +147,12 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .tour-body {
-  animation: tour-in 0.22s ease both;
+  animation: tour-in 0.3s ease both;
 }
 
 .tour-title {
@@ -134,80 +168,10 @@
   color: var(--t-text);
 }
 
-.tour-dots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-}
-
-.tour-dots i {
-  width: 5px;
-  height: 5px;
-  border-radius: var(--t-pill);
-  background: var(--t-border-strong);
-}
-
-.tour-dots i.is-done {
-  background: var(--t-text3);
-}
-
-.tour-dots i.is-on {
-  width: 12px;
-  background: var(--t-accent);
-}
-
-.tour-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.tour-spacer {
-  flex: 1;
-}
-
-.tour-skip {
-  padding: 4px 2px;
-  border: 0;
-  background: none;
+.tour-hint {
+  margin: 2px 0 0;
+  font-size: 11px;
   color: var(--t-text3);
-  font: inherit;
-  font-size: 12px;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
-
-.tour-btn {
-  height: 30px;
-  padding: 0 12px;
-  border: 1px solid var(--t-border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--t-text2);
-  font-family: var(--t-display);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.tour-btn.is-primary {
-  border-color: transparent;
-  background: var(--t-btn);
-  color: var(--t-on);
-  box-shadow: var(--t-glow);
-}
-
-.tour-btn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.tour-btn:focus-visible,
-.tour-skip:focus-visible,
-.tour-t:focus-visible {
-  outline: 2px solid var(--t-focus);
-  outline-offset: 2px;
 }
 
 /* Buddy */
@@ -240,25 +204,25 @@
   animation: tour-wave 1.4s ease-in-out infinite;
 }
 
-/* T button */
+/* Tour pill button */
 .tour-t {
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 30px;
+  gap: 7px;
   height: 30px;
-  padding: 0;
+  padding: 0 13px 0 10px;
   border: 1px solid var(--t-border);
   border-radius: var(--t-pill);
   background: var(--t-surface);
   color: var(--t-text2);
   font-family: var(--t-display);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .tour-t:hover {
@@ -267,10 +231,19 @@
 }
 
 .tour-t.is-on {
-  border-color: transparent;
-  background: var(--t-btn);
-  color: var(--t-on);
-  box-shadow: var(--t-glow);
+  border-color: var(--t-accent);
+  color: var(--t-accent);
+  box-shadow: 0 0 12px -2px currentColor;
+}
+
+.tour-t:focus-visible {
+  outline: 2px solid var(--t-focus);
+  outline-offset: 2px;
+}
+
+.tour-t-buddy {
+  flex: none;
+  color: var(--t-accent);
 }
 
 @keyframes tour-bob {
@@ -293,6 +266,16 @@
   to { opacity: 1; transform: none; }
 }
 
+@keyframes tour-tap {
+  30% { transform: scale(0.8); }
+  60% { transform: scale(1.06); }
+}
+
+@keyframes tour-ripple {
+  from { transform: scale(1); opacity: 0.9; }
+  to { transform: scale(4.5); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tour-buddy,
   .tour-buddy .tour-tail,
@@ -301,7 +284,8 @@
     animation: none !important;
   }
 
-  .tour-spot,
+  .tour-ring,
+  .tour-fly,
   .tour-card,
   .tour-t {
     transition: none !important;

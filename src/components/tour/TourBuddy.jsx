@@ -89,11 +89,13 @@ function layout(rect, bw, bh, pref, vw, vh) {
   return { left: Math.round(left), top: Math.round(top), side, tail: Math.round(tail) };
 }
 
-export function TourOverlay({ step, text, idx, total, rect, busy, canBack, isLast, onNext, onBack, onSkip }) {
+export function TourOverlay({ step, text, rect, tapKey }) {
   const cardRef = useRef(null);
   const [pos, setPos] = useState({ left: 12, top: 12, side: 'dock', tail: 0 });
   const [ready, setReady] = useState(false);
   const [vp, setVp] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [tapping, setTapping] = useState(false);
+  const lastBuddy = useRef(null);
 
   useEffect(() => {
     const f = () => setVp({ w: window.innerWidth, h: window.innerHeight });
@@ -109,19 +111,33 @@ export function TourOverlay({ step, text, idx, total, rect, busy, canBack, isLas
     if (!ready) requestAnimationFrame(() => setReady(true));
   });
 
+  useEffect(() => {
+    if (!tapKey) return undefined;
+    setTapping(true);
+    const t = window.setTimeout(() => setTapping(false), 520);
+    return () => window.clearTimeout(t);
+  }, [tapKey]);
+
+  // The buddy himself is the cursor: he rests on the current stop and
+  // glides slowly to the next one. Tracks the last seen rect so he never
+  // vanishes mid-navigation.
+  let buddyXY = null;
+  if (rect) {
+    buddyXY = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    lastBuddy.current = buddyXY;
+  } else {
+    buddyXY = lastBuddy.current;
+  }
+
   const pad = 6;
-  const shownDots = total > 12 ? null : Array.from({ length: total }, (_, i) => (
-    <i key={i} className={i === idx ? 'is-on' : i < idx ? 'is-done' : ''} />
-  ));
   return (
     <div className="tour-root" data-tour-ui="true">
-      {rect ? (
+      {rect && (
         <div
-          className="tour-spot"
+          className="tour-ring"
+          data-on="1"
           style={{ top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }}
         />
-      ) : (
-        <div className="tour-dim" />
       )}
       <section
         ref={cardRef}
@@ -133,25 +149,30 @@ export function TourOverlay({ step, text, idx, total, rect, busy, canBack, isLas
         data-ready={ready ? '1' : '0'}
         style={{ left: pos.left, top: pos.top, '--tail': `${pos.tail}px` }}
       >
-        <TourBuddy cute={!!step?.cute} />
         <div className="tour-col">
-          <div className="tour-body" key={idx}>
+          <div className="tour-body" key={step?.text}>
             {step?.title ? <p className="tour-title">{step.title}</p> : null}
             <p className="tour-text">{text}</p>
           </div>
-          <div className="tour-dots" aria-hidden="true">
-            {shownDots || <i className="is-on" style={{ width: 12 }} />}
-          </div>
-          <div className="tour-actions">
-            <button type="button" className="tour-skip" onClick={onSkip}>Skip tour</button>
-            <span className="tour-spacer" />
-            <button type="button" className="tour-btn" onClick={onBack} disabled={!canBack}>Back</button>
-            <button type="button" className="tour-btn is-primary" onClick={onNext} disabled={busy}>
-              {isLast ? 'Done' : 'Next'}
-            </button>
-          </div>
+          <p className="tour-hint">Sit back, I drive. Esc stops me.</p>
         </div>
       </section>
+      {buddyXY && (
+        <div
+          className={`tour-fly${tapping ? ' is-tap' : ''}`}
+          data-on="1"
+          style={{ left: buddyXY.x, top: buddyXY.y }}
+        >
+          <TourBuddy cute={!!step?.cute} />
+        </div>
+      )}
+      {tapKey > 0 && rect && (
+        <span
+          key={tapKey}
+          className="tour-ripple"
+          style={{ left: rect.left + rect.width / 2, top: rect.top + rect.height / 2 }}
+        />
+      )}
     </div>
   );
 }

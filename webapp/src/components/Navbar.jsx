@@ -288,6 +288,8 @@ export default function Navbar() {
                     key={item.id}
                     type="button"
                     role="menuitemradio"
+                    data-tour="web-theme-item"
+                    data-id={item.id}
                     aria-checked={theme === item.id}
                     onClick={() => applyTheme(item.id)}
                     className={`account-menu-item theme-menu-item${theme === item.id ? ' is-active' : ''}`}
@@ -311,10 +313,10 @@ export default function Navbar() {
               </div>
             )}
             <ThemeNudge hidden={showThemes} onPick={() => setShowThemes(true)} />
-            <TourButton />
           </div>
           <Link to="/explore" className="hidden sm:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Explore</Link>
           <Link to="/leaderboard" className="hidden md:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
+          <TourButton />
           <Link to="/create" data-tour="web-create-link" className="btn-primary h-9 text-xs">Create</Link>
 
           {user ? (
