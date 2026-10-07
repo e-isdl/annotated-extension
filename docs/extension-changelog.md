@@ -3047,3 +3047,7 @@ this changelog.
 
 - The 3-Minute Clipping Window header now carries a small red "word clipped" tag whenever the range came from the word clipper (same lifetime as the confirmation card).
 - Checks: extension build passes.
+### For You sidebar item and page
+
+- Sidebar has a single For You nav item (no section header, no heart icon) above Discover; the page mirrors Home (title, tab row, right rail) with For You and Following tabs and a not-available note below.
+- Checks: webapp build passes.

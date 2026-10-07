@@ -48,7 +48,7 @@ function ScrollToTop() {
 
 function AppShell() {
   const location = useLocation();
-  const isFeedSurface = location.pathname === '/' || location.pathname === '/popular' || location.pathname === '/latest' || location.pathname.startsWith('/c/');
+  const isFeedSurface = location.pathname === '/' || location.pathname === '/for-you' || location.pathname === '/popular' || location.pathname === '/latest' || location.pathname.startsWith('/c/');
   const hasRightRail = isFeedSurface || location.pathname.startsWith('/post/') || location.pathname.startsWith('/clip/') || location.pathname.startsWith('/@');
 
   return (
