@@ -432,7 +432,7 @@ export default function ClipPage() {
 
       <div className="detail-actions">
         <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
-        <a href="#comments" data-tour="web-comments-link" className="post-action no-underline"><PostActionIcon name="comments" /><span>{clip.comments_count ?? 0} comments</span></a>
+        <a href="#comments" className="post-action no-underline"><PostActionIcon name="comments" /><span>{clip.comments_count ?? 0} comments</span></a>
         <ReportButton clipId={clip.id} />
         <button type="button" className="post-action" onClick={handleShare}><PostActionIcon name="share" /><span aria-live="polite">{shared ? 'Copied' : 'Share'}</span></button>
         <button type="button" className={`post-action ${saved ? 'post-action-saved' : ''}`} onClick={handleSave}><PostActionIcon name="save" /><span>{saved ? 'Saved' : 'Save'}</span></button>
@@ -443,7 +443,7 @@ export default function ClipPage() {
           href={clip.source_type === 'youtube' ? youtubeSourceHref(clip) : clip.source_url}
           target="_blank"
           rel="noopener noreferrer"
-          data-tour="web-clip-source"
+         
           className="source-link real-source-link"
         >
           <span>↗ {clip.source_type === 'youtube' ? sourceDomain(clip.source_url) : 'Open source'}</span>

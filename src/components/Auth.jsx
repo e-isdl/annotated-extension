@@ -86,7 +86,7 @@ export default function Auth() {
   };
 
   return (
-    <div data-tour="auth-screen" className="flex flex-col items-center justify-center h-screen px-6 gap-6">
+    <div className="flex flex-col items-center justify-center h-screen px-6 gap-6">
       <div className="text-center mb-2">
         <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center mx-auto mb-3">
           <span className="text-bg-base font-bold text-lg">A</span>

@@ -41,7 +41,7 @@ export default function ArticleClipper({ pageInfo, onReady }) {
       </div>
 
       {!hasText ? (
-        <div className="article-card is-empty" data-tour="art-card">
+        <div className="article-card is-empty">
           <svg className="article-marker-icon" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M5 19l1.2-4.2L16.5 4.5a2 2 0 012.8 0l.2.2a2 2 0 010 2.8L9.2 17.8 5 19z" fill="var(--yellow)" stroke="var(--text)" strokeWidth="1.4" strokeLinejoin="round" />
             <path d="M4 21h16" stroke="var(--text)" strokeWidth="1.8" strokeLinecap="round" />
@@ -50,12 +50,12 @@ export default function ArticleClipper({ pageInfo, onReady }) {
           <p className="article-line2">Quote up to {WORD_LIMIT} words, you can edit it before posting</p>
         </div>
       ) : (
-        <div className="article-card has-quote" data-tour="art-card">
+        <div className="article-card has-quote">
           <div className="article-top">
             <span className={`article-count ${isOverLimit ? 'over' : wordCount >= warnAt ? 'warn' : ''}`}>
               {wordCount} / {WORD_LIMIT} words
             </span>
-            <button type="button" data-tour="art-edit" className="btn-ghost article-edit" onClick={() => setEditing((v) => !v)}>
+            <button type="button" className="btn-ghost article-edit" onClick={() => setEditing((v) => !v)}>
               {editing ? 'Done' : 'Edit text'}
             </button>
           </div>
@@ -85,7 +85,7 @@ export default function ArticleClipper({ pageInfo, onReady }) {
       <button
         onClick={handleContinue}
         disabled={!hasText || isOverLimit}
-        data-tour="art-continue"
+       
         className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
       >
         Continue to Annotate

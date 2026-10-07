@@ -21,7 +21,6 @@ export default function ThemeFlyer() {
 
     const begin = () => {
       if (busyRef.current) return;
-      if (document.documentElement.hasAttribute('data-tour-active')) return;
       const btn = document.querySelector('[data-theme-button]');
       if (!btn) return;
       const b = btn.getBoundingClientRect();

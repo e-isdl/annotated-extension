@@ -10,8 +10,6 @@ import { supabase } from '../lib/supabase';
 import { createExtensionPost, updateClipVideoUrl } from '../lib/postPublishing';
 import { listDrafts, deleteDraft } from '../lib/drafts';
 import DraftsScreen from './DraftsScreen';
-import TourButton from './tour/TourButton';
-import PanelTour from './tour/PanelTour';
 import { pageIdentity } from '../lib/pageInfo';
 import { THEMES, isThemeId, themeLabel } from '../lib/themes';
 
@@ -457,7 +455,6 @@ export default function ClipCreator({ pageInfo, session }) {
               <span className="draft-count">{drafts.length > 99 ? '99+' : drafts.length}</span>
             )}
           </button>
-          <TourButton />
           <div className="relative" ref={themeMenuRef}>
             <button
               type="button"
@@ -561,7 +558,6 @@ export default function ClipCreator({ pageInfo, session }) {
           />
         )}
         {step === 'success' && <SuccessScreen clip={publishedClip} uploadState={uploadState} onRetryUpload={retryUpload} onReset={() => { setStep('clip'); setClipData(null); }} />}
-        <PanelTour />
       </div>
     </div>
   );

@@ -2998,3 +2998,8 @@ this changelog.
 - Reactions now quote the source title/caption, not our own take text.
 - ThemeNudge hides while touring (no competing buddy); favicon added (killed the only 404s); post cards borderless with soft shadow.
 - Full retest: 35/35 stops resolve, zero JS errors, zero failed requests.
+### Tour removed from extension and webapp
+
+- Removed the buddy guided tour entirely: deleted the tour components, buttons, styles and engine from both apps, unmounted everything, and stripped all data-tour anchors.
+- Kept the unrelated improvements that came with it: borderless post cards, favicon, word-clipper phrase matching and window-follow.
+- Checks: root build and webapp build both pass; no tour strings remain in either bundle.

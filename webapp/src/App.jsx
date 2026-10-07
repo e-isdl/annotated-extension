@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ThemeFlyer from './components/ThemeFlyer';
-import WebappTour from './components/WebappTour';
 import AppSidebar from './components/AppSidebar';
 import RightRail from './components/RightRail';
 import Feed from './pages/Feed';
@@ -34,7 +33,6 @@ export default function App() {
           <AppShell />
           <MobileNav />
           <ThemeFlyer />
-          <WebappTour />
         </div>
       </ToastProvider>
     </BrowserRouter>

@@ -71,7 +71,7 @@ export default function AppSidebar() {
       <div className="sidebar-section">
         <p className="sidebar-label">Discover</p>
         <nav className="flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => <Link key={item.label} to={item.path} data-tour="web-side" data-to={item.path} className={`sidebar-link ${isActive(item) ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">{item.icon}</span>{item.label}{item.label === 'Drafts' && draftCount > 0 && <span className="sidebar-count">{draftCount > 99 ? '99+' : draftCount}</span>}</Link>)}
+          {NAV_ITEMS.map((item) => <Link key={item.label} to={item.path} className={`sidebar-link ${isActive(item) ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">{item.icon}</span>{item.label}{item.label === 'Drafts' && draftCount > 0 && <span className="sidebar-count">{draftCount > 99 ? '99+' : draftCount}</span>}</Link>)}
         </nav>
       </div>
 

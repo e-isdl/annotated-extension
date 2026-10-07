@@ -102,7 +102,7 @@ export default function DraftsScreen({ drafts, loading, signedIn, onBack, onCont
   return (
     <div className="clip-body">
       <div className="drafts-head">
-        <button type="button" data-tour="drafts-back" className="btn-ghost drafts-back" onClick={onBack} aria-label="Back">
+        <button type="button" className="btn-ghost drafts-back" onClick={onBack} aria-label="Back">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -156,7 +156,7 @@ export default function DraftsScreen({ drafts, loading, signedIn, onBack, onCont
                     </svg>
                   </button>
                 </div>
-                <button type="button" data-tour="drafts-first" className="btn-primary w-full draft-continue" onClick={() => onContinue(draft)}>
+                <button type="button" className="btn-primary w-full draft-continue" onClick={() => onContinue(draft)}>
                   Continue
                 </button>
               </div>

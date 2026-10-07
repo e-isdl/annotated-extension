@@ -301,14 +301,14 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
           placeholder="What stood out to you?"
           rows={5}
           maxLength={annotationLimit}
-          data-tour="ann-take"
+         
           className="take-input"
         />
         <div className="take-bar">
           <div className="take-bar-left">
             <button
               type="button"
-              data-tour="ann-speak"
+             
               className="btn-ghost take-speak"
               onClick={() => setMode('audio')}
             >
@@ -529,7 +529,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
           <button
             type="button"
             className="take-select community-picker-btn"
-            data-tour="ann-community"
+           
             onClick={() => { setCommunityOpen((v) => !v); setCommunityQuery(''); }}
             aria-haspopup="listbox"
             aria-expanded={communityOpen}
@@ -586,7 +586,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
 
       <label className="take-select-label">
         Post type
-        <select value={annotationType} onChange={(event) => setAnnotationType(event.target.value)} data-tour="ann-type" className="input take-select">
+        <select value={annotationType} onChange={(event) => setAnnotationType(event.target.value)} className="input take-select">
           {ANNOTATION_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
         </select>
       </label>
@@ -621,7 +621,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
       <button
         onClick={handlePublish}
         disabled={(!text && !audioUrl) || publishing || uploading}
-        data-tour="ann-post"
+       
         className="btn-primary w-full take-post disabled:opacity-40"
       >
         {publishing ? (
@@ -641,7 +641,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
         type="button"
         onClick={saveDraftNow}
         disabled={!canAutosave}
-        data-tour="ann-save"
+       
         className="btn-ghost w-full disabled:opacity-40"
       >
         Save draft
@@ -650,7 +650,7 @@ export default function AnnotationForm({ clipData, onBack, onPublish, onUseEmbed
       <button
         type="button"
         onClick={onOpenDrafts}
-        data-tour="ann-drafts"
+       
         className="btn-ghost w-full"
       >
         View drafts

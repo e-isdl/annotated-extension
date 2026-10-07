@@ -809,14 +809,14 @@ export default function TweetClipper({ pageInfo, onReady }) {
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      <div data-tour="tw-post" className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col gap-2">
+      <div className="bg-bg-surface border border-border rounded-lg p-4 flex flex-col gap-2">
         <p className="text-xs text-text-muted font-medium uppercase tracking-wide">Post</p>
         <p className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap">{title || 'This post will be shared on Annotated.'}</p>
         <p className="text-xs text-text-muted truncate">{url}</p>
       </div>
 
       {phase === 'preview' && clip && (
-        <div data-tour="tw-preview" className="bg-bg-surface border border-border rounded-lg overflow-hidden">
+        <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
           <video
             src={clip.url}
             loop
@@ -875,7 +875,7 @@ export default function TweetClipper({ pageInfo, onReady }) {
       <button
         onClick={handleContinue}
         disabled={busy || publishing || !canContinue}
-        data-tour="tw-continue"
+       
         className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {publishing ? 'Uploading recording…' : phase === 'recording' ? 'Recording…' : phase === 'shot-working' ? 'Capturing screenshot…' : busy ? 'Working…' : 'Continue to Annotate →'}
