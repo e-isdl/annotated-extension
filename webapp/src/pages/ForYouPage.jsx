@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import FollowingList from '../components/FollowingList';
 
 const TABS = [
   { value: 'foryou', label: 'For You' },
@@ -33,9 +34,13 @@ export default function ForYouPage() {
         ))}
       </div>
 
-      <div className="empty-state">
-        <p className="text-sm text-text-secondary">This feature is not available right now.</p>
-      </div>
+      {tab === 'following' ? (
+        <FollowingList />
+      ) : (
+        <div className="empty-state">
+          <p className="text-sm text-text-secondary">This feature is not available right now.</p>
+        </div>
+      )}
     </div>
   );
 }

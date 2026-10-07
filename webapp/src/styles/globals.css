@@ -102,7 +102,7 @@ html[data-theme="tokyo"] body::before {
 }
 
 .app-shell { display: grid; grid-template-columns: 240px minmax(0, 800px) 300px; gap: 20px; align-items: start; width: min(1400px, calc(100% - 48px)); margin: 0 auto; }
-.app-shell-focused { grid-template-columns: 240px minmax(0, 800px); justify-content: center; }
+.app-shell-focused { grid-template-columns: 240px minmax(0, 1100px); }
 .app-main { min-width: 0; padding: 28px 0 72px; }
 .community-sidebar { position: sticky; top: 72px; min-height: calc(100vh - 72px); padding: 28px 16px 24px 0; border-right: 1px solid var(--border-soft); }
 .sidebar-section { margin-bottom: 25px; }
@@ -111,6 +111,7 @@ html[data-theme="tokyo"] body::before {
 .sidebar-link:hover, .community-link:hover { background: var(--surface-3); color: var(--text-primary); }
 .sidebar-link-active { background: var(--active-bg); color: var(--active-text); }
 .sidebar-icon { width: 18px; color: var(--text-muted); font-size: 16px; text-align: center; }
+.sidebar-icon-square { display: inline-block; width: 14px; height: 14px; border-radius: 4px; background: linear-gradient(135deg, var(--red), var(--accent-2)); vertical-align: -1px; }
 .community-dot { --community-hue: 34; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 21px; height: 21px; overflow: hidden; border-radius: 50%; background: hsl(var(--community-hue) var(--community-s) var(--community-l)); color: #fff; font-size: 10px; font-weight: 750; }
 .community-pfp { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .community-dot-lg { width: 38px; height: 38px; font-size: 15px; }
@@ -122,7 +123,7 @@ html[data-theme="tokyo"] body::before {
 .sidebar-empty { margin: 5px 9px; color: var(--text-muted); font-size: 11px; line-height: 1.5; }
 .sidebar-note { display: flex; gap: 10px; margin: 32px 10px 0; padding-top: 14px; border-top: 1px solid var(--border-soft); color: var(--text-muted); }
 .sidebar-note p { margin: 0; font-size: 11px; line-height: 1.5; }
-.right-rail { position: sticky; top: 72px; display: flex; flex-direction: column; gap: 13px; padding: 28px 0 24px 16px; border-left: 1px solid var(--border-soft); }
+.right-rail { position: sticky; top: 72px; align-self: start; display: flex; flex-direction: column; gap: 13px; padding: 28px 0 24px 16px; border-left: 1px solid var(--border-soft); }
 .create-prompt, .rail-card { padding: 17px; border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--card); }
 .create-prompt { background: var(--surface-2); }
 .community-info-card { padding: 17px; border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--card); }

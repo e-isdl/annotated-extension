@@ -3055,3 +3055,10 @@ this changelog.
 
 - The word clipped tag is now a button: clicking it opens a small white popover below ("Clip set with Word clipper." plus the adjust hint) with an arrow pointing up. Pill toggle, outside click and Esc all close it; the pill deepens red while open.
 - Checks: extension build passes.
+### For You square, real Following, rail cards, unified shell
+
+- For You sidebar item has a small accent square icon.
+- Following is real: new FollowingList (posts from followed users, newest first, with signed-out and empty states), a real /following page, and the For You Following tab renders it. For You tab stays not-available.
+- Right rail gains Trending today (top 5 threads, 24h, title/community/votes, links to threads) and Top annotators (top 4 by summed score, avatar/handle/points, See all to Leaderboard) on Home, Top, New and For You.
+- Shell unified: no more centering on rail-less pages, main column widens to use the space, sidebar never moves, rail pinned with align-self.
+- Checks: webapp build passes; all markers verified in the bundle.
