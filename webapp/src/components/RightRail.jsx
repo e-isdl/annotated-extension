@@ -170,6 +170,7 @@ export default function RightRail() {
   }
 
   return (
+    <div className="rail-cell">
     <aside className="right-rail">
       {community ? (
         <section className="community-info-card">
@@ -310,5 +311,6 @@ export default function RightRail() {
         <a href="https://github.com/e-isdl/annotated-extension/releases" data-github-link target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </footer>
     </aside>
+    </div>
   );
 }

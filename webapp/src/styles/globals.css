@@ -26,6 +26,7 @@
      page looks physically identical. Mask stops are pre-scaled per tier
      because the drift overlay lives outside the zoomed root. */
   --k: 1;
+  --header-h: 57px;
   --mask-outer: 362px;
   --mask-inner: 242px;
   --mask-outer-wide: 470px;
@@ -130,7 +131,11 @@ html[data-theme="tokyo"] body::before {
 /* Explore keeps a wide 920px center so community cards breathe in 3 columns. */
 .app-shell:has(.explore-page) { grid-template-columns: minmax(0, 1fr) minmax(0, 920px) minmax(0, 1fr); }
 .app-main { min-width: 0; padding: 28px 0 72px; }
-.community-sidebar { position: sticky; top: 72px; justify-self: start; width: min(328px, 100%); max-height: calc(100vh / var(--k) - 72px); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; padding: 28px 16px 24px 0; border-right: 1px solid var(--border-soft); }
+.community-sidebar { position: sticky; top: 72px; justify-self: start; width: min(328px, 100%); max-height: calc(100vh / var(--k) - 72px); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; padding: 28px 16px 24px 0; }
+/* Divider lines live on the full-height grid cells, not the sticky inner
+   boxes, so they run header-bottom to viewport-bottom on every page. */
+.sidebar-cell { align-self: stretch; min-height: calc(100dvh / var(--k) - var(--header-h)); border-right: 1px solid var(--border-soft); }
+.rail-cell { align-self: stretch; min-height: calc(100dvh / var(--k) - var(--header-h)); border-left: 1px solid var(--border-soft); }
 /* Zoom root: header and body shell scale together so the 125% reference
    design renders at the same physical size at 110%, 100% and 90% zoom.
    Below 1640px --k is 1 and these rules are no-ops. */
@@ -170,9 +175,10 @@ html[data-theme="tokyo"] body::before {
 .sidebar-empty { margin: 5px 9px; color: var(--text-muted); font-size: 11px; line-height: 1.5; }
 .sidebar-note { display: flex; gap: 10px; margin: 32px 10px 0; padding-top: 14px; border-top: 1px solid var(--border-soft); color: var(--text-muted); }
 .sidebar-note p { margin: 0; font-size: 11px; line-height: 1.5; }
-.right-rail { position: sticky; top: 72px; justify-self: end; width: min(328px, 100%); align-self: start; display: flex; flex-direction: column; gap: 16px; padding: 28px 0 24px 16px; border-left: 1px solid var(--border-soft); }
+.right-rail { position: sticky; top: 72px; justify-self: end; width: min(328px, 100%); align-self: start; display: flex; flex-direction: column; gap: 16px; padding: 28px 0 24px 16px; }
 /* Community rail: cards separate the rail, no divider line beside it. */
-.app-shell:has(.community-page) .right-rail { border-left: 0; padding-left: 0; }
+.app-shell:has(.community-page) .rail-cell { border-left: 0; }
+.app-shell:has(.community-page) .right-rail { padding-left: 0; }
 .create-prompt, .rail-card { padding: 17px; border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--card); }
 .create-prompt { background: var(--surface-2); }
 .community-info-card { padding: 17px; border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--card); }
@@ -706,15 +712,15 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 @media (max-width: 1200px) {
   .app-shell, .app-shell-focused, .app-shell:has(.explore-page) { grid-template-columns: 220px minmax(0, 1fr); gap: 22px; }
   .community-sidebar { width: auto; }
-  .right-rail { display: none; }
+  .right-rail, .rail-cell { display: none; }
 }
 @media (max-width: 1100px) {
   .explore-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .app-shell, .app-shell-focused { display: block; width: min(100% - 24px, 680px); padding-bottom: 72px; }
-  .community-sidebar { display: none; }
-  .right-rail { display: none; }
+  .community-sidebar, .sidebar-cell { display: none; }
+  .right-rail, .rail-cell { display: none; }
   .app-main { padding: 20px 0 35px; }
   .detail-page, .annotated-post-page { max-width: none; }
   .feed-heading { align-items: flex-start; }

@@ -66,6 +66,7 @@ export default function AppSidebar() {
   const label = user && communities.length ? (failed ? 'Communities' : 'Your communities') : 'Popular communities';
 
   return (
+    <div className="sidebar-cell">
     <aside className="community-sidebar">
       <div className="sidebar-section">
         <nav className="flex flex-col gap-1">
@@ -85,5 +86,6 @@ export default function AppSidebar() {
       </div>
 
     </aside>
+    </div>
   );
 }

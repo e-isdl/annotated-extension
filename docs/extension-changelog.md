@@ -3154,3 +3154,8 @@ this changelog.
 
 - parseYouTubeJson3 omits the word offset key instead of emitting NaN when a cue has no timing, so the word clipper keeps its estimated-timing fallback; stale transcript test now expects the segs rows.
 - Checks: root suite 46/46, webapp suite 14/14.
+### Full-height sidebar dividers
+
+- Divider lines moved from the sticky inner boxes to stretched grid cells, so both lines run header-bottom to viewport-bottom on every page with no gap and no extra scroll; sticky boxes keep scrolling on their own inside.
+- Community rail keeps its no-divider exception; cells hide with their rails below 1200px and 760px.
+- Checks: webapp build passes; bundle markers verified (cell borders, zero inner borders, cell wrappers).
