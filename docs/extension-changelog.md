@@ -3138,3 +3138,8 @@ this changelog.
 - Profile rail is bio About card (hidden when empty) plus More annotators; duplicate header card, Trending topics and Trending annotators removed.
 - Community rail About card has Community home plus Create thread; toolbar Create thread button removed.
 - Checks: webapp build passes; bundle markers verified (704px, 328px, bar-free rails, Create thread, More annotators).
+### Profile rail peers and favorites
+
+- Profile rail no longer duplicates the header: bio About card removed.
+- Rail shows peer annotators like him (owner excluded) plus his Favorite communities list, hidden when empty; no trending sections, no rail scroll.
+- Checks: webapp build passes; bundle markers verified (More annotators like him, Favorite communities).

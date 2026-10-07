@@ -3,10 +3,12 @@ import Avatar from './Avatar';
 import { SAMPLE_PEOPLE } from '../lib/samplePeople';
 
 // Sample people rows (sidebar-link style) linking to their demo profiles.
-export default function SamplePeople({ limit = 10 }) {
+export default function SamplePeople({ limit = 10, exclude = null }) {
+  const skip = String(exclude || '').toLowerCase();
+  const rows = SAMPLE_PEOPLE.filter((p) => p.handle.toLowerCase() !== skip).slice(0, Math.max(limit, 1));
   return (
     <>
-      {SAMPLE_PEOPLE.slice(0, Math.max(limit, 1)).map((p) => (
+      {rows.map((p) => (
         <Link
           key={p.handle}
           to={`/u/${p.handle}`}

@@ -30,6 +30,7 @@ export default function RightRail() {
   const [relatedCommunities, setRelatedCommunities] = useState([]);
   const [communityAnnotators, setCommunityAnnotators] = useState([]);
   const [railProfile, setRailProfile] = useState(null);
+  const [favoriteCommunities, setFavoriteCommunities] = useState([]);
   const [community, setCommunity] = useState(null);
   const [joined, setJoined] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
@@ -130,22 +131,24 @@ export default function RightRail() {
   useEffect(() => {
     let active = true;
     setRailProfile(null);
+    setFavoriteCommunities([]);
     if (!profileHandle) return () => { active = false; };
     (async () => {
       const demo = findSamplePerson(profileHandle);
       if (demo) {
-        if (active) setRailProfile({ handle: demo.handle, display_name: demo.name, avatar_url: demo.pfp, bio: '', followers: demo.followers, following: demo.following, posts: 0, demo: true });
+        if (active) setRailProfile({ handle: demo.handle, display_name: demo.name, avatar_url: demo.pfp, demo: true });
         return;
       }
       const { data: row } = await supabase.from('profiles').select('*').eq('handle', profileHandle).maybeSingle();
       if (!active || !row) return;
-      const [{ count: followerCount }, { count: followingCount }, { count: postCount }] = await Promise.all([
-        supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('following_id', row.id),
-        supabase.from('follows').select('following_id', { count: 'exact', head: true }).eq('follower_id', row.id),
-        supabase.from('clips').select('id', { count: 'exact', head: true }).eq('user_id', row.id),
-      ]);
+      const { data: memberships } = await supabase
+        .from('community_members')
+        .select('community_id, communities(id, slug, name)')
+        .eq('user_id', row.id)
+        .limit(6);
       if (!active) return;
-      setRailProfile({ ...row, followers: followerCount || 0, following: followingCount || 0, posts: postCount || 0 });
+      setRailProfile({ ...row });
+      setFavoriteCommunities((memberships || []).map((m) => m.communities).filter(Boolean));
     })();
     return () => { active = false; };
   }, [profileHandle]);
@@ -292,18 +295,28 @@ export default function RightRail() {
 
       {isProfile && railProfile && (
         <>
-          {railProfile.bio && (
-            <section className="rail-card profile-rail-card">
-              <h2 className="rail-heading">About</h2>
-              <p className="profile-rail-bio">{railProfile.bio}</p>
-            </section>
-          )}
           <section className="rail-card">
-            <h2 className="rail-heading">More annotators</h2>
+            <h2 className="rail-heading">More annotators like him</h2>
             <nav className="flex flex-col gap-1 mt-2">
-              <TrendingPeople limit={5} />
+              <TrendingPeople limit={5} exclude={railProfile.handle} />
             </nav>
           </section>
+          {favoriteCommunities.length > 0 && (
+            <section className="rail-card">
+              <h2 className="rail-heading">Favorite communities</h2>
+              <nav className="flex flex-col gap-1 mt-2">
+                {favoriteCommunities.map((c) => (
+                  <Link key={c.slug} to={`/c/${c.slug}`} className="related-row">
+                    <CommunityAvatar slug={c.slug} name={c.name} />
+                    <span className="min-w-0 flex-1">
+                      <span className="related-name block truncate">{c.name}</span>
+                    </span>
+                    <span className="topic-go">↗</span>
+                  </Link>
+                ))}
+              </nav>
+            </section>
+          )}
         </>
       )}
       <footer className="rail-footer">
