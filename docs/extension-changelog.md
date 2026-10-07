@@ -3051,3 +3051,7 @@ this changelog.
 
 - Sidebar has a single For You nav item (no section header, no heart icon) above Discover; the page mirrors Home (title, tab row, right rail) with For You and Following tabs and a not-available note below.
 - Checks: webapp build passes.
+### Word-clipped pill opens an explainer popover
+
+- The word clipped tag is now a button: clicking it opens a small white popover below ("Clip set with Word clipper." plus the adjust hint) with an arrow pointing up. Pill toggle, outside click and Esc all close it; the pill deepens red while open.
+- Checks: extension build passes.

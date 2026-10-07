@@ -166,7 +166,14 @@ html[data-theme="synthwave"] .panel-logo-text { text-shadow: 0 0 14px rgba(255, 
 .tl-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px 10px; }
 .tl-cardhead { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
 .tl-cardhead svg { color: var(--text-3); flex: none; }
-.word-clipped-tag { font-size: 11px; font-weight: 700; color: var(--red); background: var(--red-soft); border: 1px solid color-mix(in srgb, var(--red) 35%, transparent); border-radius: 999px; padding: 1px 8px; margin-left: 2px; animation: word-confirm-in .3s cubic-bezier(.2,1.4,.4,1) both; }
+.word-clipped-tag { font: inherit; font-size: 11px; font-weight: 700; color: var(--red); background: var(--red-soft); border: 1px solid color-mix(in srgb, var(--red) 35%, transparent); border-radius: 999px; padding: 1px 8px; margin-left: 2px; cursor: pointer; animation: word-confirm-in .3s cubic-bezier(.2,1.4,.4,1) both; }
+.word-clipped-tag.is-open { background: color-mix(in srgb, var(--red) 16%, transparent); border-color: var(--red); }
+.word-clipped-wrap { position: relative; display: inline-flex; margin-left: 2px; }
+.word-clipped-wrap .word-clipped-tag { margin-left: 0; }
+.word-clipped-pop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 5; width: 250px; padding: 10px 12px; background: #FFFDF8; border: 1px solid #EADFC4; border-radius: 10px; font-size: 13px; line-height: 1.45; color: #1A1A1E; text-align: left; white-space: normal; }
+.word-clipped-pop::after { content: ""; position: absolute; top: -5px; left: 24px; width: 9px; height: 9px; background: #FFFDF8; border-left: 1px solid #EADFC4; border-top: 1px solid #EADFC4; border-radius: 2px 0 0 0; transform: rotate(45deg); }
+.word-clipped-pop-title { display: block; font-weight: 700; color: #1A1A1E; }
+.word-clipped-pop-text { display: block; margin-top: 2px; color: #1A1A1E; }
 .tl-cardfoot { margin-top: 2px; padding: 10px 0 4px; text-align: center; }
 .tl-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px 0 8px; white-space: nowrap; background: var(--bg); border: 1px solid var(--border-strong); border-radius: 999px; box-shadow: 0 4px 10px -6px rgba(0,0,0,.3); font-size: 15px; }
 .tl-pill-ic { width: 26px; height: 26px; border-radius: 50%; background: var(--red-soft); color: var(--red); display: inline-flex; align-items: center; justify-content: center; flex: none; }

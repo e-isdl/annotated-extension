@@ -366,6 +366,8 @@ export default function YouTubeClipper({
   const frameRef = useRef({ lastReadout: 0, capped: false, snapKey: '' });
   const [wordClipperOpen, setWordClipperOpen] = useState(false);
   const [wordConfirm, setWordConfirm] = useState(null);
+  const [clipInfoOpen, setClipInfoOpen] = useState(false);
+  const clipInfoWrapRef = useRef(null);
   const [segments, setSegments] = useState(null);
   const [wordLoading, setWordLoading] = useState(false);
   const [wordError, setWordError] = useState('');
@@ -1338,10 +1340,31 @@ export default function YouTubeClipper({
   };
 
   useEffect(() => {
-    if (!wordConfirm) return undefined;
+    if (!wordConfirm) {
+      setClipInfoOpen(false);
+      return undefined;
+    }
     const t = window.setTimeout(() => setWordConfirm(null), 5000);
     return () => window.clearTimeout(t);
   }, [wordConfirm]);
+
+  // Popover below the word-clipped pill: toggle on the pill, close on
+  // outside click or Escape.
+  useEffect(() => {
+    if (!clipInfoOpen) return undefined;
+    const onDown = (e) => {
+      if (!clipInfoWrapRef.current || !clipInfoWrapRef.current.contains(e.target)) setClipInfoOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setClipInfoOpen(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [clipInfoOpen]);
 
   const canContinue = rec.state === 'done' || playMode === 'embed';
   const locked = rec.state === 'recording' || rec.state === 'done';
@@ -2072,9 +2095,27 @@ export default function YouTubeClipper({
         )}
           <div className="tl-block">
           <div className="tl-card">
-            <div className="tl-cardhead" aria-hidden="true">
+            <div className="tl-cardhead">
               {hasWindow() ? '3-Minute Clipping Window' : 'Clipping Window'}
-              {wordConfirm && <span className="word-clipped-tag">word clipped</span>}
+              {wordConfirm && (
+                <span className="word-clipped-wrap" ref={clipInfoWrapRef}>
+                  <button
+                    type="button"
+                    className={`word-clipped-tag${clipInfoOpen ? ' is-open' : ''}`}
+                    onClick={() => setClipInfoOpen((v) => !v)}
+                    aria-expanded={clipInfoOpen}
+                    aria-label="About this word clip"
+                  >
+                    word clipped
+                  </button>
+                  {clipInfoOpen && (
+                    <span className="word-clipped-pop" role="dialog" aria-label="About this word clip">
+                      <span className="word-clipped-pop-title">Clip set with Word clipper.</span>
+                      <span className="word-clipped-pop-text">It starts where your word was spoken. Move the handles to adjust it.</span>
+                    </span>
+                  )}
+                </span>
+              )}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="9.2" />
                 <path d="M12 11v5.4" />
