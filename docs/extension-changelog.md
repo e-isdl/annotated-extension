@@ -3098,3 +3098,8 @@ this changelog.
 ### Remove board invitation, hide empty annotators
 
 - Trending annotators no longer shows the "Be the first" invitation; the card hides when nobody has points yet.
+### Discovery left, Explore people, real pfps
+
+- Trending today and Top annotators moved to the left sidebar; Communities-to-explore card removed from the rail; middle column 700px with exact centering; sidebar scrolls internally.
+- Explore page has a people-to-follow side section: Jason Calacanis first, then 9 more big names, all with real portrait photos stored locally. Same list backs Top annotators. Navbar Explore button removed.
+- Checks: webapp build passes.

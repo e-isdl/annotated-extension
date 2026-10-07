@@ -315,7 +315,6 @@ export default function Navbar() {
             )}
             <ThemeNudge hidden={showThemes} onPick={() => setShowThemes(true)} />
           </div>
-          <Link to="/explore" className="hidden sm:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Explore</Link>
           <Link to="/leaderboard" className="hidden md:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
           <Link to="/create" className="btn-primary h-9 text-xs">Create</Link>
 

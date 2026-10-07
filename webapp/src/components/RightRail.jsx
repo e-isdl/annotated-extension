@@ -7,9 +7,6 @@ import { getDemoClip } from '../lib/demoData';
 import { useToast } from './ToastProvider';
 import { postHref } from '../lib/links';
 import { subscribeActivePost } from '../lib/activePost';
-import TrendingToday from './TrendingToday';
-import TrendingTopics from './TrendingTopics';
-import TopAnnotators from './TopAnnotators';
 
 export default function RightRail() {
   const location = useLocation();
@@ -17,9 +14,7 @@ export default function RightRail() {
   const [takes, setTakes] = useState([]);
   useEffect(() => subscribeActivePost((active) => setTakes(active?.takes || [])), []);
   const postRef = location.pathname.match(/^\/(?:post|clip)\/([^/]+)/)?.[1] || location.pathname.match(/^\/@[^/]+\/post\/([^/?#]+)/)?.[1] || null;
-  const showDiscovery = !postRef && ['/', '/popular', '/latest', '/for-you'].includes(location.pathname);
   const [community, setCommunity] = useState(null);
-  const [communities, setCommunities] = useState([]);
   const [joined, setJoined] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
   const [authStateLoaded, setAuthStateLoaded] = useState(false);
@@ -82,19 +77,7 @@ export default function RightRail() {
       }
     }
 
-    async function loadTrending() {
-      const [{ data, error }, { data: membershipRows }] = await Promise.all([
-        supabase.from('communities').select('id, slug, name').order('name'),
-        supabase.from('community_members').select('community_id'),
-      ]);
-      if (!active || error || !data?.length) return;
-      const counts = {};
-      (membershipRows || []).forEach((row) => { counts[row.community_id] = (counts[row.community_id] || 0) + 1; });
-      setCommunities(data.map((item) => ({ ...item, members: counts[item.id] || 0 })).sort((a, b) => b.members - a.members).slice(0, 3));
-    }
-
     loadPostCommunity();
-    loadTrending();
     return () => { active = false; };
   }, [postRef]);
 
@@ -147,24 +130,6 @@ export default function RightRail() {
         </Link>
       ) : null}
 
-      {communities.length > 0 && takes.length === 0 && <section className="rail-card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="rail-heading">Communities to explore</h2>
-          <Link to="/explore" className="rail-seeall">See all</Link>
-        </div>
-        <div className="flex flex-col gap-3">
-          {communities.slice(0, 3).map((item) => (
-            <Link key={item.slug} to={`/c/${item.slug}`} className="flex items-center gap-3 no-underline group">
-              <CommunityAvatar slug={item.slug} name={item.name} className="community-dot community-dot-lg" />
-              <span className="min-w-0 flex-1">
-          <span className="block text-sm text-text-primary group-hover:text-accent-text truncate">c/{item.name}</span>
-          <span className="block text-[11px] text-text-muted mt-0.5">{item.members || 0} {item.members === 1 ? 'member' : 'members'}</span>
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>}
-
       {takes.length > 0 && (
         <section className="rail-card takes-card">
           <div className="takes-head">
@@ -185,13 +150,6 @@ export default function RightRail() {
         </section>
       )}
 
-      {showDiscovery && (
-        <>
-          <TrendingToday />
-          <TrendingTopics />
-          <TopAnnotators />
-        </>
-      )}
       <footer className="rail-footer">
         {!postRef && (
           <span className="rail-get-extension">

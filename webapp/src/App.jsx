@@ -8,7 +8,6 @@ import Feed from './pages/Feed';
 import ForYouPage from './pages/ForYouPage';
 import FollowingPage from './pages/FollowingPage';
 import TrendingPage from './pages/TrendingPage';
-import TrendingAnnotatorsPage from './pages/TrendingAnnotatorsPage';
 import ClipPage from './pages/ClipPage';
 import Profile from './pages/Profile';
 import AuthCallback from './pages/AuthCallback';
@@ -63,7 +62,6 @@ function AppShell() {
           <Route path="/for-you" element={<ForYouPage />} />
           <Route path="/following" element={<FollowingPage />} />
           <Route path="/trending" element={<TrendingPage />} />
-          <Route path="/trending-annotators" element={<TrendingAnnotatorsPage />} />
           <Route path="/popular" element={<Feed sortOverride="top" />} />
           <Route path="/latest" element={<Feed sortOverride="new" />} />
           <Route path="/clip/:id" element={<ClipPage />} />

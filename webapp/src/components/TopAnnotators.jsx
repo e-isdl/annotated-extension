@@ -3,12 +3,14 @@ import TrendingPeople from './TrendingPeople';
 
 export default function TopAnnotators() {
   return (
-    <section className="rail-card">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="rail-heading">Trending annotators</h2>
-        <Link to="/trending-annotators" className="rail-seeall">See all</Link>
+    <div className="border-t border-border-subtle pt-5">
+      <div className="flex items-center justify-between mb-2">
+        <p className="sidebar-label mb-0">Top annotators</p>
+        <Link to="/leaderboard" className="rail-seeall">See all</Link>
       </div>
-      <TrendingPeople limit={3} />
-    </section>
+      <nav className="flex flex-col gap-1">
+        <TrendingPeople limit={3} />
+      </nav>
+    </div>
   );
 }
