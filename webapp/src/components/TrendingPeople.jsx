@@ -46,6 +46,7 @@ export default function TrendingPeople({ limit = 3 }) {
       </div>
     );
   }
+  if (!rows.length) return null;
 
   return (
     <div className="take-list">
@@ -63,11 +64,6 @@ export default function TrendingPeople({ limit = 3 }) {
           <span className="take-points">{score}</span>
         </Link>
       ))}
-      {total < 3 && (
-        <p className="text-sm text-text-secondary">
-          Be the first to climb the board. <Link to="/create" className="text-accent-2 hover:text-accent-2 no-underline">Create a post</Link>
-        </p>
-      )}
     </div>
   );
 }

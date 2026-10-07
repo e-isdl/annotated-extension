@@ -3095,3 +3095,6 @@ this changelog.
 - Middle column widened 704 to 768px on all pages.
 - All four right-rail See all links are now muted pill buttons.
 - Checks: webapp build passes.
+### Remove board invitation, hide empty annotators
+
+- Trending annotators no longer shows the "Be the first" invitation; the card hides when nobody has points yet.
