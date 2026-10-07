@@ -3143,3 +3143,10 @@ this changelog.
 - Profile rail no longer duplicates the header: bio About card removed.
 - Rail shows peer annotators like him (owner excluded) plus his Favorite communities list, hidden when empty; no trending sections, no rail scroll.
 - Checks: webapp build passes; bundle markers verified (More annotators like him, Favorite communities).
+### Zoom-compensated shell, explore people fix, community rail trim
+
+- 125 percent zoom (1536 CSS px) is the reference and renders byte-identical: --k is 1 below 1640px, zoom no-ops, mask stops equal old pixels.
+- At wider viewports the app root scales up (1.136 at 1640px, 1.25 at 1830px, 1.389 at 2030px) so the page looks physically identical at 110, 100 and 90 percent zoom; header and shell scale together.
+- Drift overlay mask stops are pre-scaled per tier (overlay lives outside the zoomed root); sidebar max-height and root min-height divide vh by --k so nothing overflows; above 2300px the shell and header cap at 1640px effective width.
+- Explore People to follow rows stack name over handle so nothing squeezes; community rail About card removed, only rules, top annotators and related remain.
+- Checks: webapp build passes; bundle markers verified (--k tiers, zoom root, vh fixes, 1640 cap, stacked rows).

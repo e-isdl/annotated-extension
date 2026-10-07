@@ -233,25 +233,6 @@ export default function RightRail() {
 
       {communitySlug && railCommunity && (
         <>
-          <section className="community-info-card">
-            <div className="community-info-heading">
-              <CommunityAvatar slug={railCommunity.slug} name={railCommunity.name} className="community-dot community-dot-lg" />
-              <div className="min-w-0 flex-1">
-                <p className="community-info-prefix">c/{railCommunity.name}</p>
-                <h2>{railCommunity.name}</h2>
-              </div>
-            </div>
-            {railCommunity.description && <p className="community-info-description">{railCommunity.description}</p>}
-            <div className="community-stats">
-              {railCommunity.created_at && <span>Created {new Date(railCommunity.created_at).toLocaleDateString()}</span>}
-              {(railCommunity.members ?? 0) > 1 && <span><strong>{railCommunity.members}</strong> members</span>}
-              {railCommunity.threads != null && <span><strong>{railCommunity.threads}</strong> threads</span>}
-            </div>
-            <div className="community-info-actions">
-              <Link to={`/c/${railCommunity.slug}`} className="community-info-link">Community home</Link>
-              <Link to="/create" className="community-info-link">Create thread</Link>
-            </div>
-          </section>
           {railCommunity.rules && (
             <section className="rail-card">
               <h2 className="rail-heading">Community rules</h2>

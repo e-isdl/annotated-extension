@@ -233,7 +233,7 @@ export default function Navbar() {
 
   return (
     <nav className="border-b border-border-subtle bg-bg-base sticky top-0 z-10">
-      <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between gap-5">
+      <div className="navbar-inner max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between gap-5">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center">
             <span className="text-[var(--on-red)] font-bold text-xs">A</span>

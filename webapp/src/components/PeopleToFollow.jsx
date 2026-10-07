@@ -6,7 +6,7 @@ export default function PeopleToFollow({ limit = 10 }) {
     <section className="explore-people" aria-label="People to follow">
       <h2 className="explore-people-title">People to follow</h2>
       <p className="explore-people-sub">Loud builders, worth reading.</p>
-      <SamplePeople limit={limit} size="sm" />
+      <SamplePeople limit={limit} size="sm" stacked />
     </section>
   );
 }

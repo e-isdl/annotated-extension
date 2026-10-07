@@ -32,7 +32,7 @@ export default function App() {
     <BrowserRouter>
       <ScrollToTop />
       <ToastProvider>
-        <div className="min-h-screen bg-bg-base text-text-primary font-ui">
+        <div className="app-root min-h-screen bg-bg-base text-text-primary font-ui">
           <Navbar />
           <AppShell />
           <MobileNav />

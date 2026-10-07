@@ -21,6 +21,24 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-pill: 9999px;
+  /* Zoom compensation: 125% browser zoom (1536 CSS px) is the reference.
+     Lower zooms scale the reference design up via zoom: var(--k) so the
+     page looks physically identical. Mask stops are pre-scaled per tier
+     because the drift overlay lives outside the zoomed root. */
+  --k: 1;
+  --mask-outer: 362px;
+  --mask-inner: 242px;
+  --mask-outer-wide: 470px;
+  --mask-inner-wide: 350px;
+}
+@media (min-width: 1640px) {
+  :root { --k: 1.136; --mask-outer: 411.2px; --mask-inner: 274.9px; --mask-outer-wide: 533.9px; --mask-inner-wide: 397.6px; }
+}
+@media (min-width: 1830px) {
+  :root { --k: 1.25; --mask-outer: 452.5px; --mask-inner: 302.5px; --mask-outer-wide: 587.5px; --mask-inner-wide: 437.5px; }
+}
+@media (min-width: 2030px) {
+  :root { --k: 1.389; --mask-outer: 502.8px; --mask-inner: 336.1px; --mask-outer-wide: 652.8px; --mask-inner-wide: 486.2px; }
 }
 
 @layer base {
@@ -32,15 +50,15 @@
      content column: the overlay is masked transparent across the feed. */
   @media (min-width: 1100px) {
     body::after {
-      -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - 362px), transparent calc(50% - 242px), transparent calc(50% + 242px), #000 calc(50% + 362px), #000 100%);
-      mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - 362px), transparent calc(50% - 242px), transparent calc(50% + 242px), #000 calc(50% + 362px), #000 100%);
+      -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - var(--mask-outer)), transparent calc(50% - var(--mask-inner)), transparent calc(50% + var(--mask-inner)), #000 calc(50% + var(--mask-outer)), #000 100%);
+      mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - var(--mask-outer)), transparent calc(50% - var(--mask-inner)), transparent calc(50% + var(--mask-inner)), #000 calc(50% + var(--mask-outer)), #000 100%);
     }
   }
   /* Explore uses the wide 920px center: keep the drift out of it too. */
   @media (min-width: 1100px) {
     body:has(.explore-page)::after {
-      -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - 470px), transparent calc(50% - 350px), transparent calc(50% + 350px), #000 calc(50% + 470px), #000 100%);
-      mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - 470px), transparent calc(50% - 350px), transparent calc(50% + 350px), #000 calc(50% + 470px), #000 100%);
+      -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - var(--mask-outer-wide)), transparent calc(50% - var(--mask-inner-wide)), transparent calc(50% + var(--mask-inner-wide)), #000 calc(50% + var(--mask-outer-wide)), #000 100%);
+      mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - var(--mask-outer-wide)), transparent calc(50% - var(--mask-inner-wide)), transparent calc(50% + var(--mask-inner-wide)), #000 calc(50% + var(--mask-outer-wide)), #000 100%);
     }
   }
   /* Scanline overlays sit above page and card backgrounds but below all
@@ -112,7 +130,15 @@ html[data-theme="tokyo"] body::before {
 /* Explore keeps a wide 920px center so community cards breathe in 3 columns. */
 .app-shell:has(.explore-page) { grid-template-columns: minmax(0, 1fr) minmax(0, 920px) minmax(0, 1fr); }
 .app-main { min-width: 0; padding: 28px 0 72px; }
-.community-sidebar { position: sticky; top: 72px; justify-self: start; width: min(328px, 100%); max-height: calc(100vh - 72px); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; padding: 28px 16px 24px 0; border-right: 1px solid var(--border-soft); }
+.community-sidebar { position: sticky; top: 72px; justify-self: start; width: min(328px, 100%); max-height: calc(100vh / var(--k) - 72px); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; padding: 28px 16px 24px 0; border-right: 1px solid var(--border-soft); }
+/* Zoom root: header and body shell scale together so the 125% reference
+   design renders at the same physical size at 110%, 100% and 90% zoom.
+   Below 1640px --k is 1 and these rules are no-ops. */
+.app-root { zoom: var(--k); min-height: calc(100vh / var(--k)); }
+@media (min-width: 2300px) {
+  .app-shell, .app-shell-focused { max-width: 1640px; margin-inline: auto; }
+  .navbar-inner { max-width: 1640px; }
+}
 .community-sidebar::-webkit-scrollbar, .right-rail::-webkit-scrollbar { display: none; width: 0; }
 .community-sidebar, .right-rail { scrollbar-width: none; -ms-overflow-style: none; }
 .explore-layout { display: block; }
