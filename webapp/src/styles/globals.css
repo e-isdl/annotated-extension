@@ -106,6 +106,11 @@ html[data-theme="tokyo"] body::before {
 .app-main { min-width: 0; padding: 28px 0 72px; }
 .community-sidebar { position: sticky; top: 72px; max-height: calc(100vh - 72px); overflow-y: auto; scrollbar-width: thin; padding: 28px 16px 24px 0; border-right: 1px solid var(--border-soft); }
 .explore-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; align-items: start; }
+.explore-people { padding: 17px; border-radius: var(--radius-md); background: var(--surface-2); position: sticky; top: 88px; }
+.explore-people-title { margin: 0 0 2px; color: var(--text-primary); font-size: 16px; }
+.explore-people-sub { margin: 0 0 6px; color: var(--text-secondary); font-size: 12px; }
+.explore-people .sidebar-link { font-size: 13px; padding: 8px 10px; border-radius: 10px; }
+.explore-people .sidebar-link + .sidebar-link { border-top: 1px solid var(--border-soft); }
 @media (max-width: 900px) { .explore-layout { grid-template-columns: minmax(0, 1fr); } }
 .sidebar-section { margin-bottom: 25px; }
 .sidebar-label { margin: 0 0 9px 10px; }

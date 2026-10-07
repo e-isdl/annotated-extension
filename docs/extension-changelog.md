@@ -3103,3 +3103,8 @@ this changelog.
 - Trending today and Top annotators moved to the left sidebar; Communities-to-explore card removed from the rail; middle column 700px with exact centering; sidebar scrolls internally.
 - Explore page has a people-to-follow side section: Jason Calacanis first, then 9 more big names, all with real portrait photos stored locally. Same list backs Top annotators. Navbar Explore button removed.
 - Checks: webapp build passes.
+### Discovery back right, Explore people card
+
+- Trending today and Top annotators live in the right rail again (flat sidebar-styled sections); left sidebar is back to nav plus communities.
+- Explore page gains a designed People to follow card (sticky side column, real pfps, X links) instead of bare rows.
+- Checks: webapp build passes.

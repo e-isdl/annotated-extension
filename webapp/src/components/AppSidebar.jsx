@@ -4,8 +4,6 @@ import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
 import { listDrafts } from '../lib/drafts';
 import CommunityAvatar from './CommunityAvatar';
-import TrendingToday from './TrendingToday';
-import TopAnnotators from './TopAnnotators';
 
 const NAV_ITEMS = [
   { label: 'For You', path: '/for-you', icon: '✧', sort: null },
@@ -85,9 +83,6 @@ export default function AppSidebar() {
           {user && !failed && communities.length === 0 && displayedCommunities.length === 0 && <p className="sidebar-empty">Explore communities and join one to pin it here.</p>}
         </nav>
       </div>
-
-      <TrendingToday />
-      <TopAnnotators />
 
     </aside>
   );

@@ -7,6 +7,8 @@ import { getDemoClip } from '../lib/demoData';
 import { useToast } from './ToastProvider';
 import { postHref } from '../lib/links';
 import { subscribeActivePost } from '../lib/activePost';
+import TrendingToday from './TrendingToday';
+import TopAnnotators from './TopAnnotators';
 
 export default function RightRail() {
   const location = useLocation();
@@ -14,6 +16,7 @@ export default function RightRail() {
   const [takes, setTakes] = useState([]);
   useEffect(() => subscribeActivePost((active) => setTakes(active?.takes || [])), []);
   const postRef = location.pathname.match(/^\/(?:post|clip)\/([^/]+)/)?.[1] || location.pathname.match(/^\/@[^/]+\/post\/([^/?#]+)/)?.[1] || null;
+  const showDiscovery = !postRef && ['/', '/popular', '/latest', '/for-you'].includes(location.pathname);
   const [community, setCommunity] = useState(null);
   const [joined, setJoined] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
@@ -150,6 +153,12 @@ export default function RightRail() {
         </section>
       )}
 
+      {showDiscovery && (
+        <>
+          <TrendingToday />
+          <TopAnnotators />
+        </>
+      )}
       <footer className="rail-footer">
         {!postRef && (
           <span className="rail-get-extension">
