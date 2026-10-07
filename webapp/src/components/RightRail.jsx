@@ -246,7 +246,7 @@ export default function RightRail() {
             </div>
             <div className="community-info-actions">
               <Link to={`/c/${railCommunity.slug}`} className="community-info-link">Community home</Link>
-              <Link to="/create" className="community-info-link">Create a post</Link>
+              <Link to="/create" className="community-info-link">Create thread</Link>
             </div>
           </section>
           {railCommunity.rules && (
@@ -292,32 +292,18 @@ export default function RightRail() {
 
       {isProfile && railProfile && (
         <>
-          <section className="rail-card profile-rail-card">
-            <div className="community-info-heading">
-              <Avatar profile={railProfile} size="md" />
-              <div className="min-w-0 flex-1">
-                <p className="community-info-prefix">@{railProfile.handle}</p>
-                <h2>{railProfile.display_name || railProfile.handle}</h2>
-              </div>
-            </div>
-            {railProfile.bio && <p className="profile-rail-bio">{railProfile.bio}</p>}
-            <div className="profile-rail-stats">
-              <span><strong>{railProfile.posts ?? 0}</strong> posts</span>
-              <span><strong>{formatCount(railProfile.followers)}</strong> followers</span>
-              <span><strong>{formatCount(railProfile.following)}</strong> following</span>
-            </div>
-            <div className="community-info-actions">
-              <Link to={`/u/${railProfile.handle}`} className="community-info-link">View profile</Link>
-            </div>
-          </section>
+          {railProfile.bio && (
+            <section className="rail-card profile-rail-card">
+              <h2 className="rail-heading">About</h2>
+              <p className="profile-rail-bio">{railProfile.bio}</p>
+            </section>
+          )}
           <section className="rail-card">
             <h2 className="rail-heading">More annotators</h2>
             <nav className="flex flex-col gap-1 mt-2">
               <TrendingPeople limit={5} />
             </nav>
           </section>
-          <TrendingTopics />
-          <TopAnnotators />
         </>
       )}
       <footer className="rail-footer">

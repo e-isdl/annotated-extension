@@ -3130,3 +3130,11 @@ this changelog.
 - Explore centers with People to follow moved to the right rail; Saved and Profile content is capped at 640px with discovery rails; Profile header fixed so the avatar overlaps the banner by half and name/Edit sit below it.
 - Community pages get a full right rail: About, rules (hidden when empty), top annotators in the community, related communities, extension footer last; rail is sticky with its own scroll and no divider line.
 - Checks: webapp build passes; bundle markers verified (topic-row, 680px, demo topics, community rail).
+### Rail polish, wider feed, profile/community rails
+
+- Trending topics rail shows 5 ranked rows; divider line above it removed.
+- Feed center 680px to 704px with sidebars 340px to 328px (3.5 percent shift each side); drift mask follows the wider feed.
+- Right rail never scrolls so the extension/GitHub footer fits in view; rail scrollbar bars hidden everywhere, left sidebar scrolls bar-free too.
+- Profile rail is bio About card (hidden when empty) plus More annotators; duplicate header card, Trending topics and Trending annotators removed.
+- Community rail About card has Community home plus Create thread; toolbar Create thread button removed.
+- Checks: webapp build passes; bundle markers verified (704px, 328px, bar-free rails, Create thread, More annotators).

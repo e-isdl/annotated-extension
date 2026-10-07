@@ -91,7 +91,6 @@ export default function CommunityPage() {
         <div className="feed-tabs" role="tablist" aria-label="Community sort">
           {SORTS.map((option) => <button key={option.value} type="button" role="tab" aria-selected={sort === option.value} onClick={() => setSearchParams(option.value === 'best' ? {} : { sort: option.value })} className={sort === option.value ? 'feed-tab feed-tab-active' : 'feed-tab'}>{option.label}</button>)}
         </div>
-        <Link to="/create" className="btn-primary text-xs py-2 px-3">Create thread</Link>
       </div>
 
       <div className="feed-list">
