@@ -166,6 +166,7 @@ html[data-theme="synthwave"] .panel-logo-text { text-shadow: 0 0 14px rgba(255, 
 .tl-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px 10px; }
 .tl-cardhead { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
 .tl-cardhead svg { color: var(--text-3); flex: none; }
+.word-clipped-tag { font-size: 11px; font-weight: 700; color: var(--red); background: var(--red-soft); border: 1px solid color-mix(in srgb, var(--red) 35%, transparent); border-radius: 999px; padding: 1px 8px; margin-left: 2px; animation: word-confirm-in .3s cubic-bezier(.2,1.4,.4,1) both; }
 .tl-cardfoot { margin-top: 2px; padding: 10px 0 4px; text-align: center; }
 .tl-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px 0 8px; white-space: nowrap; background: var(--bg); border: 1px solid var(--border-strong); border-radius: 999px; box-shadow: 0 4px 10px -6px rgba(0,0,0,.3); font-size: 15px; }
 .tl-pill-ic { width: 26px; height: 26px; border-radius: 50%; background: var(--red-soft); color: var(--red); display: inline-flex; align-items: center; justify-content: center; flex: none; }
@@ -242,7 +243,7 @@ input.tl-chip.is-editing { width: 84px; background: var(--bg); color: var(--text
 @media (prefers-reduced-motion: reduce) {
   .chapter-sheet-panel { animation: none; }
   .chapter-sheet.is-closing .chapter-sheet-panel { animation: none; }
-  .word-confirm, .tl-pill-flash { animation: none; }
+  .word-confirm, .tl-pill-flash, .word-clipped-tag { animation: none; }
 }
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes sheet-down { from { transform: translateY(0); } to { transform: translateY(100%); } }

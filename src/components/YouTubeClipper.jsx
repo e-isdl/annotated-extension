@@ -2074,6 +2074,7 @@ export default function YouTubeClipper({
           <div className="tl-card">
             <div className="tl-cardhead" aria-hidden="true">
               {hasWindow() ? '3-Minute Clipping Window' : 'Clipping Window'}
+              {wordConfirm && <span className="word-clipped-tag">word clipped</span>}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="9.2" />
                 <path d="M12 11v5.4" />

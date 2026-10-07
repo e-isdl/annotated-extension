@@ -3043,3 +3043,7 @@ this changelog.
 
 - Pressing Continue in the word clipper now lands on a confirmation: a "Clipped from your words" card showing the range, word count and the opening words, while the clip pill pulses. Dismisses itself after 5s (or via-found-x) so the flow still moves forward.
 - Checks: extension build passes; confirmation UI verified in dist/sidepanel.js.
+### Word-clipped tag inside the clipping window
+
+- The 3-Minute Clipping Window header now carries a small red "word clipped" tag whenever the range came from the word clipper (same lifetime as the confirmation card).
+- Checks: extension build passes.
