@@ -5,7 +5,7 @@ import ThemeFlyer from './components/ThemeFlyer';
 import AppSidebar from './components/AppSidebar';
 import RightRail from './components/RightRail';
 import Feed from './pages/Feed';
-import FollowingPage from './pages/FollowingPage';
+import ForYouPage from './pages/ForYouPage';
 import ClipPage from './pages/ClipPage';
 import Profile from './pages/Profile';
 import AuthCallback from './pages/AuthCallback';
@@ -57,7 +57,7 @@ function AppShell() {
       <main className="app-main">
         <Routes>
           <Route path="/" element={<Feed />} />
-          <Route path="/following" element={<FollowingPage />} />
+          <Route path="/for-you" element={<ForYouPage />} />
           <Route path="/popular" element={<Feed sortOverride="top" />} />
           <Route path="/latest" element={<Feed sortOverride="new" />} />
           <Route path="/clip/:id" element={<ClipPage />} />

@@ -3027,3 +3027,7 @@ this changelog.
 - Yellow word paint hardened: the article clipper now disarms the exact tab it armed (tab switches no longer leave stale highlighting behind), and stale arms expire after 120s. Reload the extension to pick this up.
 - Sidebar: For You section on top with a For You link, Discover below it with Home, Top, New, Explore, Saved, Drafts. Following link removed from the sidebar; dead For You sub-page hollowed to a heading until it gets real content.
 - Checks: root build and webapp build both pass; arm/expiry logic verified in dist/content.js.
+### Following removed, For You link goes to its page
+
+- Deleted the Following page and its route; sidebar For You links straight to the For You page.
+- Checks: webapp build passes.
