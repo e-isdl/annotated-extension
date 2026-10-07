@@ -198,7 +198,7 @@ export default function CommentSection({ clipId, postBase = null, postOwnerId = 
         <input type="search" value={commentSearch} onChange={(event) => setCommentSearch(event.target.value)} placeholder="Search comments" aria-label="Search comments" className="comment-search" />
       </div>
 
-      <div className="comment-composer">
+      <div className="comment-composer" data-buddy="comment-box">
         {!composerOpen ? (
           <button type="button" className="comment-composer-trigger" aria-expanded="false" onClick={() => setComposerOpen(true)}>
             {session ? 'Add a comment' : 'Sign in to comment'}

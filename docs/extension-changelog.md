@@ -3003,3 +3003,11 @@ this changelog.
 - Removed the buddy guided tour entirely: deleted the tour components, buttons, styles and engine from both apps, unmounted everything, and stripped all data-tour anchors.
 - Kept the unrelated improvements that came with it: borderless post cards, favicon, word-clipper phrase matching and window-follow.
 - Checks: root build and webapp build both pass; no tour strings remain in either bundle.
+### Corner buddy guide replaces the tour and the theme nudge
+
+- New BuddyGuide: the buddy lives fixed in the bottom-right corner, leans toward the cursor (lerped, capped), and explains whatever is hovered via data-buddy tips with a soft ring. No autoplay, no navigation, no dimming, no sound. One-time greeting bubble, Esc-equivalent exits via pointer leave, typing/clicking dismisses politely.
+- Header Tour pill is now his on/off switch (default on, persisted, sleepy dimmed state when off).
+- Deleted the old autoplay tour leftovers and the under-theme-button ThemeNudge; buddy art moved verbatim to BuddyArt shared by the flyer and the guide.
+- New For You sidebar section with Following, opening a placeholder wall until the feature exists.
+- Post cards drop harsh borders for a borderless card with soft shadow.
+- Checks: webapp build passes; guide engine, ring, bubble, toggle and all 36 tip anchors verified in the bundle.

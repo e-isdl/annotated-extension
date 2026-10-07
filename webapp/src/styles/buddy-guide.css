@@ -1,0 +1,203 @@
+/* Corner buddy guide: fixed layer, ring, bubble, traveling toggle pill.
+   Theme vars only - renders in all seven themes. */
+.buddy-guide {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  overflow: hidden;
+  font-family: var(--ui-font);
+}
+
+.buddy-corner {
+  position: fixed;
+  right: 24px;
+  bottom: 20px;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.buddy-corner .theme-nudge-buddy {
+  display: block;
+  overflow: visible;
+  animation: buddy-breathe 3.6s ease-in-out infinite;
+}
+
+.buddy-corner.is-perky .theme-nudge-buddy {
+  animation: buddy-perk 0.2s ease;
+}
+
+.buddy-corner.is-sleepy {
+  opacity: 0.6;
+}
+
+.buddy-corner.is-sleepy .theme-nudge-buddy {
+  animation-duration: 6s;
+}
+
+.buddy-corner.is-excited .theme-nudge-buddy {
+  animation: buddy-wiggle 0.6s ease;
+}
+
+.buddy-ring {
+  position: fixed;
+  box-sizing: border-box;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 4px currentColor;
+  animation: buddy-ring-breathe 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.buddy-bubble {
+  position: fixed;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 260px;
+  padding: 12px 14px;
+  pointer-events: none;
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38), 0 0 16px -4px var(--accent);
+  animation: buddy-pop 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.buddy-bubble[data-side="above"]::after,
+.buddy-bubble[data-side="left"]::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transform: rotate(45deg);
+}
+
+.buddy-bubble[data-side="above"]::after {
+  right: 26px;
+  bottom: -5px;
+  border-left: 0;
+  border-top: 0;
+}
+
+.buddy-bubble[data-side="left"]::after {
+  right: -5px;
+  bottom: 22px;
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.buddy-bubble-title {
+  margin: 0 0 2px;
+  font-family: var(--display-font);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.buddy-bubble-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  animation: buddy-fade 0.1s ease both;
+}
+
+.buddy-bubble-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@keyframes buddy-perk {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+@keyframes buddy-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.01); }
+}
+
+@keyframes buddy-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-7deg); }
+  75% { transform: rotate(7deg); }
+}
+
+@keyframes buddy-pop {
+  from { opacity: 0; transform: scale(0.98) translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes buddy-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes buddy-ring-breathe {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+/* Header toggle pill (same look as the old Tour button) */
+.tour-t {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 13px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-family: var(--display-font);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tour-t:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.tour-t.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px -2px currentColor;
+}
+
+.tour-t:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.tour-t-buddy {
+  flex: none;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buddy-corner .theme-nudge-buddy,
+  .buddy-corner.is-perky .theme-nudge-buddy,
+  .buddy-corner.is-excited .theme-nudge-buddy,
+  .buddy-bubble,
+  .buddy-bubble-text,
+  .buddy-ring {
+    animation: none !important;
+  }
+
+  .buddy-bubble,
+  .buddy-ring {
+    transition: none !important;
+  }
+}

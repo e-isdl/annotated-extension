@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ThemeBuddy } from './ThemeNudge';
+import { ThemeBuddy } from './BuddyArt';
 
 const RELEASES = 'https://github.com/e-isdl/annotated-extension/releases';
 

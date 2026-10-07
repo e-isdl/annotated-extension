@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ThemeFlyer from './components/ThemeFlyer';
+import BuddyGuide from './components/BuddyGuide';
 import AppSidebar from './components/AppSidebar';
 import RightRail from './components/RightRail';
 import Feed from './pages/Feed';
+import FollowingPage from './pages/FollowingPage';
 import ClipPage from './pages/ClipPage';
 import Profile from './pages/Profile';
 import AuthCallback from './pages/AuthCallback';
@@ -33,6 +35,7 @@ export default function App() {
           <AppShell />
           <MobileNav />
           <ThemeFlyer />
+          <BuddyGuide />
         </div>
       </ToastProvider>
     </BrowserRouter>
@@ -56,6 +59,7 @@ function AppShell() {
       <main className="app-main">
         <Routes>
           <Route path="/" element={<Feed />} />
+          <Route path="/following" element={<FollowingPage />} />
           <Route path="/popular" element={<Feed sortOverride="top" />} />
           <Route path="/latest" element={<Feed sortOverride="new" />} />
           <Route path="/clip/:id" element={<ClipPage />} />

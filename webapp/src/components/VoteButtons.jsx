@@ -59,7 +59,7 @@ export default function VoteButtons({ clipId, score, setScore }) {
   };
 
   return (
-    <div className="vw-container" aria-label="Vote on this post">
+    <div className="vw-container" data-buddy="post-vote" aria-label="Vote on this post">
       <button
         type="button"
         aria-label="Upvote post"
