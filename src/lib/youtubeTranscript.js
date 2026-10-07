@@ -349,7 +349,9 @@ export function parseYouTubeJson3(payload) {
     const end = explicitEnd > start ? explicitEnd : (nextStart > start ? nextStart : start + 4);
     const segs = (event.segs || []).map((segment) => ({
       text: String(segment.utf8 ?? ''),
-      offset: Number(segment.tOffsetMs),
+      // Offset stays in raw milliseconds; omit when YouTube gives none so
+      // consumers keep treating the cue as estimated, never as timed at 0.
+      ...(segment.tOffsetMs != null ? { offset: Number(segment.tOffsetMs) } : {}),
     }));
     return [{ start, end, text, segs }];
   });

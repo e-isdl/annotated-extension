@@ -3150,3 +3150,7 @@ this changelog.
 - Drift overlay mask stops are pre-scaled per tier (overlay lives outside the zoomed root); sidebar max-height and root min-height divide vh by --k so nothing overflows; above 2300px the shell and header cap at 1640px effective width.
 - Explore People to follow rows stack name over handle so nothing squeezes; community rail About card removed, only rules, top annotators and related remain.
 - Checks: webapp build passes; bundle markers verified (--k tiers, zoom root, vh fixes, 1640 cap, stacked rows).
+### Caption parser test sync (CI green)
+
+- parseYouTubeJson3 omits the word offset key instead of emitting NaN when a cue has no timing, so the word clipper keeps its estimated-timing fallback; stale transcript test now expects the segs rows.
+- Checks: root suite 46/46, webapp suite 14/14.

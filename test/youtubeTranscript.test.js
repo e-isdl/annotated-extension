@@ -49,8 +49,8 @@ test('parses YouTube JSON3 caption events and infers missing event durations', (
     { tStartMs: 3000, dDurationMs: 1500, segs: [{ utf8: 'Next.' }] },
     { segs: [{ utf8: 'Formatting metadata, not a caption.' }] },
   ] }), [
-    { start: 1, end: 3, text: 'First caption.' },
-    { start: 3, end: 4.5, text: 'Next.' },
+    { start: 1, end: 3, text: 'First caption.', segs: [{ text: 'First ' }, { text: 'caption.' }] },
+    { start: 3, end: 4.5, text: 'Next.', segs: [{ text: 'Next.' }] },
   ]);
 });
 
