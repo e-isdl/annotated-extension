@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function ArticleClipper({ pageInfo, onReady }) {
   const { data, url } = pageInfo;

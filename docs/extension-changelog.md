@@ -3031,3 +3031,7 @@ this changelog.
 
 - Deleted the Following page and its route; sidebar For You links straight to the For You page.
 - Checks: webapp build passes.
+### Fix useRef crash on article pages
+
+- ArticleClipper used useRef without importing it, crashing the panel on every article page load. One-line import fix.
+- Checks: root build passes.
