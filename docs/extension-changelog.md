@@ -3198,3 +3198,8 @@ this changelog.
 
 - Displayed chapters track which video they belong to; any divergence from the active video clears them and rescrapes on the next poll tick, no matter which path went stale.
 - Checks: root suite 46/46; extension build passes.
+### Chapter sources bound to current video
+
+- DOM marker reads stay inside the main video description, ignoring other videos markers in up-next, hover cards and end screens.
+- Page-object scan trusts the live player response first and alone, with chapter bar maps supported; globals are fallback only.
+- Checks: root suite 46/46; extension build passes.

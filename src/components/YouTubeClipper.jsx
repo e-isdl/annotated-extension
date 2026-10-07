@@ -189,6 +189,18 @@ function readChaptersMainWorld(args) {
               const t = cr.timeRangeStartMillis != null ? Number(cr.timeRangeStartMillis) / 1000 : null;
               if (title && t != null) push(t, title);
             }
+            // Player-bar chapter maps (multiMarkersPlayerBarRenderer) carry
+            // the current video's chapters in structured form.
+            const cmap = item.key === 'CHAPTER' && item.value && item.value.chaptersArray;
+            if (cmap && Array.isArray(cmap.chapters)) {
+              cmap.chapters.forEach((ch) => {
+                const ccr = ch && ch.chapterRenderer;
+                if (!ccr) return;
+                const title = cleanTitle(ccr.title);
+                const t = ccr.timeRangeStartMillis != null ? Number(ccr.timeRangeStartMillis) / 1000 : null;
+                if (title && t != null) push(t, title);
+              });
+            }
             const mm = item.macroMarkersListItemRenderer;
             if (mm) {
               const title = cleanTitle(mm.title);
@@ -213,6 +225,27 @@ function readChaptersMainWorld(args) {
       const u = new URL(window.location.href);
       pageId = u.searchParams.get('v') || ((u.pathname.match(/^\/shorts\/([^/?]+)/) || [])[1] || '');
     } catch (e) {}
+    // The live player response is always the current video: scan it first
+    // and alone. Global page objects can hold other videos' data (up-next,
+    // hover cards), so they are only a fallback.
+    let liveResponse = null;
+    try {
+      liveResponse = document.querySelector('#movie_player') && document.querySelector('#movie_player').getPlayerResponse
+        ? document.querySelector('#movie_player').getPlayerResponse()
+        : null;
+    } catch (e) { liveResponse = null; }
+    const liveId = liveResponse && liveResponse.videoDetails ? String(liveResponse.videoDetails.videoId || '') : '';
+    const snapshot = () => {
+      const sorted = out.slice().sort((a, b) => a.t - b.t);
+      const inRange = sorted.filter((c, i) => (i === 0 || c.t > sorted[i - 1].t) && (!(maxT > 0) || c.t < maxT));
+      const list = inRange.slice(0, 200);
+      return list.length >= 3 ? list : [];
+    };
+    if (liveResponse && (!wantId || !liveId || liveId === wantId)) {
+      scan(liveResponse, 0);
+      const liveOnly = snapshot();
+      if (liveOnly.length) return { videoId: pageId, wantId, chapters: liveOnly };
+    }
     const roots = [];
     try { if (window.ytInitialData) roots.push(window.ytInitialData); } catch (e) {}
     try { if (window.ytInitialPlayerResponse) roots.push(window.ytInitialPlayerResponse); } catch (e) {}
@@ -221,21 +254,12 @@ function readChaptersMainWorld(args) {
         && window.ytplayer.config.args.player_response;
       if (raw) roots.push(JSON.parse(raw));
     } catch (e) {}
-    try {
-      const live = document.querySelector('#movie_player') && document.querySelector('#movie_player').getPlayerResponse
-        ? document.querySelector('#movie_player').getPlayerResponse()
-        : null;
-      if (live) roots.push(live);
-    } catch (e) {}
     for (const r of roots) scan(r, 0);
     // NOTE: shortDescription timestamp lines are deliberately NOT harvested:
     // they vary between visits and produced phantom chapter lists.
     // Structured marker renderers above are the only source.
-    out.sort((a, b) => a.t - b.t);
-    const inRange = out.filter((c, i) => (i === 0 || c.t > out[i - 1].t) && (!(maxT > 0) || c.t < maxT));
-    const chapters = inRange.slice(0, 200);
-    const ok = chapters.length >= 3;
-    return { videoId: pageId, wantId, chapters: ok ? chapters : [] };
+    const chapters = snapshot();
+    return { videoId: pageId, wantId, chapters };
   } catch (e) {
     return { videoId: '', wantId: '', chapters: [] };
   }

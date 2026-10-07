@@ -793,7 +793,12 @@ function ytVideoDuration() {
 
 function ytDomChapters() {
   const items = [];
-  document.querySelectorAll('ytd-macro-markers-list-item-renderer').forEach((el) => {
+  // Scope to the main video's description. A whole-document query also
+  // catches other videos' markers (up-next, hover cards, end screens).
+  const scope = document.querySelector('ytd-watch-metadata #description')
+    || document.querySelector('#description-inline-expander')
+    || document.querySelector('#description');
+  (scope || document).querySelectorAll('ytd-macro-markers-list-item-renderer').forEach((el) => {
     const lines = String(el.innerText || '').split('\n').map((s) => s.trim()).filter(Boolean);
     if (!lines.length) return;
     let t = null;
