@@ -10,6 +10,35 @@ const RELEASES = 'https://github.com/e-isdl/annotated-extension/releases';
 // for 15 seconds. Then he is gone until the page is refreshed. One
 // flight per page load; falls back to the bottom-right corner
 // without the right rail.
+// The dock is re-aimed at landing time (and the buddy faces his travel
+// direction mid-flight) so scrolling mid-flight never leaves him
+// pointing at empty space.
+function readLinkRect() {
+  const link = document.querySelector('[data-github-link]');
+  if (!link) return null;
+  const rect = link.getBoundingClientRect();
+  return rect && rect.width > 0 ? rect : null;
+}
+
+function linkTarget() {
+  const l = readLinkRect();
+  return l && l.top > 56 && l.bottom + 64 < window.innerHeight
+    ? { right: Math.round(l.right), bottom: Math.round(l.bottom) }
+    : null;
+}
+
+function dockEnd(target, pillWidth) {
+  const w = pillWidth || 0;
+  let end;
+  if (target) {
+    end = { x: target.right - w, y: target.bottom + 10 };
+  } else {
+    end = { x: window.innerWidth - w - 24, y: window.innerHeight - 76 };
+  }
+  end.x = Math.max(end.x, 214);
+  end.y = Math.min(Math.max(end.y, 64), window.innerHeight - 64);
+  return end;
+}
 export default function ThemeFlyer() {
   const [flight, setFlight] = useState(null);
   const busyRef = useRef(false);
@@ -31,16 +60,18 @@ export default function ThemeFlyer() {
         ? { x: Math.round(n.left + 7), y: Math.round(n.top + 6) }
         : { x: Math.round(b.left + b.width / 2 - 18), y: Math.round(b.bottom + 8) };
 
-      const link = document.querySelector('[data-github-link]');
-      const l = link ? link.getBoundingClientRect() : null;
-      const target = l && l.width > 0 && l.top > 56 && l.bottom + 64 < window.innerHeight
-        ? { right: Math.round(l.right), bottom: Math.round(l.bottom) }
-        : null;
+      const target = linkTarget();
 
       busyRef.current = true; // stays true: one flight per page load
-      setFlight({ start, target, end: null, phase: 'start' });
+      setFlight({ start, target, end: null, pillW: 0, phase: 'start' });
       timers.push(window.setTimeout(() => setFlight((f) => (f ? { ...f, phase: 'fly' } : f)), 70));
-      timers.push(window.setTimeout(() => setFlight((f) => (f ? { ...f, phase: 'docked' } : f)), 2500));
+      // Re-aim at landing time: the link may have moved (scroll/resize)
+      // since takeoff, so measure again instead of trusting the old rect.
+      timers.push(window.setTimeout(() => setFlight((f) => {
+        if (!f) return f;
+        const fresh = linkTarget();
+        return { ...f, target: fresh, end: dockEnd(fresh, f.pillW), phase: 'docked' };
+      }), 2500));
       timers.push(window.setTimeout(() => setFlight((f) => (f ? { ...f, phase: 'leave' } : f)), 17500));
       timers.push(window.setTimeout(() => { setFlight(null); clearAll(); }, 18000));
     };
@@ -57,15 +88,8 @@ export default function ThemeFlyer() {
     const m = rootRef.current.querySelector('.theme-flyer-measure');
     if (!m) return;
     const w = m.offsetWidth;
-    let end;
-    if (flight.target) {
-      end = { x: flight.target.right - w, y: flight.target.bottom + 10 };
-    } else {
-      end = { x: window.innerWidth - w - 24, y: window.innerHeight - 76 };
-    }
-    end.x = Math.max(end.x, 214);
-    end.y = Math.min(Math.max(end.y, 64), window.innerHeight - 64);
-    setFlight((f) => (f && !f.end ? { ...f, end } : f));
+    const end = dockEnd(flight.target, w);
+    setFlight((f) => (f && !f.end ? { ...f, end, pillW: w } : f));
   }, [flight]);
 
   if (!flight) return null;
@@ -74,6 +98,8 @@ export default function ThemeFlyer() {
   const dy = end.y - flight.start.y;
   const moved = flight.phase !== 'start' && !!flight.end;
   const docked = flight.phase === 'docked' || flight.phase === 'leave';
+  // Mid-flight the pointing arm leads: face the link while traveling.
+  const faceLeft = !docked && moved && dx < 0;
 
   return (
     <a
@@ -96,7 +122,7 @@ export default function ThemeFlyer() {
         </span>
       ) : (
         <>
-          <ThemeBuddy />
+          {faceLeft ? <span className="theme-flyer-face"><ThemeBuddy /></span> : <ThemeBuddy />}
           {flight.phase === 'start' && (
             <span className="theme-flyer-pill theme-flyer-measure" aria-hidden="true">
               <ThemeBuddy cute />

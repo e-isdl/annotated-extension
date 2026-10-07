@@ -27,19 +27,19 @@
      because the drift overlay lives outside the zoomed root. */
   --k: 1;
   --header-h: 57px;
-  --mask-outer: 362px;
-  --mask-inner: 242px;
+  --mask-outer: 370px;
+  --mask-inner: 250px;
   --mask-outer-wide: 470px;
   --mask-inner-wide: 350px;
 }
 @media (min-width: 1640px) {
-  :root { --k: 1.136; --mask-outer: 411.2px; --mask-inner: 274.9px; --mask-outer-wide: 533.9px; --mask-inner-wide: 397.6px; }
+  :root { --k: 1.136; --mask-outer: 420.3px; --mask-inner: 284px; --mask-outer-wide: 533.9px; --mask-inner-wide: 397.6px; }
 }
 @media (min-width: 1830px) {
-  :root { --k: 1.25; --mask-outer: 452.5px; --mask-inner: 302.5px; --mask-outer-wide: 587.5px; --mask-inner-wide: 437.5px; }
+  :root { --k: 1.25; --mask-outer: 462.5px; --mask-inner: 312.5px; --mask-outer-wide: 587.5px; --mask-inner-wide: 437.5px; }
 }
 @media (min-width: 2030px) {
-  :root { --k: 1.389; --mask-outer: 502.8px; --mask-inner: 336.1px; --mask-outer-wide: 652.8px; --mask-inner-wide: 486.2px; }
+  :root { --k: 1.389; --mask-outer: 513.9px; --mask-inner: 347.3px; --mask-outer-wide: 652.8px; --mask-inner-wide: 486.2px; }
 }
 
 @layer base {
@@ -127,11 +127,11 @@ html[data-theme="tokyo"] body::before {
     radial-gradient(680px 460px at 0 0, rgba(174, 194, 243, .10) 0%, rgba(160, 182, 238, 0) 70%);
 }
 
-.app-shell, .app-shell-focused { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 704px) minmax(0, 1fr); gap: 20px; align-items: start; padding: 0 32px; }
+.app-shell, .app-shell-focused { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 720px) minmax(0, 1fr); gap: 20px; align-items: start; padding: 0 32px; }
 /* Explore keeps a wide 920px center so community cards breathe in 3 columns. */
 .app-shell:has(.explore-page) { grid-template-columns: minmax(0, 1fr) minmax(0, 920px) minmax(0, 1fr); }
 .app-main { min-width: 0; padding: 28px 0 72px; }
-.community-sidebar { position: sticky; top: 72px; justify-self: start; width: min(328px, 100%); max-height: calc(100vh / var(--k) - 72px); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; padding: 28px 16px 24px 0; }
+.community-sidebar { position: sticky; top: 72px; justify-self: start; width: min(320px, 100%); max-height: calc(100vh / var(--k) - 72px); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; padding: 28px 16px 24px 0; }
 /* Divider lines live on the full-height grid cells, not the sticky inner
    boxes, so they run header-bottom to viewport-bottom on every page. */
 .sidebar-cell { align-self: stretch; min-height: calc(100dvh / var(--k) - var(--header-h)); }
@@ -175,7 +175,7 @@ html[data-theme="tokyo"] body::before {
 .sidebar-empty { margin: 5px 9px; color: var(--text-muted); font-size: 11px; line-height: 1.5; }
 .sidebar-note { display: flex; gap: 10px; margin: 32px 10px 0; padding-top: 14px; border-top: 1px solid var(--border-soft); color: var(--text-muted); }
 .sidebar-note p { margin: 0; font-size: 11px; line-height: 1.5; }
-.right-rail { position: sticky; top: 72px; justify-self: end; width: min(328px, 100%); align-self: start; display: flex; flex-direction: column; gap: 16px; padding: 28px 0 24px 16px; }
+.right-rail { position: sticky; top: 72px; justify-self: end; width: min(320px, 100%); align-self: start; display: flex; flex-direction: column; gap: 16px; padding: 28px 0 24px 16px; }
 /* Community rail keeps its flush alignment. */
 .app-shell:has(.community-page) .right-rail { padding-left: 0; }
 .create-prompt, .rail-card { padding: 17px; border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--card); }
@@ -354,6 +354,7 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .theme-flyer-pill::after { content: ""; position: absolute; top: -5px; right: 24px; width: 9px; height: 9px; background: var(--surface-2); border-left: 1px solid var(--border); border-top: 1px solid var(--border); border-radius: 2px 0 0 0; transform: rotate(45deg); }
 .theme-flyer:hover .theme-flyer-pill { border-color: var(--border-strong); }
 .theme-flyer-measure { position: absolute; left: -9999px; top: 0; visibility: hidden; }
+.theme-flyer-face { display: inline-flex; transform: scaleX(-1); }
 .theme-flyer-docked .theme-flyer-pill { animation: nudge-pop .35s cubic-bezier(.2,1.4,.4,1) both; }
 .theme-flyer-docked .theme-nudge-buddy { animation: nudge-jump .55s ease-in-out .35s infinite; }
 .theme-flyer-docked .theme-nudge-arm { animation: nudge-wave .6s ease-in-out .35s infinite; }

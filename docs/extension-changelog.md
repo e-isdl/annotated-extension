@@ -3163,3 +3163,8 @@ this changelog.
 
 - Sidebar and rail divider lines deleted from the grid cells; navbar bottom border removed. No other styling touched.
 - Checks: webapp build passes; bundle markers verified (zero divider borders).
+### Wider feed, buddy re-aim
+
+- Feed center 704px to 720px with sidebars 328px to 320px (2.5 percent each side, total width conserved); drift mask follows.
+- Theme buddy re-aims at the releases link at landing time so mid-flight scrolling never strands him; he faces his travel direction mid-flight with the pointing arm leading.
+- Checks: webapp build passes; bundle markers verified (720px, 320px, face class, re-aim).
