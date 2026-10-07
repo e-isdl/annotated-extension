@@ -20,23 +20,32 @@ function readLinkRect() {
   return rect && rect.width > 0 ? rect : null;
 }
 
-function linkTarget() {
-  const l = readLinkRect();
-  return l && l.top > 56 && l.bottom + 64 < window.innerHeight
-    ? { right: Math.round(l.right), bottom: Math.round(l.bottom) }
-    : null;
+// The flyer is position:fixed inside the zoomed app root, so its
+// left/top/translate resolve in root-local px, not viewport px.
+// Every viewport measurement is divided by --k (1 at 125% zoom,
+// where this math is byte-identical to the old code).
+function zoomK() {
+  const raw = Number(getComputedStyle(document.documentElement).getPropertyValue('--k'));
+  return Number.isFinite(raw) && raw > 0 ? raw : 1;
 }
 
-function dockEnd(target, pillWidth) {
+function linkTarget(k) {
+  const l = readLinkRect();
+  if (!l || !(l.top > 56) || !(l.bottom + 64 < window.innerHeight)) return null;
+  return { right: Math.round(l.right / k), bottom: Math.round(l.bottom / k) };
+}
+
+function dockEnd(target, pillWidth, k) {
+  const px = (n) => n / k;
   const w = pillWidth || 0;
   let end;
   if (target) {
-    end = { x: target.right - w, y: target.bottom + 10 };
+    end = { x: target.right - w, y: target.bottom + px(10) };
   } else {
-    end = { x: window.innerWidth - w - 24, y: window.innerHeight - 76 };
+    end = { x: window.innerWidth / k - w - px(24), y: window.innerHeight / k - px(76) };
   }
-  end.x = Math.max(end.x, 214);
-  end.y = Math.min(Math.max(end.y, 64), window.innerHeight - 64);
+  end.x = Math.max(end.x, px(214));
+  end.y = Math.min(Math.max(end.y, px(64)), window.innerHeight / k - px(64));
   return end;
 }
 export default function ThemeFlyer() {
@@ -54,23 +63,25 @@ export default function ThemeFlyer() {
       if (!btn) return;
       const b = btn.getBoundingClientRect();
 
+      const k = zoomK();
       const nudge = document.querySelector('.theme-nudge');
       const n = nudge ? nudge.getBoundingClientRect() : null;
       const start = n && n.width > 0
-        ? { x: Math.round(n.left + 7), y: Math.round(n.top + 6) }
-        : { x: Math.round(b.left + b.width / 2 - 18), y: Math.round(b.bottom + 8) };
+        ? { x: Math.round((n.left + 7) / k), y: Math.round((n.top + 6) / k) }
+        : { x: Math.round((b.left + b.width / 2 - 18) / k), y: Math.round((b.bottom + 8) / k) };
 
-      const target = linkTarget();
+      const target = linkTarget(k);
 
       busyRef.current = true; // stays true: one flight per page load
-      setFlight({ start, target, end: null, pillW: 0, phase: 'start' });
+      setFlight({ start, target, end: null, pillW: 0, k, phase: 'start' });
       timers.push(window.setTimeout(() => setFlight((f) => (f ? { ...f, phase: 'fly' } : f)), 70));
       // Re-aim at landing time: the link may have moved (scroll/resize)
       // since takeoff, so measure again instead of trusting the old rect.
       timers.push(window.setTimeout(() => setFlight((f) => {
         if (!f) return f;
-        const fresh = linkTarget();
-        return { ...f, target: fresh, end: dockEnd(fresh, f.pillW), phase: 'docked' };
+        const kk = f.k || zoomK();
+        const fresh = linkTarget(kk);
+        return { ...f, target: fresh, end: dockEnd(fresh, f.pillW, kk), phase: 'docked' };
       }), 2500));
       timers.push(window.setTimeout(() => setFlight((f) => (f ? { ...f, phase: 'leave' } : f)), 17500));
       timers.push(window.setTimeout(() => { setFlight(null); clearAll(); }, 18000));
@@ -88,7 +99,7 @@ export default function ThemeFlyer() {
     const m = rootRef.current.querySelector('.theme-flyer-measure');
     if (!m) return;
     const w = m.offsetWidth;
-    const end = dockEnd(flight.target, w);
+    const end = dockEnd(flight.target, w, flight.k || zoomK());
     setFlight((f) => (f && !f.end ? { ...f, end, pillW: w } : f));
   }, [flight]);
 

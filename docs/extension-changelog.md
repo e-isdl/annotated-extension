@@ -3168,3 +3168,7 @@ this changelog.
 - Feed center 704px to 720px with sidebars 328px to 320px (2.5 percent each side, total width conserved); drift mask follows.
 - Theme buddy re-aims at the releases link at landing time so mid-flight scrolling never strands him; he faces his travel direction mid-flight with the pointing arm leading.
 - Checks: webapp build passes; bundle markers verified (720px, 320px, face class, re-aim).
+### Buddy zoom-coordinate fix
+
+- The flyer is fixed-positioned inside the zoomed app root, so takeoff, target and dock math now divide viewport measurements by --k; at 125 percent zoom (k equals 1) the math is identical to before.
+- Checks: webapp build passes; bundle markers verified (zoomK conversion).
