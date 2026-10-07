@@ -71,7 +71,7 @@ export default function AppSidebar() {
       <div className="sidebar-section">
         <p className="sidebar-label">For You</p>
         <nav className="flex flex-col gap-1">
-          <Link to="/for-you" className={`sidebar-link ${location.pathname === '/for-you' || location.pathname === '/following' ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">♥</span>For You</Link>
+          <Link to="/following" className={`sidebar-link ${location.pathname === '/following' ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">♥</span>Following</Link>
         </nav>
       </div>
 

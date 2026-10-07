@@ -258,6 +258,9 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .theme-menu-hint { font-size: 11px; color: var(--text-muted); }
 .theme-check { margin-left: auto; flex: none; color: var(--text-primary); }
 /* Little buddy: shared art (BuddyArt) used by the theme flyer and the corner guide. */
+.theme-nudge { position: absolute; top: calc(100% + 12px); right: -4px; z-index: 40; display: none; align-items: center; gap: 7px; padding: 5px 12px 5px 6px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-primary); font-size: 12px; font-weight: 650; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.35); animation: nudge-pop .4s cubic-bezier(.2,1.4,.4,1) both; }
+.theme-nudge::after { content: ""; position: absolute; top: -5px; right: 24px; width: 9px; height: 9px; background: var(--surface-2); border-left: 1px solid var(--border); border-top: 1px solid var(--border); border-radius: 2px 0 0 0; transform: rotate(45deg); }
+.theme-nudge:hover { border-color: var(--border-strong); }
 .theme-nudge-buddy { flex: none; overflow: visible; color: var(--accent); animation: nudge-bob 1.6s ease-in-out infinite; }
 .theme-nudge-arm { transform-origin: 33px 29px; animation: nudge-point 1.1s ease-in-out infinite; }
 .theme-nudge-eyes { transform-box: fill-box; transform-origin: center; animation: nudge-blink 3.4s linear infinite; }
@@ -267,13 +270,7 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 @keyframes nudge-point { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-16deg); } }
 @keyframes nudge-blink { 0%, 91%, 100% { transform: scaleY(1); } 94% { transform: scaleY(.12); } }
 @keyframes nudge-wag { 0% { transform: rotate(-10deg); } 100% { transform: rotate(16deg); } }
-/* One-time corner greeting: buddy pops in once per browser, says hi. */
-.buddy-hello { position: fixed; right: 24px; bottom: 20px; z-index: 50; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; pointer-events: none; animation: buddy-hello-in .35s cubic-bezier(.2,1.4,.4,1) both; }
-.buddy-hello-bubble { max-width: 260px; padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 12px 32px rgba(0,0,0,.38); }
-.buddy-hello-title { margin: 0 0 2px; font-family: var(--display-font); font-size: 13px; font-weight: 700; color: var(--accent); }
-.buddy-hello-text { margin: 0; font-size: 14px; line-height: 1.4; color: var(--text-primary); }
-@keyframes buddy-hello-in { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .buddy-hello { animation: none; } }
+@media (min-width: 640px) { .theme-nudge { display: inline-flex; } }
 /* The buddy flies alone; the "Try the extension" pill appears only
    once he lands flush under the GitHub link with its tail pointing
    up at it. He then jumps up and down inside it, smiling, for 15

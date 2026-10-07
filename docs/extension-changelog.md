@@ -3016,3 +3016,9 @@ this changelog.
 - Removed the corner buddy guide entirely (engine, toggle, tips, ring, tracking, all data-buddy hooks). Kept a minimal one-time corner Hi bubble, no tracking or tips.
 - For You section moved to the top of the sidebar above Discover; the old sidebar Following link removed. Inside the For You page, Following is a section linking to the not-available wall.
 - Checks: webapp build passes; no guide remnants in the bundle.
+### Yellow highlight gated, Try-themes nudge back, For You on top
+
+- Double-clicking words no longer paints them yellow everywhere: the content script only highlights while the side panel article clipper explicitly arms it (disarms on leave/close). Explicit restores still paint.
+- The Try themes buddy is back under the theme button, flying to the extension on theme change. Corner Hi greeting removed with the rest of the guide.
+- Sidebar is now For You (with Following) on top, Discover below it. Following opens the not-available wall directly; the unlinked For You page is gone.
+- Checks: root build and webapp build both pass.

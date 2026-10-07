@@ -7,6 +7,19 @@ export default function ArticleClipper({ pageInfo, onReady }) {
 
   const WORD_LIMIT = 200;
 
+  // Arm on-page yellow word paint only while this clipper is open, so
+  // double-clicking words anywhere else never highlights. Disarm on leave.
+  useEffect(() => {
+    const sendArm = async (armed) => {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id) await chrome.tabs.sendMessage(tab.id, { type: 'ANNOTATED_HIGHLIGHT_ARM', armed }).catch(() => null);
+      } catch {}
+    };
+    sendArm(true);
+    return () => { sendArm(false); };
+  }, []);
+
   useEffect(() => {
     if (data.selectedText && data.selectedText !== selectedText) {
       setSelectedText(data.selectedText);

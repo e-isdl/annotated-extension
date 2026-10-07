@@ -570,6 +570,10 @@ async function handleRecordClip(message, sendResponse) {
 }
 
 const HIGHLIGHT_WORD_LIMIT = 200; // keep in sync with WORD_LIMIT in src/components/ArticleClipper.jsx
+// Yellow word paint is ARMED only while the side panel's article clipper is
+// open on this page. Spontaneous selections (double-click a word anywhere)
+// must never paint - that is the "extension working in the background" bug.
+let highlightArmed = false;
 let fallbackMarks = [];
 let clipMonitor = null;
 let clipMonitorOnPause = null;
@@ -716,6 +720,7 @@ if (!window.__annotatedContentLoaded) {
   window.__annotatedContentLoaded = true;
 
   const updateSelectionHighlight = () => {
+    if (!highlightArmed) return;
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !sel.rangeCount) return;
     setArticleHighlight(sel.getRangeAt(0));
@@ -892,7 +897,14 @@ async function getYouTubeChaptersExpanded() {
       return true;
     }
     if (message.type === 'RESTORE_HIGHLIGHT') {
+      // Explicit panel request: always paints, even when disarmed.
       sendResponse({ ok: restoreHighlightByText(message.text) });
+      return true;
+    }
+    if (message.type === 'ANNOTATED_HIGHLIGHT_ARM') {
+      highlightArmed = !!message.armed;
+      if (!highlightArmed) clearArticleHighlight();
+      sendResponse({ ok: true });
       return true;
     }
     if (message.type === 'CAPTURE_PREP') {
@@ -1135,6 +1147,7 @@ async function getYouTubeChaptersExpanded() {
       return true;
     }
     if (message.type === 'CLEAR_HIGHLIGHT') {
+      highlightArmed = false;
       clearArticleHighlight();
       sendResponse({ ok: true });
       return true;
