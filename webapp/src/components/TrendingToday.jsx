@@ -22,7 +22,17 @@ export default function TrendingToday() {
     return () => { active = false; };
   }, []);
 
-  if (!rows || !rows.length) return null;
+  if (!rows) {
+    return (
+      <section className="rail-card" aria-hidden="true">
+        <h2 className="rail-heading">Trending today</h2>
+        <div className="flex flex-col gap-3">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton-line w-full h-9" />)}
+        </div>
+      </section>
+    );
+  }
+  if (!rows.length) return null;
 
   return (
     <section className="rail-card">

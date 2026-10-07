@@ -35,7 +35,19 @@ export default function TopAnnotators() {
     return () => { active = false; };
   }, []);
 
-  if (!rows || !rows.length) return null;
+  if (!rows) {
+    return (
+      <section className="rail-card" aria-hidden="true">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="rail-heading">Trending annotators</h2>
+        </div>
+        <div className="flex flex-col gap-3">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton-line w-full h-9" />)}
+        </div>
+      </section>
+    );
+  }
+  if (!rows.length) return null;
 
   return (
     <section className="rail-card">

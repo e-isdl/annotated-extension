@@ -3074,3 +3074,8 @@ this changelog.
 - New Trending topics rail card (most active communities, 24h, with See all to Explore) between Trending today and annotators.
 - Top annotators renamed to Trending annotators (30-day window with all-time fallback), usernames without the @.
 - Checks: webapp build passes.
+### No more rail jump between pages
+
+- Route changes now scroll to top before paint (was after), so the sidebar and rail never flash mid-jump.
+- Trending cards render fixed-height skeletons while loading instead of popping in late and shifting the rail.
+- Checks: webapp build passes.
