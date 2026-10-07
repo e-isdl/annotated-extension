@@ -7,7 +7,6 @@ import { getDemoClip } from '../lib/demoData';
 import { useToast } from './ToastProvider';
 import { postHref } from '../lib/links';
 import { subscribeActivePost } from '../lib/activePost';
-import TrendingToday from './TrendingToday';
 import TrendingTopics from './TrendingTopics';
 import TopAnnotators from './TopAnnotators';
 
@@ -156,7 +155,6 @@ export default function RightRail() {
 
       {showDiscovery && (
         <>
-          <TrendingToday />
           <TrendingTopics />
           <TopAnnotators />
         </>

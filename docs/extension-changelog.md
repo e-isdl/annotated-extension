@@ -3118,3 +3118,8 @@ this changelog.
 - Sample big guys open real demo profile pages (millions of followers, big DEMO banner, no follow button); their rows link internally.
 - Trending topics section is back with sample data and (demo) tags on it and Top annotators; plain-string crash and CSS debris fixed.
 - Checks: webapp build passes; home feed loads clean with zero errors.
+### Exact-center layout, keyword topics, annotators page
+
+- Page shell is now symmetric side tracks with a 920px feed dead-center at every width (measured 0px off at 1911/1440/1280, no overlap, no horizontal scroll); sidebars pin to equal 32px outer margins.
+- Trending today removed; trending topics are real keywords linking to search, with a full /trending-topics page; Top annotators renamed to Trending annotators with its own /trending-annotators page.
+- Checks: webapp build passes; layout rects verified in headless Chrome.
