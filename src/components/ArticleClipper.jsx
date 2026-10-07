@@ -9,15 +9,28 @@ export default function ArticleClipper({ pageInfo, onReady }) {
 
   // Arm on-page yellow word paint only while this clipper is open, so
   // double-clicking words anywhere else never highlights. Disarm on leave.
+  // The tab is tracked by id: cleanup must disarm the ARMED tab, not
+  // whatever tab happens to be active when this unmounts (tab switches
+  // would otherwise leave stale yellow painting behind).
+  const armedTabRef = useRef(null);
   useEffect(() => {
-    const sendArm = async (armed) => {
+    const sendArmTo = async (tabId, armed) => {
       try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id) await chrome.tabs.sendMessage(tab.id, { type: 'ANNOTATED_HIGHLIGHT_ARM', armed }).catch(() => null);
+        if (tabId) await chrome.tabs.sendMessage(tabId, { type: 'ANNOTATED_HIGHLIGHT_ARM', armed }).catch(() => null);
       } catch {}
     };
-    sendArm(true);
-    return () => { sendArm(false); };
+    const arm = async () => {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id) { armedTabRef.current = tab.id; await sendArmTo(tab.id, true); }
+      } catch {}
+    };
+    arm();
+    return () => {
+      const id = armedTabRef.current;
+      armedTabRef.current = null;
+      if (id) sendArmTo(id, false);
+    };
   }, []);
 
   useEffect(() => {

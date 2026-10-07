@@ -3022,3 +3022,8 @@ this changelog.
 - The Try themes buddy is back under the theme button, flying to the extension on theme change. Corner Hi greeting removed with the rest of the guide.
 - Sidebar is now For You (with Following) on top, Discover below it. Following opens the not-available wall directly; the unlinked For You page is gone.
 - Checks: root build and webapp build both pass.
+### Highlight disarm fixed, sidebar For You over Discover
+
+- Yellow word paint hardened: the article clipper now disarms the exact tab it armed (tab switches no longer leave stale highlighting behind), and stale arms expire after 120s. Reload the extension to pick this up.
+- Sidebar: For You section on top with a For You link, Discover below it with Home, Top, New, Explore, Saved, Drafts. Following link removed from the sidebar; dead For You sub-page hollowed to a heading until it gets real content.
+- Checks: root build and webapp build both pass; arm/expiry logic verified in dist/content.js.

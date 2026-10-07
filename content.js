@@ -574,6 +574,7 @@ const HIGHLIGHT_WORD_LIMIT = 200; // keep in sync with WORD_LIMIT in src/compone
 // open on this page. Spontaneous selections (double-click a word anywhere)
 // must never paint - that is the "extension working in the background" bug.
 let highlightArmed = false;
+let highlightArmedAt = 0;
 let fallbackMarks = [];
 let clipMonitor = null;
 let clipMonitorOnPause = null;
@@ -721,6 +722,8 @@ if (!window.__annotatedContentLoaded) {
 
   const updateSelectionHighlight = () => {
     if (!highlightArmed) return;
+    // Stale arms (tab switched, panel closed) expire: never paint cold.
+    if (Date.now() - highlightArmedAt > 120000) { highlightArmed = false; return; }
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !sel.rangeCount) return;
     setArticleHighlight(sel.getRangeAt(0));
@@ -903,6 +906,7 @@ async function getYouTubeChaptersExpanded() {
     }
     if (message.type === 'ANNOTATED_HIGHLIGHT_ARM') {
       highlightArmed = !!message.armed;
+      if (message.armed) highlightArmedAt = Date.now();
       if (!highlightArmed) clearArticleHighlight();
       sendResponse({ ok: true });
       return true;
