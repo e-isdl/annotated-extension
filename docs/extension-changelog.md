@@ -3177,3 +3177,8 @@ this changelog.
 - Theme buddy docks above the releases link with the pill tail hanging down at it and his arm pointing down; landing re-aim and zoom math carried over.
 - Chapter answers carry the page video id; a mid-navigation stale answer retries instead of caching the wrong video chapters.
 - Checks: webapp build passes; root suite 46/46; bundle markers verified.
+### Word noti persists, v8 release
+
+- Word-clip confirmation and Word Clipped tag stay until the clip range moves or the video changes; playback alone never clears them.
+- Extension 2.3.23.
+- Checks: root suite 46/46; extension build passes.

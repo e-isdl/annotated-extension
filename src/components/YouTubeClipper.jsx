@@ -645,6 +645,8 @@ export default function YouTubeClipper({
     activeVideoRef.current = data.videoId;
     setChapters([]);
     setChaptersOpen(false);
+    setWordConfirm(null);
+    setClipInfoOpen(false);
     loadChapters(data.videoId);
   }, [data.videoId]);
 
@@ -748,6 +750,8 @@ export default function YouTubeClipper({
     setChapters([]);
     setChaptersOpen(false);
     setSheetSearch('');
+    setWordConfirm(null);
+    setClipInfoOpen(false);
     chapterCacheRef.current.delete(previousId);
     prevTRef.current = t;
     ytTimeRef.current = t;
@@ -1357,14 +1361,16 @@ export default function YouTubeClipper({
     wordSnapRef.current = null;
   };
 
+  // The word-clip confirmation stays until the user changes the timeline:
+  // any clip-range move clears it, playback and playhead motion do not.
   useEffect(() => {
     if (!wordConfirm) {
       setClipInfoOpen(false);
       return undefined;
     }
-    const t = window.setTimeout(() => setWordConfirm(null), 5000);
-    return () => window.clearTimeout(t);
-  }, [wordConfirm]);
+    if (startSec !== wordConfirm.s || endSec !== wordConfirm.e) setWordConfirm(null);
+    return undefined;
+  }, [wordConfirm, startSec, endSec]);
 
   // Popover below the word-clipped pill: toggle on the pill, close on
   // outside click or Escape.
