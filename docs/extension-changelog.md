@@ -2954,3 +2954,9 @@ this changelog.
 - Arm pivot moved to the new shoulder (33, 29) so pointing and waving swing from the side naturally; arm stays behind the ears and head in layer order.
 - Face, cute landed variant, blink/bob/pop animations and all flight behavior unchanged; still only theme variables.
 - Checks: root build and webapp build both pass.
+### Cuter buddy: shining eyes, gloss, wagging tail
+
+- Big eyes (r3.2) with white glints and a smaller smile; blush cheeks now on both the normal and landed looks.
+- Glossy highlight on the forehead and a little curled tail that wags (faster once he lands at the extension).
+- Tail added to the reduced-motion freeze list; arm/ears/feet and all flight behavior unchanged.
+- Checks: root build and webapp build both pass.

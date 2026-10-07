@@ -256,10 +256,12 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .theme-nudge-buddy { flex: none; overflow: visible; color: var(--accent); animation: nudge-bob 1.6s ease-in-out infinite; }
 .theme-nudge-arm { transform-origin: 33px 29px; animation: nudge-point 1.1s ease-in-out infinite; }
 .theme-nudge-eyes { transform-box: fill-box; transform-origin: center; animation: nudge-blink 3.4s linear infinite; }
+.theme-nudge-tail { transform-origin: 9px 32px; animation: nudge-wag .38s ease-in-out infinite alternate; }
 @keyframes nudge-pop { from { opacity: 0; transform: translateY(-7px) scale(.8); } to { opacity: 1; transform: none; } }
 @keyframes nudge-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @keyframes nudge-point { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-16deg); } }
 @keyframes nudge-blink { 0%, 91%, 100% { transform: scaleY(1); } 94% { transform: scaleY(.12); } }
+@keyframes nudge-wag { 0% { transform: rotate(-10deg); } 100% { transform: rotate(16deg); } }
 @media (min-width: 640px) { .theme-nudge { display: inline-flex; } }
 /* The buddy flies alone; the "Try the extension" pill appears only
    once he lands flush under the GitHub link with its tail pointing
@@ -274,9 +276,10 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .theme-flyer-docked .theme-flyer-pill { animation: nudge-pop .35s cubic-bezier(.2,1.4,.4,1) both; }
 .theme-flyer-docked .theme-nudge-buddy { animation: nudge-jump .55s ease-in-out .35s infinite; }
 .theme-flyer-docked .theme-nudge-arm { animation: nudge-wave .6s ease-in-out .35s infinite; }
+.theme-flyer-docked .theme-nudge-tail { animation-duration: .22s; }
 @keyframes nudge-jump { 0% { transform: translateY(0) scaleY(1); animation-timing-function: cubic-bezier(.3,.6,.4,1); } 12% { transform: translateY(1px) scaleY(.94); } 55% { transform: translateY(-9px) scaleY(1.06); animation-timing-function: ease-in; } 90% { transform: translateY(0) scaleY(.96); } 100% { transform: translateY(0) scaleY(1); } }
 @keyframes nudge-wave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-34deg); } }
-@media (prefers-reduced-motion: reduce) { .theme-nudge, .theme-nudge-buddy, .theme-nudge-arm, .theme-nudge-eyes, .theme-flyer-docked .theme-flyer-pill, .theme-flyer-docked .theme-nudge-buddy, .theme-flyer-docked .theme-nudge-arm { animation: none; } .theme-flyer { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .theme-nudge, .theme-nudge-buddy, .theme-nudge-arm, .theme-nudge-eyes, .theme-nudge-tail, .theme-flyer-docked .theme-flyer-pill, .theme-flyer-docked .theme-nudge-buddy, .theme-flyer-docked .theme-nudge-arm { animation: none; } .theme-flyer { transition: none; } }
 .post-timestamp-row { display: flex; align-items: center; gap: 7px; margin: 10px 0 0; }
 .post-actions, .detail-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 0; }
 .post-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 5px 11px; border: 0; border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: color .15s, background .15s; }
