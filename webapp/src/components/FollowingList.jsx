@@ -79,7 +79,7 @@ export default function FollowingList() {
 
   return (
     <div className="feed-list">
-      {state.clips.map((clip) => <ClipCard key={clip.id} clip={clip} />)}
+      {state.clips.map((clip) => <ClipCard key={clip.id} clip={clip} autoPlayVideo />)}
     </div>
   );
 }

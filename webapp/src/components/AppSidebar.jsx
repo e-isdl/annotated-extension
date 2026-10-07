@@ -6,6 +6,7 @@ import { listDrafts } from '../lib/drafts';
 import CommunityAvatar from './CommunityAvatar';
 
 const NAV_ITEMS = [
+  { label: 'For You', path: '/for-you', icon: '✧', sort: null },
   { label: 'Home', path: '/', icon: '⌂', sort: null },
   { label: 'Top', path: '/popular', icon: '✦', sort: 'top' },
   { label: 'New', path: '/latest', icon: '◷', sort: 'new' },
@@ -68,12 +69,6 @@ export default function AppSidebar() {
 
   return (
     <aside className="community-sidebar">
-      <div className="sidebar-section">
-        <nav className="flex flex-col gap-1">
-          <Link to="/for-you" className={`sidebar-link ${location.pathname === '/for-you' ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon sidebar-icon-square"></span>For You</Link>
-        </nav>
-      </div>
-
       <div className="sidebar-section">
         <p className="sidebar-label">Discover</p>
         <nav className="flex flex-col gap-1">

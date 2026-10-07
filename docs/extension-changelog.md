@@ -3062,3 +3062,9 @@ this changelog.
 - Right rail gains Trending today (top 5 threads, 24h, title/community/votes, links to threads) and Top annotators (top 4 by summed score, avatar/handle/points, See all to Leaderboard) on Home, Top, New and For You.
 - Shell unified: no more centering on rail-less pages, main column widens to use the space, sidebar never moves, rail pinned with align-self.
 - Checks: webapp build passes; all markers verified in the bundle.
+### For You glyph item, calmer rail-less width, Following parity
+
+- For You is now the first item in the Discover list with a star glyph matching the other icons (same font, size and alignment); red square removed.
+- Rail-less pages use a 920px main column instead of 1100px so media no longer balloons.
+- Following feed renders cards exactly like Home, including inline autoplay.
+- Checks: webapp build passes.
