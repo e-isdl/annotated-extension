@@ -6,7 +6,6 @@ import { useToast } from './ToastProvider';
 import { postHref } from '../lib/links';
 import { THEMES, isThemeId, themeLabel, syncThemeMeta } from '../lib/themes';
 import Avatar from './Avatar';
-import TourButton from './TourButton';
 
 const NOTIF_ICONS = {
   comment: (
@@ -254,7 +253,7 @@ export default function Navbar() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search"
-              data-buddy="search"
+             
              
               className="w-full bg-bg-surface border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent transition-colors"
             />
@@ -266,7 +265,7 @@ export default function Navbar() {
             <button
               type="button"
               data-theme-button
-              data-buddy="theme-button"
+             
              
               onClick={() => setShowThemes((value) => !value)}
               aria-label={`Theme: ${themeLabel(theme)}. Change theme`}
@@ -314,16 +313,16 @@ export default function Navbar() {
               </div>
             )}
           </div>
-          <Link to="/explore" data-buddy="explore" className="hidden sm:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Explore</Link>
-          <Link to="/leaderboard" data-buddy="leaderboard" className="hidden md:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
-          <Link to="/create" data-buddy="create" className="btn-primary h-9 text-xs">Create</Link>
+          <Link to="/explore" className="hidden sm:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Explore</Link>
+          <Link to="/leaderboard" className="hidden md:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
+          <Link to="/create" className="btn-primary h-9 text-xs">Create</Link>
 
           {user ? (
             <>
               <div className="relative" ref={notifRef}>
                   <button
                   aria-label="Open notifications"
-                  data-buddy="notifications"
+                 
                   onClick={() => { setShowNotifs(!showNotifs); if (!showNotifs) markAllRead(); }}
                   className="relative flex items-center justify-center w-9 h-9 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors"
                 >
@@ -374,7 +373,7 @@ export default function Navbar() {
                   type="button"
                   onClick={() => setShowMenu((value) => !value)}
                   aria-label="Account menu"
-                  data-buddy="avatar"
+                 
                   aria-haspopup="menu"
                   aria-expanded={showMenu}
                   className="flex items-center justify-center w-9 h-9 rounded-full"

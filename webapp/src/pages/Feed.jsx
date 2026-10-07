@@ -79,7 +79,7 @@ export default function Feed({ sortOverride = null }) {
         </div>
       </section>
 
-      <div className="feed-tabs" data-buddy="feed-sort" role="tablist" aria-label="Feed sort">
+      <div className="feed-tabs" role="tablist" aria-label="Feed sort">
         {SORT_OPTIONS.map((option) => (
           <button
             key={option.value}

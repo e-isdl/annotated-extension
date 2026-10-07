@@ -21,7 +21,7 @@ export default function AnnotationLead({ text, profile, annotationType = 'Annota
           </Link>
         </div>
       )}
-      <Copy className="annotation-lead-copy" data-buddy="post-annotation">{text}</Copy>
+      <Copy className="annotation-lead-copy">{text}</Copy>
     </section>
   );
 }

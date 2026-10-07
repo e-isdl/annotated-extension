@@ -246,7 +246,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
           </>
         )}
         <span>{timeAgo(clip.created_at)}</span>
-        <span data-buddy="post-kind-chip" className={`badge badge-${clip.source_type}`}><SourceIcon type={clip.source_type} />{sourceLabel}</span>
+        <span className={`badge badge-${clip.source_type}`}><SourceIcon type={clip.source_type} />{sourceLabel}</span>
       </div>
 
       <div className="post-card-main">
@@ -277,7 +277,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
           clip.article_text && <p className="post-text-body">{clip.article_text}</p>
         ) : playing && isVideoPost ? (
         <div className="source-preview source-preview-playing">
-          <div className="source-preview-player" data-buddy="post-clip" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
+          <div className="source-preview-player" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
             {playableRecording ? (
               <ClipPlayer src={clip.video_url} onError={() => setVideoFailed(true)} fallbackDuration={clip.end_sec - clip.start_sec} mutedAutoplay={autoPlayVideo} positionKey={clip.id} />
             ) : (
@@ -320,12 +320,12 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
         <div className={`source-preview${hasMedia ? ' source-preview-loop' : ''}`}>
           {!xOverlay && (
           <div className="source-preview-copy">
-            {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" data-buddy="post-source" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
+            {clip.source_type !== 'youtube' && <div className="source-label"><span className="source-icon">↗</span> <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/source/${encodeURIComponent(clip.source_domain || sourceDomain(clip.source_url))}`); }} className="source-domain-link">{clip.source_domain || sourceDomain(clip.source_url)}</button></div>}
             {posterHandle && <p className="source-quote-poster">@{posterHandle}</p>}
             {showQuote && clip.source_preview_text ? (
-              <p ref={quoteRef} data-buddy="post-quote" className={quoteClassName}>{clip.source_preview_text}</p>
+              <p ref={quoteRef} className={quoteClassName}>{clip.source_preview_text}</p>
             ) : showQuote && (clip.article_text || clip.source_excerpt || clip.transcript) ? (
-              <p ref={quoteRef} data-buddy="post-quote" className={quoteClassName}>“{stripWrappingQuotes(clip.source_type === 'youtube' ? cleanTranscript(clip.article_text || clip.source_excerpt || clip.transcript) : (clip.article_text || clip.source_excerpt || clip.transcript))}”</p>
+              <p ref={quoteRef} className={quoteClassName}>“{stripWrappingQuotes(clip.source_type === 'youtube' ? cleanTranscript(clip.article_text || clip.source_excerpt || clip.transcript) : (clip.article_text || clip.source_excerpt || clip.transcript))}”</p>
             ) : showQuote && !episodeAudio && (
               <p className="source-quote source-quote-muted">Open the source and see what the conversation is about.</p>
             )}
@@ -431,13 +431,13 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
 
       <div className="post-actions">
         <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
-        <Link to={`${href}#comments`} data-buddy="post-comments" className="post-action no-underline">
+        <Link to={`${href}#comments`} className="post-action no-underline">
           <span>▱</span> {clip.comments_count ?? 0} comments
         </Link>
-        <button type="button" onClick={handleShare} data-buddy="post-share" className="post-action">
+        <button type="button" onClick={handleShare} className="post-action">
           <span>↗</span> <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span>
         </button>
-        <button type="button" onClick={handleSave} data-buddy="post-save" className={`post-action post-action-last ${saved ? 'post-action-saved' : ''}`}>
+        <button type="button" onClick={handleSave} className={`post-action post-action-last ${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
         </button>
       </div>

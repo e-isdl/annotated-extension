@@ -69,23 +69,23 @@ export default function AppSidebar() {
   return (
     <aside className="community-sidebar">
       <div className="sidebar-section">
-        <p className="sidebar-label">Discover</p>
+        <p className="sidebar-label">For You</p>
         <nav className="flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => <Link key={item.label} to={item.path} data-buddy={item.label === 'Explore' ? 'explore' : `nav-${item.label.toLowerCase()}`} className={`sidebar-link ${isActive(item) ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">{item.icon}</span>{item.label}{item.label === 'Drafts' && draftCount > 0 && <span className="sidebar-count">{draftCount > 99 ? '99+' : draftCount}</span>}</Link>)}
+          <Link to="/for-you" className={`sidebar-link ${location.pathname === '/for-you' || location.pathname === '/following' ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">♥</span>For You</Link>
         </nav>
       </div>
 
-      <div className="sidebar-section border-t border-border-subtle pt-5">
-        <p className="sidebar-label">For You</p>
+      <div className="sidebar-section">
+        <p className="sidebar-label">Discover</p>
         <nav className="flex flex-col gap-1">
-          <Link to="/following" className={`sidebar-link ${location.pathname === '/following' ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">♥</span>Following</Link>
+          {NAV_ITEMS.map((item) => <Link key={item.label} to={item.path} className={`sidebar-link ${isActive(item) ? 'sidebar-link-active' : ''}`}><span className="sidebar-icon">{item.icon}</span>{item.label}{item.label === 'Drafts' && draftCount > 0 && <span className="sidebar-count">{draftCount > 99 ? '99+' : draftCount}</span>}</Link>)}
         </nav>
       </div>
 
       <div className="sidebar-section border-t border-border-subtle pt-5">
         <div className="flex items-center justify-between mb-2">
-          <p className="sidebar-label mb-0" data-buddy="communities">{label}</p>
-          <Link to="/explore" data-buddy="add-community" className="text-xs text-text-muted hover:text-accent-text">+</Link>
+          <p className="sidebar-label mb-0">{label}</p>
+          <Link to="/explore" className="text-xs text-text-muted hover:text-accent-text">+</Link>
         </div>
         <nav className="flex flex-col gap-1">
           {displayedCommunities.map((community) => <Link key={community.slug} to={`/c/${community.slug}`} className="community-link"><CommunityAvatar slug={community.slug} name={community.name} /><span className="truncate">{community.name}</span></Link>)}

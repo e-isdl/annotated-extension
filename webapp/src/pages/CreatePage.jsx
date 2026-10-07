@@ -207,7 +207,7 @@ export default function CreatePage() {
 
       <form onSubmit={publish} className="create-layout">
         <div className="create-form">
-          <div className="create-mode-tabs" data-buddy="create-type" role="tablist" aria-label="Post type">
+          <div className="create-mode-tabs" role="tablist" aria-label="Post type">
             {POST_MODES.map((postMode) => (
               <button key={postMode.value} type="button" role="tab" aria-selected={mode === postMode.value} onClick={() => chooseMode(postMode.value)} className={`create-mode-tab ${mode === postMode.value ? 'create-mode-tab-active' : ''}`}>
                 <span>{postMode.label}</span><small>{postMode.helper}</small>
@@ -215,7 +215,7 @@ export default function CreatePage() {
             ))}
           </div>
 
-          <label className="form-label">Community <span className="text-text-muted font-normal">(optional)</span>            <select data-buddy="create-community" className="input" value={form.community} onChange={(event) => update('community', event.target.value)} disabled={!communitiesReady}>
+          <label className="form-label">Community <span className="text-text-muted font-normal">(optional)</span>            <select className="input" value={form.community} onChange={(event) => update('community', event.target.value)} disabled={!communitiesReady}>
               <option value="">{communitiesReady ? 'No community' : 'Loading communities…'}</option>
               {communities.map((community) => <option key={community.slug} value={community.slug}>c/{community.name}</option>)}
             </select>
@@ -225,14 +225,14 @@ export default function CreatePage() {
           {!needsSource ? null : (
             <fieldset>
               <legend className="form-label">What kind of note is this?</legend>
-              <div className="type-picker" data-buddy="create-note-kind">
+              <div className="type-picker">
                 {ANNOTATION_TYPES.map((type) => <button key={type} type="button" onClick={() => update('type', type)} className={form.type === type ? 'type-option type-option-active' : 'type-option'}>{type}</button>)}
               </div>
             </fieldset>
           )}
 
           {needsSource && <label className="form-label">Source URL
-            <input data-buddy="create-source-url" className="input" value={form.url} onChange={(event) => update('url', event.target.value)} placeholder="https://..." inputMode="url" required />
+            <input className="input" value={form.url} onChange={(event) => update('url', event.target.value)} placeholder="https://..." inputMode="url" required />
             {form.url && <span className="field-hint">Detected as {sourceType} · {domain}</span>}
             {duplicateClips.length > 0 && <span className="duplicate-note">This source already has {duplicateClips.length} discussion{duplicateClips.length === 1 ? '' : 's'} in this community. You can still add a distinct annotation.</span>}
           </label>}
@@ -243,15 +243,15 @@ export default function CreatePage() {
           </div>}
 
           <label className="form-label">{needsSource ? 'Source title' : 'Post title'}
-            <input data-buddy="create-source-title" className="input" value={form.title} onChange={(event) => update('title', event.target.value)} placeholder={needsSource ? 'The original source title' : 'What is the conversation about?'} maxLength={titleLimit} />
+            <input className="input" value={form.title} onChange={(event) => update('title', event.target.value)} placeholder={needsSource ? 'The original source title' : 'What is the conversation about?'} maxLength={titleLimit} />
             <span className="field-counter">{form.title.length}/{titleLimit}</span>
           </label>
           <label className="form-label">{needsSource ? <>The context <span className="text-text-muted font-normal">(quote, timestamp, or excerpt)</span></> : 'The content'}
-            <textarea data-buddy="create-exact-part" className="input resize-none" rows={5} value={form.quote} onChange={(event) => update('quote', event.target.value)} placeholder={needsSource ? 'Point to the exact part people should look at...' : 'Write the post people will respond to...'} maxLength={2000} />
+            <textarea className="input resize-none" rows={5} value={form.quote} onChange={(event) => update('quote', event.target.value)} placeholder={needsSource ? 'Point to the exact part people should look at...' : 'Write the post people will respond to...'} maxLength={2000} />
             <span className="field-counter">{form.quote.length}/2000</span>
           </label>
           {needsSource && <label className="form-label">Your annotation
-            <textarea data-buddy="create-annotation" className="input resize-none annotation-editor" rows={7} value={form.commentary} onChange={(event) => update('commentary', event.target.value)} placeholder="What do you want people to understand, question, or add?" maxLength={annotationLimit} />
+            <textarea className="input resize-none annotation-editor" rows={7} value={form.commentary} onChange={(event) => update('commentary', event.target.value)} placeholder="What do you want people to understand, question, or add?" maxLength={annotationLimit} />
             <span className={`field-counter ${form.commentary.length > annotationLimit * 0.9 ? 'field-counter-warning' : ''}`}>{form.commentary.length}/{annotationLimit}</span>
           </label>}
           {status && <p className="form-status" role="alert">{status}</p>}
@@ -264,7 +264,7 @@ export default function CreatePage() {
 
         <div className="create-preview-wrap">
           <p className="eyebrow">Live preview</p>
-          <div className="create-preview" data-buddy="create-preview">
+          <div className="create-preview">
             <p className="post-meta">{selectedCommunity ? <span className="community-pill"><CommunityAvatar slug={selectedCommunity.slug} name={selectedCommunity.name} /> c/{selectedCommunity.name}</span> : <span>Post</span>}<span>• just now</span></p>
             <h2 className="post-annotation-preview">{needsSource ? (form.commentary || 'Your point of view will be the center of the post.') : (form.title || 'Your title will be the headline of the post.')}</h2>
             {!needsSource && form.quote && <p className="post-text-body">{form.quote}</p>}

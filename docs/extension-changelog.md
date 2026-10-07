@@ -3011,3 +3011,8 @@ this changelog.
 - New For You sidebar section with Following, opening a placeholder wall until the feature exists.
 - Post cards drop harsh borders for a borderless card with soft shadow.
 - Checks: webapp build passes; guide engine, ring, bubble, toggle and all 36 tip anchors verified in the bundle.
+### Guide removed, minimal Hi kept, For You on top
+
+- Removed the corner buddy guide entirely (engine, toggle, tips, ring, tracking, all data-buddy hooks). Kept a minimal one-time corner Hi bubble, no tracking or tips.
+- For You section moved to the top of the sidebar above Discover; the old sidebar Following link removed. Inside the For You page, Following is a section linking to the not-available wall.
+- Checks: webapp build passes; no guide remnants in the bundle.

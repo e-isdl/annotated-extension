@@ -5,7 +5,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { isThemeId } from './lib/themes';
 import './styles/tokens.css';
 import './styles/globals.css';
-import './styles/buddy-guide.css';
 
 let storedTheme = null;
 try { storedTheme = localStorage.getItem('annotated-theme'); } catch {}
