@@ -232,7 +232,7 @@ export default function CreatePage() {
           )}
 
           {needsSource && <label className="form-label">Source URL
-            <input className="input" value={form.url} onChange={(event) => update('url', event.target.value)} placeholder="https://..." inputMode="url" required />
+            <input data-tour="web-create-url" className="input" value={form.url} onChange={(event) => update('url', event.target.value)} placeholder="https://..." inputMode="url" required />
             {form.url && <span className="field-hint">Detected as {sourceType} · {domain}</span>}
             {duplicateClips.length > 0 && <span className="duplicate-note">This source already has {duplicateClips.length} discussion{duplicateClips.length === 1 ? '' : 's'} in this community. You can still add a distinct annotation.</span>}
           </label>}
@@ -243,15 +243,15 @@ export default function CreatePage() {
           </div>}
 
           <label className="form-label">{needsSource ? 'Source title' : 'Post title'}
-            <input className="input" value={form.title} onChange={(event) => update('title', event.target.value)} placeholder={needsSource ? 'The original source title' : 'What is the conversation about?'} maxLength={titleLimit} />
+            <input data-tour="web-create-title" className="input" value={form.title} onChange={(event) => update('title', event.target.value)} placeholder={needsSource ? 'The original source title' : 'What is the conversation about?'} maxLength={titleLimit} />
             <span className="field-counter">{form.title.length}/{titleLimit}</span>
           </label>
           <label className="form-label">{needsSource ? <>The context <span className="text-text-muted font-normal">(quote, timestamp, or excerpt)</span></> : 'The content'}
-            <textarea className="input resize-none" rows={5} value={form.quote} onChange={(event) => update('quote', event.target.value)} placeholder={needsSource ? 'Point to the exact part people should look at...' : 'Write the post people will respond to...'} maxLength={2000} />
+            <textarea data-tour="web-create-quote" className="input resize-none" rows={5} value={form.quote} onChange={(event) => update('quote', event.target.value)} placeholder={needsSource ? 'Point to the exact part people should look at...' : 'Write the post people will respond to...'} maxLength={2000} />
             <span className="field-counter">{form.quote.length}/2000</span>
           </label>
           {needsSource && <label className="form-label">Your annotation
-            <textarea className="input resize-none annotation-editor" rows={7} value={form.commentary} onChange={(event) => update('commentary', event.target.value)} placeholder="What do you want people to understand, question, or add?" maxLength={annotationLimit} />
+            <textarea data-tour="web-create-take" className="input resize-none annotation-editor" rows={7} value={form.commentary} onChange={(event) => update('commentary', event.target.value)} placeholder="What do you want people to understand, question, or add?" maxLength={annotationLimit} />
             <span className={`field-counter ${form.commentary.length > annotationLimit * 0.9 ? 'field-counter-warning' : ''}`}>{form.commentary.length}/{annotationLimit}</span>
           </label>}
           {status && <p className="form-status" role="alert">{status}</p>}

@@ -2976,3 +2976,11 @@ this changelog.
 - Replaced the tight neon-like glow on the logo mark with a still, soft moonlight wash over the whole top-left corner (body::before, above the navbar but below menus, pointer-events none): a brighter heart near the corner melting into a wide faint falloff, so the logo reads as the light source.
 - Removed the breathing halo animation, the mark glow and the wordmark glow entirely; the mark is back to plain accent.
 - Checks: webapp build passes.
+### Buddy guided tour (T button), extension + webapp
+
+- New T button in the extension header and the webapp navbar. Pressing T starts a buddy-guided tour with spotlight bubble, Back/Next/Skip/dots, Esc to exit, T to toggle.
+- Extension: DOM-driving engine (new files src/components/tour/: PanelTour engine+scripts, TourBuddy, TourButton; src/styles/tour.css). YouTube tour drives the real UI: seeks, chapter pick, word find + phrase select, embed/record mode switches, take typing. Articles/X/Spotify tours are explain-only. Hard NEVER list enforced in the runner (post, save, drafts-resume, captures, all Continues outside YouTube).
+- Webapp: engine copy + reaction tour (WebappTour.jsx, TourButton.jsx, styles/tour.css): reacts to one article/X/YT/podcast card each, plays + pauses YT and episode audio ("this is how it sounds like"), visits the X comments, then tours sidebar/sort/search/create/rail/themes. xCommentPath config present (null = reacted post; installer fills when the user names the X post).
+- RULE ZERO enforced: nothing posts, saves, votes or submits anywhere. Exit restores video time, take text and play mode. Clip-range restore is unavailable through the DOM (documented): range stays where the tour left it.
+- Tour anchors added via data-tour attributes across clippers, annotation, drafts, cards, players, comments, navbar, sidebar, feed, create and rail. Reduced-motion support throughout, theme vars only.
+- Checks: root build and webapp build both pass; tour engine/events/copy verified in both bundles.

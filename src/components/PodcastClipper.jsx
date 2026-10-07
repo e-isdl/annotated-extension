@@ -448,7 +448,7 @@ export default function PodcastClipper({ pageInfo, onReady }) {
             <p className="text-xs text-text-muted text-center">
               Press capture, pick the Spotify tab, and turn on tab audio. Up to 90 seconds.
             </p>
-            <button onClick={beginCapture} className="btn-primary w-full">
+            <button onClick={beginCapture} data-tour="pod-capture" className="btn-primary w-full">
               Capture episode audio
             </button>
           </>
@@ -479,7 +479,7 @@ export default function PodcastClipper({ pageInfo, onReady }) {
             ) : (
               <AudioPreview url={audioUrl} seconds={seconds} />
             )}
-            <p className="text-xs text-text-muted">Recorded {seconds}s. Listen back, trim it, then continue.</p>
+            <p data-tour="pod-trim" className="text-xs text-text-muted">Recorded {seconds}s. Listen back, trim it, then continue.</p>
           </>
         )}
         {uploading && <p className="text-xs text-text-muted">Uploading...</p>}
@@ -489,7 +489,7 @@ export default function PodcastClipper({ pageInfo, onReady }) {
             <button onClick={resetTake} className="btn-ghost flex-1">
               Re-record
             </button>
-            <button onClick={continueToAnnotate} className="btn-primary flex-1">
+            <button onClick={continueToAnnotate} data-tour="pod-continue" className="btn-primary flex-1">
               Continue to Annotate →
             </button>
           </div>

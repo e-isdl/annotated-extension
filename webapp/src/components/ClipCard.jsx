@@ -222,7 +222,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   };
 
   return (
-    <article ref={cardRef} className="post-card post-card-linked" onClick={onCardClick}>
+    <article ref={cardRef} data-tour="web-postcard" data-kind={clip.source_type} className="post-card post-card-linked" onClick={onCardClick}>
       <div className="post-meta">
         {clip.community_slug && clip.community_name ? (
           <>
@@ -431,7 +431,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
 
       <div className="post-actions">
         <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
-        <Link to={`${href}#comments`} className="post-action no-underline">
+        <Link to={`${href}#comments`} data-tour="web-comments-link" className="post-action no-underline">
           <span>▱</span> {clip.comments_count ?? 0} comments
         </Link>
         <button type="button" onClick={handleShare} className="post-action">

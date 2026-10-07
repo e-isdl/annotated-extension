@@ -143,7 +143,7 @@ export default function RightRail() {
         </Link>
       ) : null}
 
-      {communities.length > 0 && takes.length === 0 && <section className="rail-card">
+      {communities.length > 0 && takes.length === 0 && <section className="rail-card" data-tour="web-rail-comms">
         <div className="flex items-center justify-between mb-4">
           <h2 className="rail-heading">Communities to explore</h2>
           <Link to="/explore" className="text-[11px] text-accent-2 hover:text-accent-2">See all</Link>
@@ -181,7 +181,7 @@ export default function RightRail() {
         </section>
       )}
 
-      <footer className="rail-footer">
+      <footer className="rail-footer" data-tour="web-rail-ext">
         {!postRef && (
           <span className="rail-get-extension">
             <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>

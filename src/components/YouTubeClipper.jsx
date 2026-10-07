@@ -1871,6 +1871,7 @@ export default function YouTubeClipper({
             <div className="word-findbar">
               <input
                 ref={findInputRef}
+                data-tour="word-find"
                 className="input word-findinput"
                 type="text"
                 value={findQuery}
@@ -1902,7 +1903,7 @@ export default function YouTubeClipper({
             <p className="word-clipper-msg">No transcript available for this video.</p>
           ) : (
             <>
-              <div className={`word-area${draggingWord ? ' is-dragging' : ''}`} data-drag={draggingWord || ''} ref={wordAreaRef} onWheel={disarmWordScroll} onTouchMove={disarmWordScroll}>
+              <div className={`word-area${draggingWord ? ' is-dragging' : ''}`} data-tour="word-area" data-drag={draggingWord || ''} ref={wordAreaRef} onWheel={disarmWordScroll} onTouchMove={disarmWordScroll}>
                 {words.map((w, i) => (
                   <Word
                     key={i}
@@ -1927,7 +1928,7 @@ export default function YouTubeClipper({
                   <span className="word-clipper-hint">Double-click a word to select it · Drag the bars to adjust</span>
                 </div>
                 <div className="word-perma-continue">
-                  <button type="button" className="btn-primary w-full" onClick={closeWordClipper}>Continue</button>
+                  <button type="button" data-tour="word-continue" className="btn-primary w-full" onClick={closeWordClipper}>Continue</button>
                 </div>
               </div>
             </>
@@ -1976,6 +1977,7 @@ export default function YouTubeClipper({
         <div className="play-clip">
           <button
             type="button"
+            data-tour="yt-play"
             className={`play-clip-btn play-clip-main${previewPlaying ? ' playing' : ''}`}
             onClick={togglePlay}
             disabled={locked}
@@ -2018,7 +2020,7 @@ export default function YouTubeClipper({
         {hasWindow() && (
           <div className="tl-block">
             <div className="tl-barlabel" aria-hidden="true">Full Video Timeline <span>({formatShort(tlDuration())})</span></div>
-          <div ref={overRef} className="tl-bar tl-over" style={BAR_TOUCH} role="slider" aria-label={`Seek the video, 0 to ${formatShort(tlDuration())}.`} aria-valuemin={0} aria-valuemax={Math.round(tlDuration())} aria-valuenow={Math.round(playValue())} aria-valuetext={ariaTimeText(playValue())} tabIndex={0} onKeyDown={overKeyDown} onPointerDown={(e) => beginSeekPointer(e.clientX)}>
+          <div ref={overRef} data-tour="yt-scrub" className="tl-bar tl-over" style={BAR_TOUCH} role="slider" aria-label={`Seek the video, 0 to ${formatShort(tlDuration())}.`} aria-valuemin={0} aria-valuemax={Math.round(tlDuration())} aria-valuenow={Math.round(playValue())} aria-valuetext={ariaTimeText(playValue())} tabIndex={0} onKeyDown={overKeyDown} onPointerDown={(e) => beginSeekPointer(e.clientX)}>
             <div className="tl-track" />
             {chapters.map((c, i) => (
               <div key={`ct${i}`} className="tl-ctick" style={{ left: `${overPct(c.t)}%` }} />
@@ -2050,6 +2052,7 @@ export default function YouTubeClipper({
             </div>
           <div
             ref={detailRef}
+            data-tour="yt-clipbar"
             className="tl-bar tl-detail"
             style={BAR_TOUCH}
             role="group"
@@ -2078,7 +2081,7 @@ export default function YouTubeClipper({
             />
           </div>
             <div className="tl-cardfoot">
-              <span className="tl-pill">
+              <span className="tl-pill" data-tour="yt-clippill">
                 <span className="tl-pill-ic" aria-hidden="true">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M10.2 13.8a4.2 4.2 0 0 0 5.9 0l3-3a4.2 4.2 0 0 0-5.9-5.9l-1.1 1.1" />
@@ -2095,7 +2098,7 @@ export default function YouTubeClipper({
         {!hasWindow() && (
           <div className="tl-block">
             <div className="tl-barlabel" aria-hidden="true">Full Video Timeline <span>({formatShort(tlDuration())})</span></div>
-          <div ref={overRef} className="tl-bar tl-over" style={BAR_TOUCH} role="slider" aria-label={`Seek the video, 0 to ${formatShort(tlDuration())}.`} aria-valuemin={0} aria-valuemax={Math.round(tlDuration())} aria-valuenow={Math.round(playValue())} aria-valuetext={ariaTimeText(playValue())} tabIndex={0} onKeyDown={overKeyDown} onPointerDown={(e) => beginSeekPointer(e.clientX)}>
+          <div ref={overRef} data-tour="yt-scrub" className="tl-bar tl-over" style={BAR_TOUCH} role="slider" aria-label={`Seek the video, 0 to ${formatShort(tlDuration())}.`} aria-valuemin={0} aria-valuemax={Math.round(tlDuration())} aria-valuenow={Math.round(playValue())} aria-valuetext={ariaTimeText(playValue())} tabIndex={0} onKeyDown={overKeyDown} onPointerDown={(e) => beginSeekPointer(e.clientX)}>
             <div className="tl-track" />
             {chapters.map((c, i) => (
               <div key={`ct${i}`} className="tl-ctick" style={{ left: `${overPct(c.t)}%` }} />
@@ -2118,7 +2121,7 @@ export default function YouTubeClipper({
       </div>
 
       <div className="find-tiles">
-        <button type="button" className="find-tile" onClick={openChapters} aria-haspopup="dialog" disabled={locked}>
+        <button type="button" data-tour="yt-chapters" className="find-tile" onClick={openChapters} aria-haspopup="dialog" disabled={locked}>
           <span className="find-tile-icon" aria-hidden="true">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle cx="5" cy="6" r="1.6" fill="currentColor" />
@@ -2138,7 +2141,7 @@ export default function YouTubeClipper({
             <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <button type="button" className="find-tile" onClick={toggleWordClipper} disabled={locked}>
+        <button type="button" data-tour="yt-words" className="find-tile" onClick={toggleWordClipper} disabled={locked}>
           <span className="find-tile-icon" aria-hidden="true">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M4 6h9M4 10h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -2198,6 +2201,7 @@ export default function YouTubeClipper({
                     role="option"
                     aria-selected={isCur}
                     className={`tl-chapter-row${isCur ? ' is-current' : ''}`}
+                    data-tour="yt-chapter-row"
                     onClick={() => pickChapter(c)}
                   >
                     <span className="tl-chapter-time">{formatShort(c.t)}</span>
@@ -2222,6 +2226,7 @@ export default function YouTubeClipper({
             aria-checked={playMode === 'embed'}
             disabled={locked}
             className={`play-seg-btn${playMode === 'embed' ? ' is-selected' : ''}`}
+            data-tour="yt-embed"
             onClick={() => setPlayMode('embed')}
           >
             Embed clip
@@ -2232,6 +2237,7 @@ export default function YouTubeClipper({
             aria-checked={playMode === 'record'}
             disabled={locked}
             className={`play-seg-btn${playMode === 'record' ? ' is-selected' : ''}`}
+            data-tour="yt-record"
             onClick={() => setPlayMode('record')}
           >
             Record clip
@@ -2263,6 +2269,7 @@ export default function YouTubeClipper({
       {rec.state !== 'recording' && (
         <div className="continue-sticky">
           <button
+            data-tour="yt-continue"
             onClick={canContinue ? handleContinue : startRecording}
             disabled={clipLen > MAX_CLIP || clipLen <= 0 || endSec <= startSec || !durKnown || isLive}
             className="btn-primary w-full"

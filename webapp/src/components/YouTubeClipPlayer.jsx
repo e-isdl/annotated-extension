@@ -406,6 +406,7 @@ export default function YouTubeClipPlayer({ videoId, startSec, endSec, autoplay 
         <div className="ytclip-bar">
           <button
             type="button"
+            data-tour="web-yt-play"
             className="ytclip-play"
             onClick={togglePlayPause}
             aria-label={playing ? 'Pause clip' : 'Play clip'}

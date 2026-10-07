@@ -184,7 +184,7 @@ export default function CommentSection({ clipId, postBase = null, postOwnerId = 
   };
 
   return (
-    <section className="comment-section" id="comments">
+    <section className="comment-section" id="comments" data-tour="web-comments">
       <div className="comment-toolbar">
         <label className="comment-sort-label">
           <span>Sort by</span>

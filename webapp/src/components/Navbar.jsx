@@ -7,6 +7,7 @@ import { postHref } from '../lib/links';
 import { THEMES, isThemeId, themeLabel, syncThemeMeta } from '../lib/themes';
 import Avatar from './Avatar';
 import ThemeNudge from './ThemeNudge';
+import TourButton from './TourButton';
 
 const NOTIF_ICONS = {
   comment: (
@@ -234,7 +235,7 @@ export default function Navbar() {
   return (
     <nav className="border-b border-border-subtle bg-bg-base sticky top-0 z-10">
       <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between gap-5">
-        <Link to="/" className="flex items-center gap-2 shrink-0">
+        <Link to="/" data-tour="web-logo" className="flex items-center gap-2 shrink-0">
           <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center">
             <span className="text-[var(--on-red)] font-bold text-xs">A</span>
           </div>
@@ -254,6 +255,7 @@ export default function Navbar() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search"
+              data-tour="web-search"
               className="w-full bg-bg-surface border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent transition-colors"
             />
           </div>
@@ -264,6 +266,7 @@ export default function Navbar() {
             <button
               type="button"
               data-theme-button
+              data-tour="web-theme"
               onClick={() => setShowThemes((value) => !value)}
               aria-label={`Theme: ${themeLabel(theme)}. Change theme`}
               aria-haspopup="menu"
@@ -308,10 +311,11 @@ export default function Navbar() {
               </div>
             )}
             <ThemeNudge hidden={showThemes} onPick={() => setShowThemes(true)} />
+            <TourButton />
           </div>
           <Link to="/explore" className="hidden sm:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Explore</Link>
           <Link to="/leaderboard" className="hidden md:inline-flex items-center h-9 text-xs text-text-secondary hover:text-text-primary transition-colors">Leaderboard</Link>
-          <Link to="/create" className="btn-primary h-9 text-xs">Create</Link>
+          <Link to="/create" data-tour="web-create-link" className="btn-primary h-9 text-xs">Create</Link>
 
           {user ? (
             <>

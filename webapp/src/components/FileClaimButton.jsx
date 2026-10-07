@@ -28,7 +28,7 @@ export default function FileClaimButton({ clipId }) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" data-tour="web-claim">
       <button
         onClick={() => setOpen(!open)}
         className="text-[11px] text-text-muted hover:text-text-secondary transition-colors"

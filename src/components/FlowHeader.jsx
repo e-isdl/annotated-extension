@@ -18,7 +18,7 @@ export default function FlowHeader({ step, pageInfo }) {
       : pageInfo.data?.title || 'Which part matters?';
 
   return (
-    <div className="flow-pad">
+    <div className="flow-pad" data-tour="ext-flowhead">
       <p className="flow-eyebrow">{platform}</p>
       <h1 className="flow-heading">{heading}</h1>
     </div>
