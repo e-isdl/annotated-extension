@@ -2960,3 +2960,9 @@ this changelog.
 - Glossy highlight on the forehead and a little curled tail that wags (faster once he lands at the extension).
 - Tail added to the reduced-motion freeze list; arm/ears/feet and all flight behavior unchanged.
 - Checks: root build and webapp build both pass.
+### Word clipper: window follows, finds phrases and sentences
+
+- The 3-minute clipping window now jumps to the selection when you double-click a word and when you drop the start handle (same 30s-behind lock as a real seek), and when closing the word clipper after moving the start - so scrubbing to a later part of the video moves the window there instead of leaving it stale.
+- The transcript find box now matches multi-word phrases and whole sentences: the query is split into atomic tokens (lowercased, apostrophes folded, split on punctuation) so "real world engineering" finds "Real-World Engineering" and "dont stop" finds "don't stop". Single-word substring search still works as before; every word of a matched phrase highlights.
+- Double-clicking a word inside a find match selects the whole matched phrase (capped at the 90s clip limit), and its text is attached to the clip as the transcript.
+- Checks: find-matcher unit checks pass (13/13: phrases, sentences, punctuation, apostrophes, hyphens, overlaps, cap math); extension build passes.

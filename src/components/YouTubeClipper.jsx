@@ -1016,17 +1016,47 @@ export default function YouTubeClipper({
   wordOpenRef.current = wordClipperOpen;
   const lastScrolledMatch = useRef(-1);
 
-  const findMatches = useMemo(() => {
-    const q = findQuery.trim().toLowerCase();
-    if (!q) return [];
-    const out = [];
-    words.forEach((w, i) => {
-      if (w.text.toLowerCase().includes(q)) out.push(i);
-    });
-    return out;
+  // Atomic tokens for find: lowercase, apostrophes folded away, split on
+  // anything that is not a letter or digit - so phrases and whole
+  // sentences match regardless of punctuation or case. "real-world" is
+  // seen as ["real", "world"], "don't" as ["dont"].
+  const findAtoms = (t) => String(t || '').toLowerCase().replace(/[''’]/g, '').split(/[^a-z0-9]+/).filter(Boolean);
+
+  const findData = useMemo(() => {
+    const qt = findAtoms(findQuery);
+    const runs = [];
+    if (qt.length && words.length) {
+      const perWord = words.map((w) => findAtoms(w.text));
+      if (qt.length === 1) {
+        const q = qt[0];
+        perWord.forEach((atoms, i) => {
+          if (atoms.some((a) => a.includes(q))) runs.push([i, i]);
+        });
+      } else {
+        const flat = [];
+        const owner = [];
+        perWord.forEach((atoms, i) => { atoms.forEach((a) => { flat.push(a); owner.push(i); }); });
+        for (let k = 0; k + qt.length <= flat.length; k += 1) {
+          let ok = true;
+          for (let j = 0; j < qt.length; j += 1) {
+            if (flat[k + j] !== qt[j]) { ok = false; break; }
+          }
+          if (ok) runs.push([owner[k], owner[k + qt.length - 1]]);
+        }
+      }
+    }
+    return { runs };
   }, [words, findQuery]);
 
-  const findSet = useMemo(() => new Set(findMatches), [findMatches]);
+  const findMatches = useMemo(() => findData.runs.map((r) => r[0]), [findData]);
+  const findRunsRef = useRef([]);
+  findRunsRef.current = findData.runs;
+
+  const findSet = useMemo(() => {
+    const st = new Set();
+    findData.runs.forEach(([a, b]) => { for (let i = a; i <= b; i += 1) st.add(i); });
+    return st;
+  }, [findData]);
   const findCount = findMatches.length;
   const findPos = findCount === 0 ? 0 : ((findIndex % findCount) + findCount) % findCount;
   const currentMatch = findCount === 0 ? -1 : findMatches[findPos];
@@ -1170,18 +1200,33 @@ export default function YouTubeClipper({
     wordClipUsedRef.current = true;
     const s = wordStateRef.current;
     if (!s.words.length) return;
-    const w = s.words[index];
+    // A double-click inside a find match selects the whole phrase or
+    // sentence, so multi-word finds clip in one action.
+    let si = index;
+    let ei = Math.min(index + 1, s.words.length - 1);
+    const runs = findRunsRef.current || [];
+    for (let r = 0; r < runs.length; r += 1) {
+      if (index >= runs[r][0] && index <= runs[r][1]) {
+        const spanEnd = Math.min(runs[r][1], s.words.length - 1);
+        const spanT = Math.max(0, s.words[runs[r][0]].start);
+        const spanE = Math.min(s.words[spanEnd].end, s.duration);
+        if (spanE > spanT && spanE - spanT <= MAX_CLIP) { si = runs[r][0]; ei = spanEnd; }
+        break;
+      }
+    }
+    const w = s.words[si];
     if (!w || w.start >= s.duration) return;
-    const ei = Math.min(index + 1, s.words.length - 1);
     const t = Math.max(0, w.start);
     let e = Math.min(s.words[ei].end, s.duration);
     if (e <= t) return;
     skipDeriveRef.current = true;
-    s.setWordStart(index);
+    s.setWordStart(si);
     s.setWordEnd(ei);
     s.setStartSec(t);
     s.setEndSec(e);
     timesTouchedRef.current = true;
+    // The 3-minute window follows the selection like a real seek does.
+    lockWindowTo(t, s.duration);
   }, []);
 
   const onWordHandleEvent = useCallback((which, phase, e) => {
@@ -1227,6 +1272,11 @@ export default function YouTubeClipper({
     };
     const up = () => {
       if (wordRafRef.current) { cancelAnimationFrame(wordRafRef.current); wordRafRef.current = 0; }
+      const st = wordStateRef.current;
+      if (st && st.draggingWord === 'start' && st.words.length) {
+        // The 3-minute window recenters on the dropped handle like a seek.
+        lockWindowTo(Math.max(0, st.startSec), st.duration);
+      }
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
@@ -1266,6 +1316,7 @@ export default function YouTubeClipper({
     setWordClipperOpen(false);
     if (snap && (startSec !== snap.s || endSec !== snap.e)) {
       markDirty();
+      if (startSec !== snap.s) lockWindowTo(startSec);
       ytSeek(startSec);
       viewRef.current = { ...viewRef.current, s: startSec, e: endSec };
     }
