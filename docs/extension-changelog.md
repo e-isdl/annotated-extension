@@ -2948,3 +2948,9 @@ this changelog.
 - The "Try the extension" pill appears (pops in) only after he arrives, flush under the GitHub link with the tail pointing up at it; its width is measured from a hidden copy laid out during the start phase.
 - At the dock the pill stays static and the buddy jumps up and down inside it with the smiling face (and waving arm), delayed until the pill has popped in.
 - Checks: webapp build passes.
+### Buddy redesign: no longer looks like the Reddit logo
+
+- The buddy is now a little puppy: two perky ears with inner-ear detail, two small feet below the body, and a bent raised arm at his side (moved off the top of the head, where it read as Snoo's antenna).
+- Arm pivot moved to the new shoulder (33, 29) so pointing and waving swing from the side naturally; arm stays behind the ears and head in layer order.
+- Face, cute landed variant, blink/bob/pop animations and all flight behavior unchanged; still only theme variables.
+- Checks: root build and webapp build both pass.

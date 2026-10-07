@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 
-// Shared little buddy: round face, waving arm, blinking eyes. The
-// `cute` variant is the landed look - happy arc eyes, open smile and
-// blush cheeks.
+// Shared little buddy: round puppy with perky ears, little feet and a
+// bent raised arm, blinking eyes. The `cute` variant is the landed
+// look - happy arc eyes, open smile and blush cheeks.
 export function ThemeBuddy({ cute = false }) {
   return (
     <svg className="theme-nudge-buddy" width="32" height="32" viewBox="0 0 48 48" aria-hidden="true">
       <g className="theme-nudge-arm">
-        <path d="M31 15 C 34 9, 34 5, 33 2" stroke="currentColor" strokeWidth="5" strokeLinecap="round" fill="none" />
-        <circle cx="33" cy="3" r="4" fill="currentColor" />
+        <path d="M33 29 C 38 27, 41 24, 41 19" stroke="currentColor" strokeWidth="5" strokeLinecap="round" fill="none" />
+        <circle cx="41" cy="17.5" r="4" fill="currentColor" />
       </g>
+      <ellipse cx="14" cy="13" rx="4" ry="7" fill="var(--accent)" transform="rotate(-18 14 13)" />
+      <ellipse cx="30" cy="13" rx="4" ry="7" fill="var(--accent)" transform="rotate(18 30 13)" />
+      <ellipse cx="14" cy="13.5" rx="2" ry="4.5" fill="var(--on-red)" opacity="0.3" transform="rotate(-18 14 13.5)" />
+      <ellipse cx="30" cy="13.5" rx="2" ry="4.5" fill="var(--on-red)" opacity="0.3" transform="rotate(18 30 13.5)" />
+      <ellipse cx="15" cy="42" rx="5.5" ry="4" fill="var(--accent)" />
+      <ellipse cx="29" cy="42" rx="5.5" ry="4" fill="var(--accent)" />
       <circle cx="22" cy="27" r="15" fill="var(--accent)" />
       {cute ? (
         <>
