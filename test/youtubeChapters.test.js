@@ -15,13 +15,14 @@ async function run(args, page) {
     if (typeof page.liveFn === 'function') return page.liveFn();
     if (page.liveResponse !== undefined) return page.liveResponse;
     if (page.player && page.player.getPlayerResponse) return page.player.getPlayerResponse();
-    return undefined;
+    // Default: a live player already on the wanted video carrying nothing,
+    // so tests focus on the source under test instead of the wait loop.
+    return { videoDetails: { videoId: args.videoId } };
   };
   const playerScope = {
     querySelectorAll: () => [],
-    getPlayerResponse: page.live === undefined && page.player === undefined && page.liveResponse === undefined
-      ? undefined
-      : () => resolveLive(),
+    getPlayerResponse: page.noPlayerResponse ? undefined : () => resolveLive(),
+    getVideoData: () => ({ video_id: resolveLive()?.videoDetails?.videoId }),
   };
   const sandbox = {
     window: {
@@ -32,11 +33,7 @@ async function run(args, page) {
     },
     document: {
       querySelector: (sel) => {
-        if (sel === '#movie_player') {
-          return page.live === undefined && page.player === undefined && page.liveResponse === undefined
-            ? null
-            : playerScope;
-        }
+        if (sel === '#movie_player') return page.noPlayer ? null : playerScope;
         if (sel === 'ytd-watch-metadata') {
           return page.markerReads !== undefined && !page.noScopes ? metadataScope : null;
         }
@@ -88,16 +85,24 @@ const VID_B = [[0, 'Intro'], [120000, 'Middle'], [300000, 'End']];
 const VID_A = [[0, 'Old one'], [60000, 'Old two'], [180000, 'Old three']];
 
 function globalsFor(id, chapters) {
+  // Real page globals name their video; the reader only trusts matching roots.
+  const items = [0, 1, 2].map((i) => (
+    { chapterRenderer: { title: { simpleText: chapters[i][1] }, timeRangeStartMillis: chapters[i][0] } }
+  ));
   return {
-    contents: {
-      secondary: [
-        { chapterRenderer: { title: { simpleText: chapters[0][1] }, timeRangeStartMillis: chapters[0][0] } },
-        { chapterRenderer: { title: { simpleText: chapters[1][1] }, timeRangeStartMillis: chapters[1][0] } },
-        { chapterRenderer: { title: { simpleText: chapters[2][1] }, timeRangeStartMillis: chapters[2][0] } },
-      ],
-    },
+    currentVideoEndpoint: { watchEndpoint: { videoId: id } },
+    videoDetails: { videoId: id },
+    contents: { secondary: items },
   };
 }
+
+// Real watch-page globals always name their video; unnamed roots are
+// rejected, so fixtures must carry the id like production does.
+const asVideo = (id, obj) => ({
+  ...obj,
+  currentVideoEndpoint: { watchEndpoint: { videoId: id } },
+  videoDetails: { videoId: id },
+});
 
 test('live player wins over stale globals for the wanted video', async () => {
   const out = await run({ videoId: 'BBB', duration: 400 }, {
@@ -107,6 +112,7 @@ test('live player wins over stale globals for the wanted video', async () => {
     ytInitialData: globalsFor('AAA', VID_A),
   });
   assert.equal(out.videoId, 'BBB');
+  assert.equal(out.playerVideoId, 'BBB');
   assert.deepEqual(out.chapters.map((c) => c.title), ['Intro', 'Middle', 'End']);
 });
 
@@ -118,6 +124,35 @@ test('stale live player refuses instead of serving globals', async () => {
     ytInitialData: globalsFor('BBB', VID_B),
   });
   assert.deepEqual(out.chapters, []);
+  assert.equal(out.playerVideoId, 'AAA');
+});
+
+test('catching-up player resolves once it matches', async () => {
+  let calls = 0;
+  const out = await run({ videoId: 'BBB', duration: 400 }, {
+    href: 'https://www.youtube.com/watch?v=BBB',
+    liveFn: () => (++calls <= 2 ? RomansLive('AAA', VID_A) : RomansLive('BBB', VID_B)),
+  });
+  assert.equal(out.playerVideoId, 'BBB');
+  assert.deepEqual(out.chapters.map((c) => c.title), ['Intro', 'Middle', 'End']);
+});
+
+test('missing player refuses instead of guessing', async () => {
+  const out = await run({ videoId: 'BBB', duration: 400 }, {
+    href: 'https://www.youtube.com/watch?v=BBB',
+    noPlayer: true,
+    ytInitialData: globalsFor('BBB', VID_B),
+  });
+  assert.deepEqual(out.chapters, []);
+});
+
+test('getVideoData-only players still identify the video', async () => {
+  const out = await run({ videoId: 'BBB', duration: 400 }, {
+    href: 'https://www.youtube.com/watch?v=BBB',
+    noPlayerResponse: true,
+    ytInitialData: globalsFor('BBB', VID_B),
+  });
+  assert.deepEqual(out.chapters.map((c) => c.title), ['Intro', 'Middle', 'End']);
 });
 
 test('globals alone still work without any player', async () => {
@@ -135,11 +170,11 @@ test('macro markers support startTimeSeconds and timeDescription fallback', asyn
     href: 'https://www.youtube.com/watch?v=v',
     live: undefined,
     player: null,
-    ytInitialData: { items: [
+    ytInitialData: asVideo('v', { items: [
       { macroMarkersListItemRenderer: { title: { simpleText: 'First' }, startTimeSeconds: 0 } },
       { macroMarkersListItemRenderer: { title: { simpleText: 'Second' }, timeDescription: { simpleText: '2:00' } } },
       { macroMarkersListItemRenderer: { title: { simpleText: 'Third' }, startTimeSeconds: 200 } },
-    ] },
+    ] }),
   });
   assert.deepEqual(out.chapters.map((c) => [c.t, c.title]), [[0, 'First'], [120, 'Second'], [200, 'Third']]);
 });
@@ -149,21 +184,21 @@ test('fewer than three chapters means no chapters', async () => {
     href: 'https://www.youtube.com/watch?v=v',
     live: undefined,
     player: null,
-    ytInitialData: { items: [
+    ytInitialData: asVideo('v', { items: [
       { macroMarkersListItemRenderer: { title: { simpleText: 'Only' }, startTimeSeconds: 0 } },
       { macroMarkersListItemRenderer: { title: { simpleText: 'Two' }, startTimeSeconds: 60 } },
-    ] },
+    ] }),
   });
   assert.deepEqual(out.chapters, []);
 });
 
 test('feature-length durations cap over-long entries, ad lengths do not', async () => {
-  const data = { items: [
+  const data = asVideo('v', { items: [
     { macroMarkersListItemRenderer: { title: { simpleText: 'A' }, startTimeSeconds: 0 } },
     { macroMarkersListItemRenderer: { title: { simpleText: 'B' }, startTimeSeconds: 100 } },
     { macroMarkersListItemRenderer: { title: { simpleText: 'C' }, startTimeSeconds: 200 } },
     { macroMarkersListItemRenderer: { title: { simpleText: 'Far' }, startTimeSeconds: 5000 } },
-  ] };
+  ] });
   const page = { href: 'https://www.youtube.com/watch?v=v', live: undefined, player: null, ytInitialData: data };
   const capped = await run({ videoId: 'v', duration: 400 }, page);
   assert.deepEqual(capped.chapters.map((c) => c.title), ['A', 'B', 'C']);
@@ -176,28 +211,27 @@ test('duplicate times collapse, garbage rows are skipped', async () => {
     href: 'https://www.youtube.com/watch?v=v',
     live: undefined,
     player: null,
-    ytInitialData: { items: [
+    ytInitialData: asVideo('v', { items: [
       { macroMarkersListItemRenderer: { title: { simpleText: 'A' }, startTimeSeconds: 0 } },
       { macroMarkersListItemRenderer: { title: { simpleText: 'A dup' }, startTimeSeconds: 0 } },
       { macroMarkersListItemRenderer: { title: { simpleText: '' }, startTimeSeconds: 50 } },
       { macroMarkersListItemRenderer: { title: { simpleText: 'No time' } } },
       { chapterRenderer: { title: { simpleText: 'B' }, timeRangeStartMillis: 90000 } },
       { chapterRenderer: { title: { simpleText: 'C' }, timeRangeStartMillis: 200000 } },
-    ] },
+    ] }),
   });
   assert.deepEqual(out.chapters.map((c) => [c.t, c.title]), [[0, 'A'], [90, 'B'], [200, 'C']]);
 });
 
-test('live response without an id is still trusted first', async () => {
+test('unidentifiable live player refuses instead of guessing', async () => {
   const live = RomansLive('', VID_B);
   delete live.videoDetails;
   const out = await run({ videoId: 'BBB', duration: 400 }, {
     href: 'https://www.youtube.com/watch?v=BBB',
-    live: true,
-    player: { getPlayerResponse: () => live },
-    ytInitialData: globalsFor('AAA', VID_A),
+    liveResponse: live,
+    ytInitialData: globalsFor('BBB', VID_B),
   });
-  assert.deepEqual(out.chapters.map((c) => c.title), ['Intro', 'Middle', 'End']);
+  assert.deepEqual(out.chapters, []);
 });
 
 test('shorts URLs report the shorts id', async () => {
@@ -221,7 +255,7 @@ test('cyclic page objects cannot hang the scan', async () => {
     href: 'https://www.youtube.com/watch?v=v',
     live: undefined,
     player: null,
-    ytInitialData: cyclic,
+    ytInitialData: asVideo('v', cyclic),
   });
   assert.deepEqual(out.chapters.map((c) => c.title), ['A', 'B', 'C']);
 });
@@ -238,24 +272,26 @@ test('stable DOM markers win without any globals', async () => {
     ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight']);
 });
 
-test('progressive DOM renders resolve to the full list', async () => {
+test('growing DOM across confirmation resolves to the full list', async () => {
   const seven = domEight.slice(0, 7);
   const out = await run({ videoId: 'd', duration: 900 }, {
     href: 'https://www.youtube.com/watch?v=d',
-    markerReads: [seven, seven, domEight, domEight],
+    markerReads: [seven, domEight, domEight],
   });
   assert.equal(out.chapters.length, 8);
   assert.equal(out.chapters[7].title, 'Eight');
 });
 
-test('thin DOM plus structured globals combine', async () => {
+test('sub-threshold DOM never joins the union', async () => {
+  // Two rendered markers cannot corroborate anything: they read as often
+  // from a half render as from a stray node, so only complete sources count.
   const two = domEight.slice(0, 2);
   const out = await run({ videoId: 'd', duration: 900 }, {
     href: 'https://www.youtube.com/watch?v=d',
     markerReads: [two],
     ytInitialData: globalsFor('d', VID_B),
   });
-  assert.deepEqual(out.chapters.map((c) => c.title), ['One', 'Two', 'Middle', 'End']);
+  assert.deepEqual(out.chapters.map((c) => c.title), ['Intro', 'Middle', 'End']);
 });
 
 test('ad-length durations do not filter DOM markers', async () => {

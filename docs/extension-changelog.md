@@ -3239,3 +3239,7 @@ this changelog.
 
 - All chapter reads run in MAIN world where the player API works: player-bound refusal, scoped DOM with longest-wins confirmation, structured fallback. Content-scriptiline fallbacks removed.
 - Checks: root suite 83/83, webapp suite 24/24; both builds pass.
+### Chapters: per-source trust, union of fresh only (local)
+
+- Each source is collected separately and only non-stale complete sources union; sub-threshold reads never join; Sonnet reset bug fixed.
+- Checks: root suite 87/87; extension build passes.
