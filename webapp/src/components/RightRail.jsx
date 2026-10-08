@@ -305,7 +305,7 @@ export default function RightRail() {
         {!postRef && (
           <span className="rail-get-extension">
             <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
-            <span className="rail-footer-updated">Extension updated October 7, 6:00 PM</span>
+            <span className="rail-footer-updated">Extension updated October 9, 1:30 AM</span>
           </span>
         )}
         <a href="https://github.com/e-isdl/annotated-extension/releases" data-github-link target="_blank" rel="noopener noreferrer">GitHub ↗</a>
