@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, mem
 import { fetchYouTubeTranscript } from '../lib/youtubeTranscript';
 import { cleanTranscript } from '../lib/text';
 import { readChaptersMainWorld, chapterKey } from '../lib/youtubeChapters';
-import { findWordRuns } from '../lib/wordFind';
+import { findWordRuns, sentenceAround } from '../lib/wordFind';
 
 function formatTime(s) {
   s = Math.max(0, Math.floor(s));
@@ -1019,6 +1019,40 @@ export default function YouTubeClipper({
     }
   };
 
+  // Snap the selection to the whole sentence around the current match
+  // (or the selection anchor), and move the clip window there with it.
+  const snapToSentence = () => {
+    if (!words.length) return;
+    const anchor = currentMatch >= 0 ? currentMatch : wordStart;
+    const range = sentenceAround(words.map((w) => w.text), anchor);
+    if (!range) return;
+    wordClipUsedRef.current = true;
+    const t = Math.max(0, words[range.start].start);
+    let e = Math.min(words[range.end].end, duration);
+    if (!(e > t)) return;
+    let we = range.end;
+    if (e - t > MAX_CLIP) {
+      e = t + MAX_CLIP;
+      while (we > range.start && words[we - 1].end > e) we -= 1;
+      e = Math.min(words[we].end, duration);
+      flashCap();
+    }
+    skipDeriveRef.current = true;
+    setWordStart(range.start);
+    setWordEnd(we);
+    setStartSec(t);
+    setEndSec(e);
+    timesTouchedRef.current = true;
+    lockWindowTo(t, duration);
+  };
+
+  const matchSentence = (() => {
+    if (!findQuery.trim() || currentMatch < 0 || !words.length) return '';
+    const range = sentenceAround(words.map((w) => w.text), currentMatch);
+    if (!range) return '';
+    return words.slice(range.start, range.end + 1).map((w) => w.text).join(' ');
+  })();
+
   useLayoutEffect(() => {
     if (draggingWord || !words.length) return;
     if (skipDeriveRef.current) { skipDeriveRef.current = false; return; }
@@ -1845,6 +1879,7 @@ export default function YouTubeClipper({
                 </svg>
               </button>
             </div>
+            {matchSentence ? <p className="word-find-context">{matchSentence}</p> : null}
           </div>
           {wordLoading ? (
             <p className="word-clipper-msg">Loading transcript…</p>
@@ -1877,6 +1912,7 @@ export default function YouTubeClipper({
                     <span key={capFlash} className={`max${capFlash ? ' flash' : ''}`}>{formatShort(clipLen)} of {formatShort(MAX_CLIP)}</span>
                   </span>
                   <span className="word-clipper-hint">Double-click a word to select it · Drag the bars to adjust</span>
+                  <button type="button" className="word-sentence-btn" onClick={snapToSentence} disabled={!words.length}>Sentence</button>
                 </div>
                 <div className="word-perma-continue">
                   <button type="button" className="btn-primary w-full" onClick={closeWordClipper}>Continue</button>

@@ -3247,3 +3247,7 @@ this changelog.
 
 - /next API bound to the video id is the primary source; live wait, per-return player re-checks, one source per read, id-gated globals, stale-echo taint detection.
 - Checks: root suite 91/91, webapp suite 24/24; both builds pass.
+### Intelligent word find (local)
+
+- Whole-word matching plus plural folding (robot/robots); sentence snap button moves the clip window to the current match sentence; match context line under search.
+- Checks: root suite 98/98; extension build passes.

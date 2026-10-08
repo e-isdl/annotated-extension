@@ -492,6 +492,10 @@ input.tl-chip.is-editing { width: 84px; background: var(--bg); color: var(--text
 .word-findnav { width: 32px; height: 32px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 8px; background: transparent; color: var(--text-2); cursor: pointer; }
 .word-findnav:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
 .word-findnav:disabled { opacity: 0.35; cursor: default; }
+.word-find-context { margin: 6px 2px 0; color: var(--text-3); font-size: 12px; line-height: 1.45; display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.word-sentence-btn { flex: none; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text-secondary); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.word-sentence-btn:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
+.word-sentence-btn:disabled { opacity: 0.4; cursor: default; }
 .word.is-match { box-shadow: inset 0 0 0 1px var(--red); }
 .word.is-current { background: var(--red); color: var(--on-red); }
 /* Dragging: handles ignore pointer so elementFromPoint hits words */
