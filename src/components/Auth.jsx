@@ -25,21 +25,43 @@ export default function Auth() {
       if (oauthError) throw oauthError;
       if (!data?.url) throw new Error('Supabase did not return a Google sign-in URL.');
 
-      const redirectUrl = await Promise.race([
-        new Promise((resolve, reject) => {
-          chrome.identity.launchWebAuthFlow({ url: data.url, interactive: true }, (result) => {
-            const launchError = chrome.runtime.lastError;
-            if (launchError) reject(new Error(launchError.message));
-            else if (!result) reject(new Error('Google sign-in was cancelled before it completed.'));
-            else resolve(result);
-          });
-        }),
-        new Promise((_, reject) => {
-          setTimeout(() => reject(new Error(
-            `The sign-in window never came back to the extension. Supabase almost certainly redirected to your website instead. Add ${redirectUri} to Authentication → URL Configuration → Redirect URLs, then reload the extension.`
-          )), 120000);
-        }),
-      ]);
+      const launchOnce = () => new Promise((resolve, reject) => {
+        chrome.identity.launchWebAuthFlow({ url: data.url, interactive: true }, (result) => {
+          const launchError = chrome.runtime.lastError;
+          if (launchError) reject(new Error(launchError.message));
+          else if (!result) reject(new Error('Google sign-in was cancelled before it completed.'));
+          else resolve(result);
+        });
+      });
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      let redirectUrl;
+      try {
+        redirectUrl = await Promise.race([
+          (async () => {
+            try {
+              return await launchOnce();
+            } catch (first) {
+              if (!/could not be loaded/i.test(first.message || '')) throw first;
+              // Transient load failure (VPN, ad-blocker, flaky network):
+              // one retry before giving up.
+              await sleep(1500);
+              return await launchOnce();
+            }
+          })(),
+          new Promise((_, reject) => {
+            setTimeout(() => reject(new Error(
+              `The sign-in window never came back to the extension. Supabase almost certainly redirected to your website instead. Add ${redirectUri} to Authentication → URL Configuration → Redirect URLs, then reload the extension.`
+            )), 120000);
+          }),
+        ]);
+      } catch (err) {
+        if (/could not be loaded/i.test(err.message || '')) {
+          throw new Error(
+            `Google's sign-in page would not load inside the extension window. Turn off any VPN or ad-blocker for the sign-in and try again. (Callback in use: ${redirectUri})`
+          );
+        }
+        throw err;
+      }
 
       const callback = new URL(redirectUrl);
       const callbackHash = new URLSearchParams(callback.hash.slice(1));
