@@ -1,7 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { fetchYouTubeTranscript } from '../lib/youtubeTranscript';
 import { cleanTranscript } from '../lib/text';
-import { readChaptersMainWorld } from '../lib/youtubeChapters';
+import { readChaptersMainWorld, chapterKey } from '../lib/youtubeChapters';
+import { findWordRuns } from '../lib/wordFind';
 
 function formatTime(s) {
   s = Math.max(0, Math.floor(s));
@@ -459,89 +460,78 @@ export default function YouTubeClipper({
     }
   };
 
+  // Previous video fingerprint: turns the stale-echo guard on inside the
+  // MAIN-world reader, so an old page still rendered never passes as new.
+  const shownRef = useRef({ videoId: '', key: '' });
+
+  const commitChapters = (id, list) => {
+    chapterCacheRef.current.set(id, list); // safe: only ever called with player-verified data
+    if (activeVideoRef.current !== id) return;
+    chaptersForRef.current = id;
+    shownRef.current = { videoId: id, key: chapterKey(list) };
+    setChapters(list);
+  };
+
+  // Returns chapters only when BOTH the page id and the live player id equal videoId.
+  const readChaptersVerified = async (tabId, videoId) => {
+    try {
+      const [inj] = await chrome.scripting.executeScript({
+        target: { tabId },
+        world: 'MAIN',
+        func: readChaptersMainWorld,
+        args: [{
+          videoId,
+          duration: tlDuration(),
+          prevVideoId: shownRef.current.videoId,
+          prevKey: shownRef.current.key,
+        }],
+      });
+      const out = inj?.result;
+      if (!out || !Array.isArray(out.chapters) || !out.chapters.length) return null;
+      if (out.videoId && out.videoId !== videoId) return null;
+      if (out.playerVideoId !== videoId) return null;
+      return out.chapters;
+    } catch (e) {
+      return null;
+    }
+  };
+
   const loadChapters = async (forId) => {
     const videoId = forId || activeVideoRef.current;
     if (!videoId) return;
     const cached = chapterCacheRef.current.get(videoId);
     if (cached) {
-      chaptersForRef.current = videoId;
-      setChapters(cached);
+      commitChapters(videoId, cached);
       return;
     }
     // Ignore results that arrive after the user has moved to another video.
     const still = () => activeVideoRef.current === videoId;
-    // The page side binds its answer to the live player; only accept answers
-    // whose page AND player both agree with the wanted video.
-    const accepted = (r) => r && r.ok && Array.isArray(r.chapters) && r.chapters.length
-      && (!r.videoId || r.videoId === videoId)
-      && (!r.playerVideoId || r.playerVideoId === videoId);
     setChaptersLoading(true);
     try {
       const tab = await getActiveTab();
       if (!tab) return;
-      let res = await sendToActiveTab({ type: 'YT_CHAPTERS', videoId });
-      if (!res) {
-        // Content script not there yet: inject it once, then ask again.
-        // (Injecting on every call stacked duplicate message listeners.)
-        try {
-          await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
-        } catch (e) {}
-        res = await sendToActiveTab({ type: 'YT_CHAPTERS', videoId });
-      }
-      if (accepted(res)) {
-        chapterCacheRef.current.set(videoId, res.chapters);
-        if (still()) {
-          chaptersForRef.current = videoId;
-          setChapters(res.chapters);
-        }
-        return;
-      }
-      if (res && res.ok && Array.isArray(res.chapters) && res.chapters.length) {
-        // The tab answered for another video (SPA navigation race). Retry
-        // briefly for the new page; never cache another video's chapters
-        // under this id.
-        for (let attempt = 0; attempt < 3; attempt += 1) {
-          await new Promise((resolve) => setTimeout(resolve, 700));
-          if (!still()) return;
-          let retry = null;
-          try { retry = await sendToActiveTab({ type: 'YT_CHAPTERS', videoId }); } catch (e) { retry = null; }
-          if (accepted(retry)) {
-            chapterCacheRef.current.set(videoId, retry.chapters);
-            if (still()) {
-              chaptersForRef.current = videoId;
-              setChapters(retry.chapters);
-            }
-            return;
-          }
-        }
-        return;
-      }
+      // The MAIN-world reader is the only reader: it waits for the live player
+      // to be on videoId, and re-checks after scraping.
       for (let attempt = 0; attempt < 3; attempt += 1) {
-        if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 500));
+        if (attempt) await new Promise((r) => setTimeout(r, 700));
         if (!still()) return;
-        let out = null;
-        try {
-          const [injection] = await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            world: 'MAIN',
-            func: readChaptersMainWorld,
-            args: [{ videoId, duration: tlDuration() }],
-          });
-          out = injection?.result || null;
-        } catch (e) {
-          out = null;
-        }
-        if (!out) continue;
-        if (out.videoId && out.videoId !== videoId) continue;
-        if (Array.isArray(out.chapters) && out.chapters.length) {
-          chapterCacheRef.current.set(videoId, out.chapters);
-          if (still()) {
-            chaptersForRef.current = videoId;
-            setChapters(out.chapters);
-          }
-          return;
-        }
+        const list = await readChaptersVerified(tab.id, videoId);
+        if (list) { commitChapters(videoId, list); return; }
       }
+      // Last resort: have the content script expand the description so markers
+      // render, IGNORE its answer (it cannot verify the player from the isolated
+      // world), then read again through the verified path.
+      if (!still()) return;
+      try {
+        const res = await sendToActiveTab({ type: 'YT_CHAPTERS', videoId });
+        if (!res) {
+          try { await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] }); } catch (e) {}
+          await sendToActiveTab({ type: 'YT_CHAPTERS', videoId });
+        }
+      } catch (e) {}
+      if (!still()) return;
+      const list = await readChaptersVerified(tab.id, videoId);
+      if (list) commitChapters(videoId, list);
     } catch (e) {
     } finally {
       if (still()) setChaptersLoading(false);
@@ -961,37 +951,11 @@ export default function YouTubeClipper({
   wordOpenRef.current = wordClipperOpen;
   const lastScrolledMatch = useRef(-1);
 
-  // Atomic tokens for find: lowercase, apostrophes folded away, split on
-  // anything that is not a letter or digit - so phrases and whole
-  // sentences match regardless of punctuation or case. "real-world" is
-  // seen as ["real", "world"], "don't" as ["dont"].
-  const findAtoms = (t) => String(t || '').toLowerCase().replace(/[''’]/g, '').split(/[^a-z0-9]+/).filter(Boolean);
-
-  const findData = useMemo(() => {
-    const qt = findAtoms(findQuery);
-    const runs = [];
-    if (qt.length && words.length) {
-      const perWord = words.map((w) => findAtoms(w.text));
-      if (qt.length === 1) {
-        const q = qt[0];
-        perWord.forEach((atoms, i) => {
-          if (atoms.some((a) => a.includes(q))) runs.push([i, i]);
-        });
-      } else {
-        const flat = [];
-        const owner = [];
-        perWord.forEach((atoms, i) => { atoms.forEach((a) => { flat.push(a); owner.push(i); }); });
-        for (let k = 0; k + qt.length <= flat.length; k += 1) {
-          let ok = true;
-          for (let j = 0; j < qt.length; j += 1) {
-            if (flat[k + j] !== qt[j]) { ok = false; break; }
-          }
-          if (ok) runs.push([owner[k], owner[k + qt.length - 1]]);
-        }
-      }
-    }
-    return { runs };
-  }, [words, findQuery]);
+  // Whole-word find lives in lib/wordFind so it can be unit tested: "ai"
+  // matches the word AI, never the "ai" inside "said" or "again".
+  const findData = useMemo(() => ({
+    runs: findWordRuns(words.map((w) => w.text), findQuery),
+  }), [words, findQuery]);
 
   const findMatches = useMemo(() => findData.runs.map((r) => r[0]), [findData]);
   const findRunsRef = useRef([]);
