@@ -18,16 +18,25 @@ export async function createQuote(client, { clipId, annotation, communityId = nu
   return data;
 }
 
-// Minimal quoted-post row for the inline embed. Throws on database errors.
+// Full quoted-post row for the rich inline card. Throws on database errors.
 export async function fetchQuotedPost(client, clipId) {
   if (!clipId) return null;
   const { data, error } = await client
     .from('clips')
-    .select('id,slug,title,source_title,source_type,profiles(handle,display_name,avatar_url)')
+    .select('*, profiles(*), annotations(id,text_content)')
     .eq('id', clipId)
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+// Best static image for the quoted card. Never autoplays inside an embed.
+export function quotedImage(post) {
+  if (!post) return null;
+  if (post.source_type === 'youtube' && post.youtube_id) {
+    return `https://img.youtube.com/vi/${post.youtube_id}/hqdefault.jpg`;
+  }
+  return post.source_image_url || post.thumbnail || null;
 }
 
 // Whether this user already reshared this post. Never throws: unknown

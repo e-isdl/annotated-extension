@@ -140,9 +140,16 @@ html[data-theme="tokyo"] body::before {
    design renders at the same physical size at 110%, 100% and 90% zoom.
    Below 1640px --k is 1 and these rules are no-ops. */
 .app-root { zoom: var(--k); min-height: calc(100vh / var(--k)); }
+/* Navbar rides the same grid as the shell so the logo lines up with the
+   sidebar links at every width: same tracks, same outer padding, same
+   12px link inset. */
+.navbar-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 720px) minmax(0, 1fr); gap: 20px; align-items: center; height: 56px; padding: 0 32px; }
+.navbar-inner > :first-child { justify-self: start; width: min(320px, 100%); padding-left: 12px; }
+.navbar-inner > form { justify-self: center; width: 100%; }
+.navbar-inner > :last-child { justify-self: end; }
 @media (min-width: 2300px) {
   .app-shell, .app-shell-focused { max-width: 1640px; margin-inline: auto; }
-  .navbar-inner { max-width: 1640px; }
+  .navbar-inner { max-width: 1640px; margin-inline: auto; }
 }
 .community-sidebar::-webkit-scrollbar, .right-rail::-webkit-scrollbar { display: none; width: 0; }
 .community-sidebar, .right-rail { scrollbar-width: none; -ms-overflow-style: none; }
@@ -379,6 +386,16 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .quote-embed:hover { background: var(--surface-3); }
 .quote-embed-title { overflow: hidden; margin: 0; color: var(--text-primary); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .quote-embed-meta { margin: 2px 0 0; color: var(--text-muted); font-size: 11px; }
+.quote-card { display: block; margin: 4px 2px 12px; overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-2); text-decoration: none; transition: border-color .15s, background .15s; }
+.quote-card:hover { border-color: var(--border-strong); background: var(--surface-3); }
+.quote-card-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 0; }
+.quote-card-author { overflow: hidden; color: var(--text-secondary); font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.quote-card-time { flex: none; color: var(--text-muted); font-size: 11px; }
+.quote-card-take { display: -webkit-box; overflow: hidden; margin: 8px 14px 0; color: var(--text-primary); font-size: 14px; line-height: 1.5; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+.quote-card-media { display: block; width: calc(100% - 28px); max-height: 280px; margin: 10px 14px 0; border-radius: 10px; object-fit: cover; background: var(--card); }
+.quote-card-source { display: flex; align-items: baseline; gap: 7px; min-width: 0; padding: 10px 14px 12px; color: var(--text-muted); font-size: 12px; }
+.quote-card-source-title { overflow: hidden; color: var(--text-secondary); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.quote-card-domain { flex: none; font-size: 11px; }
 .demo-badge { padding: 3px 8px; border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--text-muted); font-size: 9px; letter-spacing: .06em; }
 .demo-wall { margin: 14px 0 0; padding: 10px; border: 1px dashed var(--border-strong); border-radius: 12px; text-align: center; font-size: 28px; font-weight: 800; letter-spacing: 0.12em; color: var(--text-muted); }
 .demo-note { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-muted); font-size: 11px; }

@@ -13,7 +13,7 @@ import { useToast } from './ToastProvider';
 import CommunityAvatar from './CommunityAvatar';
 import Avatar from './Avatar';
 import { postHref } from '../lib/links';
-import { toggleRepost, fetchQuotedPost, fetchRepostState } from '../lib/repost';
+import { toggleRepost, fetchQuotedPost, fetchRepostState, quotedImage } from '../lib/repost';
 import QuoteDialog from './QuoteDialog';
 import { registerMounted, touchMounted, unregisterMounted } from '../lib/feedPlayback';
 import { hasMoment } from '../lib/moment';
@@ -325,28 +325,22 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
         )}
 
         {isQuote && quoted && (
-          <Link to={postHref(quoted)} className="quote-embed no-underline">
-            <Avatar profile={quoted.profiles} size="dot" />
-            <div className="min-w-0">
-              <p className="quote-embed-title">{quoted.source_title || quoted.title || 'Quoted post'}</p>
-              {quoted.profiles?.handle && <p className="quote-embed-meta">@{quoted.profiles.handle}</p>}
-            </div>
-          </Link>
+          <QuotedCard post={quoted} />
         )}
 
-        {audioUrl && (
+        {!isQuote && audioUrl && (
           <div className="post-audio" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
             <AudioPlayer src={audioUrl} compact />
           </div>
         )}
-        {episodeAudio && (
+        {!isQuote && episodeAudio && (
           <div className="post-audio post-audio-episode" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
             <PodcastEpisode clip={clip} />
           </div>
         )}
-        {isYouTube && youtubeTitle && youtubeTitle !== commentary && <p className="post-source-title">{youtubeTitle}</p>}
+        {!isQuote && isYouTube && youtubeTitle && youtubeTitle !== commentary && <p className="post-source-title">{youtubeTitle}</p>}
 
-        {clip.source_type === 'text' ? (
+        {!isQuote && (clip.source_type === 'text' ? (
           clip.article_text && <p className="post-text-body">{clip.article_text}</p>
         ) : playing && isVideoPost ? (
         <div className="source-preview source-preview-playing">
@@ -492,8 +486,8 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
             </div>
           )}
         </div>
-        )}
-        {hasMoment(clip.start_sec, clip.end_sec) && (
+        ))}
+        {!isQuote && hasMoment(clip.start_sec, clip.end_sec) && (
           <div className="post-timestamp-row" aria-label={`Source moment from ${formatTime(clip.start_sec)} to ${formatTime(clip.end_sec)}`}>
             <span className="timestamp">{formatTime(clip.start_sec)}</span>
             <span className="text-text-muted text-xs">→</span>
@@ -530,6 +524,33 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
 
 function sourceDomain(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'source'; }
+}
+
+// The quoted post rendered whole inside a quote: their header, their take,
+// their media still. Never nests: a quote of a quote still renders one level.
+function QuotedCard({ post }) {
+  if (!post) return null;
+  const take = post.annotation || post.annotations?.[0]?.text_content;
+  const image = quotedImage(post);
+  const sourceTitle = post.source_title || post.title;
+  return (
+    <Link to={postHref(post)} className="quote-card no-underline">
+      <div className="quote-card-head">
+        <Avatar profile={post.profiles} size="dot" />
+        <span className="quote-card-author">{post.profiles?.handle || 'anonymous'}</span>
+        {post.created_at && <span className="quote-card-time">· {timeAgo(post.created_at)}</span>}
+      </div>
+      {take && <p className="quote-card-take">{take}</p>}
+      {image && <img src={image} alt="" loading="lazy" className="quote-card-media" />}
+      <div className="quote-card-source">
+        <span aria-hidden="true">↗</span>
+        <span className="quote-card-source-title">{sourceTitle || 'Quoted post'}</span>
+        {(post.source_domain || post.source_url) && (
+          <span className="quote-card-domain">{post.source_domain || sourceDomain(post.source_url)}</span>
+        )}
+      </div>
+    </Link>
+  );
 }
 
 function timeAgo(dateStr) {
