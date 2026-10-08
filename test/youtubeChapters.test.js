@@ -3,7 +3,26 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readChaptersMainWorld } from '../src/lib/youtubeChapters.js';
 
-function run(args, page) {
+const markerEl = (t, title) => ({ innerText: `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}\n${title}` });
+const markerList = (pairs) => pairs.map(([t, title]) => markerEl(t, title));
+
+async function run(args, page) {
+  let domCalls = 0;
+  const reads = page.markerReads || [[]];
+  const domMarkers = () => reads[Math.min(domCalls++, reads.length - 1)];
+  const metadataScope = { querySelectorAll: () => domMarkers() };
+  const resolveLive = () => {
+    if (typeof page.liveFn === 'function') return page.liveFn();
+    if (page.liveResponse !== undefined) return page.liveResponse;
+    if (page.player && page.player.getPlayerResponse) return page.player.getPlayerResponse();
+    return undefined;
+  };
+  const playerScope = {
+    querySelectorAll: () => [],
+    getPlayerResponse: page.live === undefined && page.player === undefined && page.liveResponse === undefined
+      ? undefined
+      : () => resolveLive(),
+  };
   const sandbox = {
     window: {
       location: undefined,
@@ -12,16 +31,29 @@ function run(args, page) {
       ytplayer: page.ytplayer,
     },
     document: {
-      querySelector: (sel) => (sel === '#movie_player' && page.live !== undefined ? page.player : null),
+      querySelector: (sel) => {
+        if (sel === '#movie_player') {
+          return page.live === undefined && page.player === undefined && page.liveResponse === undefined
+            ? null
+            : playerScope;
+        }
+        if (sel === 'ytd-watch-metadata') {
+          return page.markerReads !== undefined && !page.noScopes ? metadataScope : null;
+        }
+        if (sel === '#description-inline-expander' || sel === '#description') return null;
+        return null;
+      },
     },
     URL,
     JSON,
+    setTimeout,
+    clearTimeout,
   };
   sandbox.window.location = { href: page.href };
   // The function reads window.location.href directly.
   const factory = vm.runInNewContext(`(${readChaptersMainWorld.toString()})`, sandbox);
   // JSON round-trip: values built inside vm carry the vm realm's prototypes.
-  return JSON.parse(JSON.stringify(factory(args)));
+  return JSON.parse(JSON.stringify(await factory(args)));
 }
 
 function RomansLive(id, chapters) {
@@ -67,8 +99,8 @@ function globalsFor(id, chapters) {
   };
 }
 
-test('live player wins over stale globals for the wanted video', () => {
-  const out = run({ videoId: 'BBB', duration: 400 }, {
+test('live player wins over stale globals for the wanted video', async () => {
+  const out = await run({ videoId: 'BBB', duration: 400 }, {
     href: 'https://www.youtube.com/watch?v=BBB',
     live: true,
     player: { getPlayerResponse: () => RomansLive('BBB', VID_B) },
@@ -78,8 +110,8 @@ test('live player wins over stale globals for the wanted video', () => {
   assert.deepEqual(out.chapters.map((c) => c.title), ['Intro', 'Middle', 'End']);
 });
 
-test('stale live player refuses instead of serving globals', () => {
-  const out = run({ videoId: 'BBB', duration: 400 }, {
+test('stale live player refuses instead of serving globals', async () => {
+  const out = await run({ videoId: 'BBB', duration: 400 }, {
     href: 'https://www.youtube.com/watch?v=BBB',
     live: true,
     player: { getPlayerResponse: () => RomansLive('AAA', VID_A) },
@@ -88,8 +120,8 @@ test('stale live player refuses instead of serving globals', () => {
   assert.deepEqual(out.chapters, []);
 });
 
-test('globals alone still work without any player', () => {
-  const out = run({ videoId: 'BBB', duration: 400 }, {
+test('globals alone still work without any player', async () => {
+  const out = await run({ videoId: 'BBB', duration: 400 }, {
     href: 'https://www.youtube.com/watch?v=BBB',
     live: undefined,
     player: null,
@@ -98,8 +130,8 @@ test('globals alone still work without any player', () => {
   assert.deepEqual(out.chapters.map((c) => [c.t, c.title]), [[0, 'Intro'], [120, 'Middle'], [300, 'End']]);
 });
 
-test('macro markers support startTimeSeconds and timeDescription fallback', () => {
-  const out = run({ videoId: 'v', duration: 400 }, {
+test('macro markers support startTimeSeconds and timeDescription fallback', async () => {
+  const out = await run({ videoId: 'v', duration: 400 }, {
     href: 'https://www.youtube.com/watch?v=v',
     live: undefined,
     player: null,
@@ -112,8 +144,8 @@ test('macro markers support startTimeSeconds and timeDescription fallback', () =
   assert.deepEqual(out.chapters.map((c) => [c.t, c.title]), [[0, 'First'], [120, 'Second'], [200, 'Third']]);
 });
 
-test('fewer than three chapters means no chapters', () => {
-  const out = run({ videoId: 'v', duration: 400 }, {
+test('fewer than three chapters means no chapters', async () => {
+  const out = await run({ videoId: 'v', duration: 400 }, {
     href: 'https://www.youtube.com/watch?v=v',
     live: undefined,
     player: null,
@@ -125,7 +157,7 @@ test('fewer than three chapters means no chapters', () => {
   assert.deepEqual(out.chapters, []);
 });
 
-test('feature-length durations cap over-long entries, ad lengths do not', () => {
+test('feature-length durations cap over-long entries, ad lengths do not', async () => {
   const data = { items: [
     { macroMarkersListItemRenderer: { title: { simpleText: 'A' }, startTimeSeconds: 0 } },
     { macroMarkersListItemRenderer: { title: { simpleText: 'B' }, startTimeSeconds: 100 } },
@@ -133,14 +165,14 @@ test('feature-length durations cap over-long entries, ad lengths do not', () => 
     { macroMarkersListItemRenderer: { title: { simpleText: 'Far' }, startTimeSeconds: 5000 } },
   ] };
   const page = { href: 'https://www.youtube.com/watch?v=v', live: undefined, player: null, ytInitialData: data };
-  const capped = run({ videoId: 'v', duration: 400 }, page);
+  const capped = await run({ videoId: 'v', duration: 400 }, page);
   assert.deepEqual(capped.chapters.map((c) => c.title), ['A', 'B', 'C']);
-  const adLength = run({ videoId: 'v', duration: 15 }, page);
+  const adLength = await run({ videoId: 'v', duration: 15 }, page);
   assert.deepEqual(adLength.chapters.map((c) => c.title), ['A', 'B', 'C', 'Far']);
 });
 
-test('duplicate times collapse, garbage rows are skipped', () => {
-  const out = run({ videoId: 'v', duration: 400 }, {
+test('duplicate times collapse, garbage rows are skipped', async () => {
+  const out = await run({ videoId: 'v', duration: 400 }, {
     href: 'https://www.youtube.com/watch?v=v',
     live: undefined,
     player: null,
@@ -156,10 +188,10 @@ test('duplicate times collapse, garbage rows are skipped', () => {
   assert.deepEqual(out.chapters.map((c) => [c.t, c.title]), [[0, 'A'], [90, 'B'], [200, 'C']]);
 });
 
-test('live response without an id is still trusted first', () => {
+test('live response without an id is still trusted first', async () => {
   const live = RomansLive('', VID_B);
   delete live.videoDetails;
-  const out = run({ videoId: 'BBB', duration: 400 }, {
+  const out = await run({ videoId: 'BBB', duration: 400 }, {
     href: 'https://www.youtube.com/watch?v=BBB',
     live: true,
     player: { getPlayerResponse: () => live },
@@ -168,8 +200,8 @@ test('live response without an id is still trusted first', () => {
   assert.deepEqual(out.chapters.map((c) => c.title), ['Intro', 'Middle', 'End']);
 });
 
-test('shorts URLs report the shorts id', () => {
-  const out = run({ videoId: 'sh0rt', duration: 60 }, {
+test('shorts URLs report the shorts id', async () => {
+  const out = await run({ videoId: 'sh0rt', duration: 60 }, {
     href: 'https://www.youtube.com/shorts/sh0rt',
     live: undefined,
     player: null,
@@ -179,13 +211,13 @@ test('shorts URLs report the shorts id', () => {
   assert.deepEqual(out.chapters, []);
 });
 
-test('cyclic page objects cannot hang the scan', () => {
+test('cyclic page objects cannot hang the scan', async () => {
   const cyclic = { items: [] };
   cyclic.self = cyclic;
   cyclic.items.push({ macroMarkersListItemRenderer: { title: { simpleText: 'A' }, startTimeSeconds: 0 } });
   cyclic.items.push({ macroMarkersListItemRenderer: { title: { simpleText: 'B' }, startTimeSeconds: 60 } });
   cyclic.items.push({ macroMarkersListItemRenderer: { title: { simpleText: 'C' }, startTimeSeconds: 120 } });
-  const out = run({ videoId: 'v', duration: 400 }, {
+  const out = await run({ videoId: 'v', duration: 400 }, {
     href: 'https://www.youtube.com/watch?v=v',
     live: undefined,
     player: null,
@@ -194,7 +226,47 @@ test('cyclic page objects cannot hang the scan', () => {
   assert.deepEqual(out.chapters.map((c) => c.title), ['A', 'B', 'C']);
 });
 
-test('serialized reader stays self-contained for executeScript', () => {
+const domPairs = (names) => names.map((title, i) => [i * 60, title]);
+const domEight = markerList(domPairs(['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight']));
+
+test('stable DOM markers win without any globals', async () => {
+  const out = await run({ videoId: 'd', duration: 900 }, {
+    href: 'https://www.youtube.com/watch?v=d',
+    markerReads: [domEight, domEight],
+  });
+  assert.deepEqual(out.chapters.map((c) => c.title),
+    ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight']);
+});
+
+test('progressive DOM renders resolve to the full list', async () => {
+  const seven = domEight.slice(0, 7);
+  const out = await run({ videoId: 'd', duration: 900 }, {
+    href: 'https://www.youtube.com/watch?v=d',
+    markerReads: [seven, seven, domEight, domEight],
+  });
+  assert.equal(out.chapters.length, 8);
+  assert.equal(out.chapters[7].title, 'Eight');
+});
+
+test('thin DOM plus structured globals combine', async () => {
+  const two = domEight.slice(0, 2);
+  const out = await run({ videoId: 'd', duration: 900 }, {
+    href: 'https://www.youtube.com/watch?v=d',
+    markerReads: [two],
+    ytInitialData: globalsFor('d', VID_B),
+  });
+  assert.deepEqual(out.chapters.map((c) => c.title), ['One', 'Two', 'Middle', 'End']);
+});
+
+test('ad-length durations do not filter DOM markers', async () => {
+  const out = await run({ videoId: 'd', duration: 15 }, {
+    href: 'https://www.youtube.com/watch?v=d',
+    markerReads: [domEight, domEight],
+  });
+  assert.equal(out.chapters.length, 8);
+});
+
+test('serialized reader stays self-contained for executeScript', async () => {
   const src = readChaptersMainWorld.toString();
   for (const banned of ['require(', 'process.', 'module.', '__dirname']) {
     assert.ok(!src.includes(banned), `leaked reference: ${banned}`);

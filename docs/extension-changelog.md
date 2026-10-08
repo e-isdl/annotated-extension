@@ -3235,3 +3235,7 @@ this changelog.
 
 - Chapter answers wait for the live player to match the wanted video and refuse otherwise; MAIN reader refuses on live mismatch too.
 - Checks: root suite 79/79 with handler-level refusal tests; extension build passes.
+### Single verified chapter pipeline (local)
+
+- All chapter reads run in MAIN world where the player API works: player-bound refusal, scoped DOM with longest-wins confirmation, structured fallback. Content-scriptiline fallbacks removed.
+- Checks: root suite 83/83, webapp suite 24/24; both builds pass.

@@ -2,11 +2,23 @@
 // so it can be unit tested in Node. YouTubeClipper passes this function
 // reference straight to chrome.scripting.executeScript, so the body must
 // stay self-contained: no imports, no outer references, only page globals
-// (window, document, URL, JSON) which exist in the MAIN world too.
-export function readChaptersMainWorld(args) {
+// (window, document, URL, JSON, setTimeout) which exist in the MAIN world.
+//
+// Runs in the page MAIN world (not the isolated content script) because
+// only there is the live player API callable: an isolated world cannot
+// call page-defined functions, so any player check there silently fails.
+// Single pipeline: refuse on player mismatch, DOM markers with confirmation,
+// then structured player objects, then globals. No description scraping.
+export async function readChaptersMainWorld(args) {
   try {
     const wantId = String((args && args.videoId) || '');
     const maxT = Number((args && args.duration) || 0);
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    let pageId = '';
+    try {
+      const u = new URL(window.location.href);
+      pageId = u.searchParams.get('v') || ((u.pathname.match(/^\/shorts\/([^/?]+)/) || [])[1] || '');
+    } catch (e) {}
     const seen = new Set();
     const out = [];
     const visited = new Set();
@@ -17,11 +29,14 @@ export function readChaptersMainWorld(args) {
       if (Array.isArray(v.runs)) return v.runs.map((r) => r.text || '').join('').trim().slice(0, 140);
       return '';
     };
-    const parseT = (v) => {
-      if (typeof v === 'number' && isFinite(v) && v >= 0) return Math.floor(v);
-      const m = String(v || '').trim().match(/^(?:(\d+):)?([0-5]?\d):([0-5]\d)$/);
+    const chapSeconds = (text) => {
+      const m = String(text || '').trim().match(/^(?:(\d+):)?([0-5]?\d):([0-5]\d)$/);
       if (!m) return null;
       return (Number(m[1] || 0) * 3600) + (Number(m[2]) * 60) + Number(m[3]);
+    };
+    const parseT = (v) => {
+      if (typeof v === 'number' && isFinite(v) && v >= 0) return Math.floor(v);
+      return chapSeconds(v);
     };
     const push = (t, title) => {
       t = Math.round(Number(t));
@@ -29,6 +44,52 @@ export function readChaptersMainWorld(args) {
       if (!Number.isFinite(t) || t < 0 || !title || seen.has(t)) return;
       seen.add(t);
       out.push({ t, title });
+    };
+    // DOM markers, scoped to the current video's own surfaces. A
+    // whole-document query also catches other videos' markers (up-next,
+    // hover cards, end screens); the player's own markers may live outside
+    // the description, so both are read and merged.
+    const readDomMarkers = () => {
+      let scopes = [];
+      try {
+        scopes = [
+          document.querySelector('ytd-watch-metadata'),
+          document.querySelector('#movie_player'),
+          document.querySelector('#description-inline-expander'),
+          document.querySelector('#description'),
+        ].filter(Boolean);
+      } catch (e) {
+        scopes = [];
+      }
+      if (!scopes.length) return false;
+      scopes.forEach((root) => {
+        let els = [];
+        try {
+          els = root.querySelectorAll('ytd-macro-markers-list-item-renderer');
+        } catch (e) {
+          els = [];
+        }
+        els.forEach((el) => {
+          const lines = String((el && el.innerText) || '').split('\n').map((s) => s.trim()).filter(Boolean);
+          if (!lines.length) return;
+          let t = null;
+          let ti = -1;
+          for (let i = 0; i < lines.length; i += 1) {
+            const s = chapSeconds(lines[i]);
+            if (s !== null) {
+              t = s;
+              ti = i;
+              break;
+            }
+          }
+          if (t === null) return;
+          const title = lines.slice(ti + 1).filter((line) => chapSeconds(line) === null).join(' ').trim().slice(0, 140)
+            || lines.slice(0, ti).join(' ').trim().slice(0, 140);
+          if (!title) return;
+          push(t, title);
+        });
+      });
+      return true;
     };
     const scan = (node, depth) => {
       if (!node || depth > 12 || visited.has(node)) return;
@@ -69,32 +130,18 @@ export function readChaptersMainWorld(args) {
         return;
       }
       let keys = [];
-      try { keys = Object.keys(node); } catch (e) { return; }
+      try {
+        keys = Object.keys(node);
+      } catch (e) {
+        return;
+      }
       if (keys.length > 400) return;
       for (const k of keys) {
-        try { scan(node[k], depth + 1); } catch (e) {}
+        try {
+          scan(node[k], depth + 1);
+        } catch (e) {}
       }
     };
-    let pageId = '';
-    try {
-      const u = new URL(window.location.href);
-      pageId = u.searchParams.get('v') || ((u.pathname.match(/^\/shorts\/([^/?]+)/) || [])[1] || '');
-    } catch (e) {}
-    // The live player response is always the current video: scan it first
-    // and alone. Global page objects can hold other videos' data (up-next,
-    // hover cards), so they are only a fallback.
-    let liveResponse = null;
-    try {
-      liveResponse = document.querySelector('#movie_player') && document.querySelector('#movie_player').getPlayerResponse
-        ? document.querySelector('#movie_player').getPlayerResponse()
-        : null;
-    } catch (e) { liveResponse = null; }
-    const liveId = liveResponse && liveResponse.videoDetails ? String(liveResponse.videoDetails.videoId || '') : '';
-    // A live player on another video means mid-transition: refuse outright
-    // instead of serving possibly-stale globals under the wanted id.
-    if (liveResponse && wantId && liveId && liveId !== wantId) {
-      return { videoId: pageId, wantId, chapters: [] };
-    }
     const snapshot = () => {
       const sorted = out.slice().sort((a, b) => a.t - b.t);
       // The duration cap only applies to sane feature-length values: during
@@ -104,23 +151,85 @@ export function readChaptersMainWorld(args) {
       const list = inRange.slice(0, 200);
       return list.length >= 3 ? list : [];
     };
+    // The live player response is always the current video. A player on
+    // another video means mid-transition: refuse outright instead of
+    // serving possibly-stale data under the wanted id.
+    let liveResponse = null;
+    try {
+      liveResponse = document.querySelector('#movie_player') && document.querySelector('#movie_player').getPlayerResponse
+        ? document.querySelector('#movie_player').getPlayerResponse()
+        : null;
+    } catch (e) {
+      liveResponse = null;
+    }
+    const liveId = liveResponse && liveResponse.videoDetails ? String(liveResponse.videoDetails.videoId || '') : '';
+    if (liveResponse && wantId && liveId && liveId !== wantId) {
+      return { videoId: pageId, wantId, chapters: [] };
+    }
+    // DOM markers first, with confirmation: markers render progressively
+    // and can pause mid-render, so track the longest list and only trust it
+    // after repeats with no further growth.
+    const key = (list) => (list || []).map((c) => `${c.t}:${c.title}`).join('|');
+    let best = [];
+    let streak = 0;
+    let scopesSeen = false;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      try {
+        if (readDomMarkers()) scopesSeen = true;
+      } catch (e) {}
+      const list = snapshot();
+      if (key(list) === key(best)) {
+        streak += 1;
+      } else if (list.length > best.length) {
+        best = list;
+        streak = 0;
+      } else {
+        streak = 0;
+      }
+      if (best.length >= 3 && streak >= 2) {
+        return { videoId: pageId, wantId, chapters: best.slice(0, 200) };
+      }
+      // No marker containers at all (embeds, music, shorts): nothing will
+      // ever render, so stop after one confirmation read.
+      if (!scopesSeen && attempt >= 1) break;
+      if (attempt < 3) {
+        try {
+          await sleep(700);
+        } catch (e) {}
+      }
+    }
+    if (best.length >= 3) {
+      return { videoId: pageId, wantId, chapters: best.slice(0, 200) };
+    }
+    // Structured fallback, live first (id already matched above), then the
+    // global page objects which can lag on navigation.
     if (liveResponse && (!wantId || !liveId || liveId === wantId)) {
-      scan(liveResponse, 0);
+      try {
+        scan(liveResponse, 0);
+      } catch (e) {}
       const liveOnly = snapshot();
       if (liveOnly.length) return { videoId: pageId, wantId, chapters: liveOnly };
     }
     const roots = [];
-    try { if (window.ytInitialData) roots.push(window.ytInitialData); } catch (e) {}
-    try { if (window.ytInitialPlayerResponse) roots.push(window.ytInitialPlayerResponse); } catch (e) {}
+    try {
+      if (window.ytInitialData) roots.push(window.ytInitialData);
+    } catch (e) {}
+    try {
+      if (window.ytInitialPlayerResponse) roots.push(window.ytInitialPlayerResponse);
+    } catch (e) {}
     try {
       const raw = window.ytplayer && window.ytplayer.config && window.ytplayer.config.args
         && window.ytplayer.config.args.player_response;
       if (raw) roots.push(JSON.parse(raw));
     } catch (e) {}
-    for (const r of roots) scan(r, 0);
+    for (const r of roots) {
+      try {
+        scan(r, 0);
+      } catch (e) {}
+    }
     // NOTE: shortDescription timestamp lines are deliberately NOT harvested:
     // they vary between visits and produced phantom chapter lists.
-    // Structured marker renderers above are the only source.
+    // Structured marker renderers above are the only fallback source.
     const chapters = snapshot();
     return { videoId: pageId, wantId, chapters };
   } catch (e) {
