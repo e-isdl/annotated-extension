@@ -3230,3 +3230,4 @@ this changelog.
 ### Quotes reuse the feed card
 
 - Quote posts render the original through the same feed-post component with actions stripped, no separate gray card anywhere; feed and detail share the composition.
+### Quoted nest: border hint, 40 percent smaller

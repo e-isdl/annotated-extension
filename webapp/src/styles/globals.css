@@ -392,10 +392,10 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .quote-embed:hover { background: var(--surface-3); }
 .quote-embed-title { overflow: hidden; margin: 0; color: var(--text-primary); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .quote-embed-meta { margin: 2px 0 0; color: var(--text-muted); font-size: 11px; }
-/* The quoted post is the same feed card, nested with no actions: no new
-   visual language, it merges into the parent post. */
-.quote-nest { margin: 4px 2px 12px; }
-.quote-nest .post-card { margin: 0; }
+/* The quoted post is the same feed card, nested with no actions: same
+   background so it merges, one quiet border to define the edge. */
+.quote-nest { margin: 4px 2px 12px; overflow: hidden; border: 1px solid var(--border-soft); border-radius: 14px; zoom: 0.6; }
+.quote-nest .post-card { margin: 0; border: 0; box-shadow: none; background: transparent; }
 .quote-card-source { display: flex; align-items: baseline; gap: 7px; min-width: 0; padding: 10px 14px 12px; color: var(--text-muted); font-size: 12px; }
 .quote-card-source-title { overflow: hidden; color: var(--text-secondary); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .quote-card-domain { flex: none; font-size: 11px; }
