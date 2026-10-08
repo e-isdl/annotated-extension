@@ -3208,3 +3208,8 @@ this changelog.
 - Chapter reader extracted to a tested module; DOM reads cover metadata plus player surfaces only.
 - Progressive renders resolve to the longest stable list; ad-length durations never filter chapters.
 - Checks: root suite 65/65 with new edge-case tests; extension build passes.
+### Repost and quote (local)
+
+- toggle_repost and create_quote_post RPCs: reposts reshare with attribution, quotes attach commentary plus the quoted post; takes lists exclude both types.
+- Clip cards gain Repost and Quote actions, repost flags, quoted embeds and a quote composer; feeds need no query changes.
+- Checks: root suite 72/72, webapp suite 21/21; both builds pass.

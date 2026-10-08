@@ -13,6 +13,8 @@ import { useToast } from './ToastProvider';
 import CommunityAvatar from './CommunityAvatar';
 import Avatar from './Avatar';
 import { postHref } from '../lib/links';
+import { toggleRepost, fetchQuotedPost, fetchRepostState } from '../lib/repost';
+import QuoteDialog from './QuoteDialog';
 import { registerMounted, touchMounted, unregisterMounted } from '../lib/feedPlayback';
 import { hasMoment } from '../lib/moment';
 import { isXPostUrl, matchStatusUrl } from '../lib/social';
@@ -47,6 +49,11 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   const [score, setScore] = useState(clip.score ?? 0);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
+  const [reposted, setReposted] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [quoted, setQuoted] = useState(null);
+  const isRepost = clip.annotation_type === 'Repost';
+  const isQuote = clip.annotation_type === 'Quote' && clip.parent_clip_id;
   const [imageFailed, setImageFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
@@ -207,6 +214,59 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
     window.setTimeout(() => setShared(false), 1600);
   };
 
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!active || !user) return;
+        if (await fetchRepostState(supabase, clip.id, user.id)) {
+          if (active) setReposted(true);
+        }
+      } catch { /* unknown state reads as not reposted */ }
+    })();
+    return () => { active = false; };
+  }, [clip.id]);
+
+  useEffect(() => {
+    if (!isQuote) return undefined;
+    let active = true;
+    (async () => {
+      try {
+        const row = await fetchQuotedPost(supabase, clip.parent_clip_id);
+        if (active) setQuoted(row);
+      } catch { /* quoted embed simply hides when unloadable */ }
+    })();
+    return () => { active = false; };
+  }, [clip.id, clip.parent_clip_id, isQuote]);
+
+  const handleRepost = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const user = await getCurrentUser();
+    if (!user) { push('Sign in to repost.', 'info'); return; }
+    if (String(clip.id).startsWith('demo-')) { push('Demo posts live outside the database.', 'info'); return; }
+    const next = !reposted;
+    setReposted(next);
+    try {
+      const result = await toggleRepost(supabase, clip.id);
+      setReposted(Boolean(result?.reposted));
+      push(result?.reposted ? 'Reposted to your feed.' : 'Repost removed.', 'info');
+    } catch (err) {
+      setReposted(!next);
+      push(err?.message || 'Repost did not go through.', 'error');
+    }
+  };
+
+  const handleQuote = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const user = await getCurrentUser();
+    if (!user) { push('Sign in to quote posts.', 'info'); return; }
+    if (String(clip.id).startsWith('demo-')) { push('Demo posts live outside the database.', 'info'); return; }
+    setQuoteOpen(true);
+  };
+
   const handleSave = async (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -223,6 +283,18 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
 
   return (
     <article ref={cardRef} className="post-card post-card-linked" onClick={onCardClick}>
+      {isRepost && clip.profiles?.handle && (
+        <div className="repost-flag">↻ <Link to={`/u/${clip.profiles.handle}`} className="no-underline">{clip.profiles.handle} reposted</Link></div>
+      )}
+      {isQuote && quoted && (
+        <Link to={postHref(quoted)} className="quote-embed no-underline">
+          <Avatar profile={quoted.profiles} size="dot" />
+          <div className="min-w-0">
+            <p className="quote-embed-title">{quoted.source_title || quoted.title || 'Quoted post'}</p>
+            {quoted.profiles?.handle && <p className="quote-embed-meta">@{quoted.profiles.handle}</p>}
+          </div>
+        </Link>
+      )}
       <div className="post-meta">
         {clip.community_slug && clip.community_name ? (
           <>
@@ -437,11 +509,18 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
         <button type="button" onClick={handleShare} className="post-action">
           <span>↗</span> <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span>
         </button>
+        <button type="button" onClick={handleRepost} className={`post-action ${reposted ? 'post-action-saved' : ''}`} aria-pressed={reposted}>
+          <span>↻</span> <span aria-live="polite">{reposted ? 'Reposted' : 'Repost'}</span>
+        </button>
+        <button type="button" onClick={handleQuote} className="post-action">
+          <span>❝</span> Quote
+        </button>
         <button type="button" onClick={handleSave} className={`post-action post-action-last ${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
         </button>
       </div>
       <Link to={href} className="post-card-link" aria-label={cardAriaLabel} draggable={false} onClick={onCardLinkClick} />
+      {quoteOpen && <QuoteDialog clip={clip} onClose={() => setQuoteOpen(false)} />}
     </article>
   );
 }

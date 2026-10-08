@@ -146,6 +146,7 @@ export default function ClipPage() {
           .from('clips')
           .select('*, profiles(*), annotations(id, text_content, audio_url), communities(slug)')
           .eq('parent_clip_id', clipData.id)
+          .not('annotation_type', 'in', '(Repost,Quote)')
           .order('thread_position', { ascending: true });
         if (threadClips?.length) setThread(threadClips);
 
@@ -165,6 +166,7 @@ export default function ClipPage() {
             .select('id, slug, title, score, profiles(handle)')
             .eq('source_url', clipData.source_url)
             .neq('id', clipData.id)
+            .not('annotation_type', 'in', '(Repost,Quote)')
             .order('score', { ascending: false })
             .limit(5);
           setActivePost({ id: clipData.id, takes: others || [] });
