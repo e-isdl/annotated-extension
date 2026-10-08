@@ -3203,3 +3203,8 @@ this changelog.
 - DOM marker reads stay inside the main video description, ignoring other videos markers in up-next, hover cards and end screens.
 - Page-object scan trusts the live player response first and alone, with chapter bar maps supported; globals are fallback only.
 - Checks: root suite 46/46; extension build passes.
+### Chapter tests and longest-wins reads (local)
+
+- Chapter reader extracted to a tested module; DOM reads cover metadata plus player surfaces only.
+- Progressive renders resolve to the longest stable list; ad-length durations never filter chapters.
+- Checks: root suite 65/65 with new edge-case tests; extension build passes.

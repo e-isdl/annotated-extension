@@ -774,7 +774,10 @@ function ytCleanChapters(items, maxT) {
     const t = Math.round(Number(item && item.t));
     const title = String((item && item.title) || '').trim().slice(0, 140);
     if (!Number.isFinite(t) || t < 0 || !title || seen.has(t)) return;
-    if (Number.isFinite(maxT) && maxT > 0 && t >= maxT) return;
+    // The duration cap only applies to sane feature-length values: during
+    // ads the reported duration can be the ad's length, which must never
+    // filter out the real chapters.
+    if (Number.isFinite(maxT) && maxT > 120 && t >= maxT) return;
     seen.add(t);
     good.push({ t, title });
   });
@@ -783,35 +786,35 @@ function ytCleanChapters(items, maxT) {
   return good;
 }
 
-function ytVideoDuration() {
-  try {
-    const d = Number(document.querySelector('video.html5-main-video, #movie_player video, video')?.duration);
-    if (Number.isFinite(d) && d > 0) return d;
-  } catch (e) {}
-  return 0;
-}
-
 function ytDomChapters() {
   const items = [];
-  // Scope to the main video's description. A whole-document query also
-  // catches other videos' markers (up-next, hover cards, end screens).
-  const scope = document.querySelector('ytd-watch-metadata #description')
-    || document.querySelector('#description-inline-expander')
-    || document.querySelector('#description');
-  (scope || document).querySelectorAll('ytd-macro-markers-list-item-renderer').forEach((el) => {
-    const lines = String(el.innerText || '').split('\n').map((s) => s.trim()).filter(Boolean);
-    if (!lines.length) return;
-    let t = null;
-    let ti = -1;
-    for (let i = 0; i < lines.length; i += 1) {
-      const s = ytChapterSeconds(lines[i]);
-      if (s !== null) { t = s; ti = i; break; }
-    }
-    if (t === null) return;
-    const title = lines.slice(ti + 1).filter((line) => ytChapterSeconds(line) === null).join(' ').trim().slice(0, 140)
-      || lines.slice(0, ti).join(' ').trim().slice(0, 140);
-    if (!title) return;
-    items.push({ t, title });
+  // Only the current video's own surfaces: its metadata/description and
+  // its player. A whole-document query also catches other videos' markers
+  // (up-next, hover cards, end screens). Markers for this video can live in
+  // either place, so both are read and merged.
+  const scopes = [
+    document.querySelector('ytd-watch-metadata'),
+    document.querySelector('#movie_player'),
+    document.querySelector('#description-inline-expander'),
+    document.querySelector('#description'),
+  ].filter(Boolean);
+  const roots = scopes.length ? scopes : [document];
+  roots.forEach((root) => {
+    root.querySelectorAll('ytd-macro-markers-list-item-renderer').forEach((el) => {
+      const lines = String(el.innerText || '').split('\n').map((s) => s.trim()).filter(Boolean);
+      if (!lines.length) return;
+      let t = null;
+      let ti = -1;
+      for (let i = 0; i < lines.length; i += 1) {
+        const s = ytChapterSeconds(lines[i]);
+        if (s !== null) { t = s; ti = i; break; }
+      }
+      if (t === null) return;
+      const title = lines.slice(ti + 1).filter((line) => ytChapterSeconds(line) === null).join(' ').trim().slice(0, 140)
+        || lines.slice(0, ti).join(' ').trim().slice(0, 140);
+      if (!title) return;
+      items.push({ t, title });
+    });
   });
   return items;
 }
@@ -820,17 +823,33 @@ function ytDomChapters() {
 // lines are never chapters: they vary between visits (truncated text,
 // sponsor links) and produced phantom lists. No markers means no chapters.
 async function getYouTubeChapters() {
-  const maxT = ytVideoDuration();
+  // getDurationFromPage prefers the real video length and reports 0 during
+  // ads, so an ad's short duration can never filter out real chapters.
+  const maxT = getDurationFromPage();
+  // Markers render progressively and can pause mid-render, so two identical
+  // reads are not proof of completeness. Track the longest list seen and
+  // only trust it after repeats with no further growth.
+  const key = (list) => (list || []).map((c) => `${c.t}:${c.title}`).join('|');
+  let best = [];
+  let streak = 0;
   for (let attempt = 0; attempt < 6; attempt += 1) {
-    try {
-      const cleaned = ytCleanChapters(ytDomChapters(), maxT);
-      if (cleaned) return cleaned.slice(0, 200);
-    } catch (e) {}
+    let cleaned = null;
+    try { cleaned = ytCleanChapters(ytDomChapters(), maxT); } catch (e) {}
+    const list = cleaned || [];
+    if (key(list) === key(best)) {
+      streak += 1;
+    } else if (list.length > best.length) {
+      best = list;
+      streak = 0;
+    } else {
+      streak = 0;
+    }
+    if (best.length >= 3 && streak >= 2) return best.slice(0, 200);
     if (attempt < 5) {
       try { await new Promise((resolve) => setTimeout(resolve, 700)); } catch (e) {}
     }
   }
-  return [];
+  return best.slice(0, 200);
 }
 
 // Marker rows only render once the description is expanded. Expand it,
@@ -850,10 +869,9 @@ async function getYouTubeChaptersExpanded() {
     try { more.click(); } catch (e) { return null; }
     expandedHere = true;
     await new Promise((resolve) => setTimeout(resolve, 900));
-    const maxT = ytVideoDuration();
     try {
-      const cleaned = ytCleanChapters(ytDomChapters(), maxT);
-      if (cleaned) return cleaned.slice(0, 200);
+      const after = await getYouTubeChapters();
+      if (after.length) return after.slice(0, 200);
     } catch (e) {}
     return null;
   } catch (e) {
