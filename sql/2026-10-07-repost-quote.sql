@@ -34,14 +34,20 @@ begin
     return jsonb_build_object('reposted', false);
   end if;
   new_slug := coalesce(target.slug, 'post') || '-repost-' || substr(md5(actor::text || target.id::text || now()::text), 1, 6);
+  -- Every content field is copied so the reshare renders exactly like the
+  -- original (players, media, embeds). Anything less guts the card.
   insert into public.clips (
     user_id, community_id, source_url, source_type, source_domain, source_title,
     title, thumbnail, youtube_id, start_sec, end_sec, article_text, author,
-    duration, annotation_type, parent_clip_id, slug
+    audio_url, transcript, duration, media_url, media_kind, media_w, media_h,
+    media_duration_ms, poster_url, video_url, video_status, author_url,
+    source_image_url, source_excerpt, annotation_type, parent_clip_id, slug
   ) values (
     actor, target.community_id, target.source_url, target.source_type, target.source_domain, target.source_title,
     target.title, target.thumbnail, target.youtube_id, target.start_sec, target.end_sec, target.article_text, target.author,
-    target.duration, 'Repost', target.id, new_slug
+    target.audio_url, target.transcript, target.duration, target.media_url, target.media_kind, target.media_w, target.media_h,
+    target.media_duration_ms, target.poster_url, target.video_url, target.video_status, target.author_url,
+    target.source_image_url, target.source_excerpt, 'Repost', target.id, new_slug
   ) returning * into existing;
   return jsonb_build_object('reposted', true, 'id', existing.id, 'slug', existing.slug);
 end;
@@ -70,14 +76,20 @@ begin
     raise exception 'Choose a valid community';
   end if;
   new_slug := coalesce(target.slug, 'post') || '-quote-' || substr(md5(actor::text || target.id::text || now()::text), 1, 6);
+  -- Every content field is copied so the quote renders exactly like the
+  -- original (players, media, embeds). Anything less guts the card.
   insert into public.clips (
     user_id, community_id, source_url, source_type, source_domain, source_title,
     title, thumbnail, youtube_id, start_sec, end_sec, article_text, author,
-    duration, annotation_type, parent_clip_id, slug
+    audio_url, transcript, duration, media_url, media_kind, media_w, media_h,
+    media_duration_ms, poster_url, video_url, video_status, author_url,
+    source_image_url, source_excerpt, annotation_type, parent_clip_id, slug
   ) values (
     actor, community, target.source_url, target.source_type, target.source_domain, target.source_title,
     coalesce(target.title, 'Quoted post'), target.thumbnail, target.youtube_id, target.start_sec, target.end_sec,
-    target.article_text, target.author, target.duration, 'Quote', target.id, new_slug
+    target.article_text, target.author, target.audio_url, target.transcript, target.duration, target.media_url,
+    target.media_kind, target.media_w, target.media_h, target.media_duration_ms, target.poster_url, target.video_url,
+    target.video_status, target.author_url, target.source_image_url, target.source_excerpt, 'Quote', target.id, new_slug
   ) returning * into created_clip;
 
   insert into public.annotations (clip_id, user_id, text_content)

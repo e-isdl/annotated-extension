@@ -3219,3 +3219,7 @@ this changelog.
 - Quote composer clicks can no longer trigger card navigation (textarea and dialog added to the nav guard).
 - RPC column parity machine-checked 17/17 on both writes; auth gate proven live.
 - Checks: root suite 75/75, webapp suite 24/24; both builds pass.
+### Repost quote full copy (local)
+
+- Repost and quote rows now copy every content field so reshares render exactly like the original; removed the broken test quote.
+- Checks: migration applied clean.
