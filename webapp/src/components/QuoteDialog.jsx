@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../lib/authUser';
@@ -38,8 +39,10 @@ export default function QuoteDialog({ clip, onClose }) {
     }
   }
 
-  return (
-    <div className="profile-edit-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+  // Portaled to the body: nested inside a card, a fixed backdrop can get
+  // trapped by ancestor stacking contexts and paint as a black hole.
+  return createPortal(
+    <div className="quote-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="profile-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="quote-title">
         <div className="profile-edit-heading">
           <div>

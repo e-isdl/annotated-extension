@@ -589,6 +589,7 @@ function QuotedCard({ post }) {
         {post.created_at && <span className="quote-card-time">· {timeAgo(post.created_at)}</span>}
       </div>
       {take && <p className="quote-card-take">{take}</p>}
+      {post.article_text && <p className="quote-card-article">{post.article_text}</p>}
       {playing && isYt ? (
         <div className="quote-card-player" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
           <YouTubeClipPlayer videoId={post.youtube_id} startSec={post.start_sec} endSec={post.end_sec} autoplay positionKey={`quote-${post.id}`} onClose={() => setPlaying(false)} />

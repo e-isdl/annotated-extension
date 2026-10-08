@@ -379,6 +379,8 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .post-action:hover { background: var(--surface-3); color: var(--text-primary); }
 .post-action-last { margin-left: 0; }
 .post-action-saved { color: var(--accent-strong); }
+.quote-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, .45); }
+@media (max-width: 760px) { .quote-backdrop { padding: 12px; } }
 .repost-menu-wrap { position: relative; display: inline-flex; }
 .repost-menu { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 5; display: flex; flex-direction: column; gap: 2px; min-width: 168px; padding: 5px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); box-shadow: 0 12px 32px rgba(0, 0, 0, .4); }
 .repost-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 11px; border: 0; border-radius: 8px; background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
@@ -396,6 +398,7 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .quote-card-author { overflow: hidden; color: var(--text-secondary); font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .quote-card-time { flex: none; color: var(--text-muted); font-size: 11px; }
 .quote-card-take { display: -webkit-box; overflow: hidden; margin: 8px 14px 0; color: var(--text-primary); font-size: 14px; line-height: 1.5; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+.quote-card-article { display: -webkit-box; overflow: hidden; margin: 8px 14px 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; white-space: pre-wrap; -webkit-line-clamp: 5; -webkit-box-orient: vertical; }
 .quote-card-media { display: block; width: calc(100% - 28px); max-height: 280px; margin: 10px 14px 0; border-radius: 10px; object-fit: cover; background: var(--card); }
 .quote-card-thumbbtn { position: relative; display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; }
 .quote-card-thumbbtn .quote-card-media { width: calc(100% - 28px); }

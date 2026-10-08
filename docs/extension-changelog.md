@@ -3223,3 +3223,7 @@ this changelog.
 
 - Repost and quote rows now copy every content field so reshares render exactly like the original; removed the broken test quote.
 - Checks: migration applied clean.
+### Quote composer portal, rich quoted cards
+
+- Quote composer portals to the body with a light Twitter-weight backdrop instead of rendering trapped inside cards.
+- Quoted posts render whole (take, article, playable media) with no duplicated outer source.
