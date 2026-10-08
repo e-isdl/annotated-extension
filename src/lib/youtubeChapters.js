@@ -3,6 +3,14 @@
 // reference straight to chrome.scripting.executeScript, so the body must
 // stay self-contained: no imports, no outer references, only page globals
 // (window, document, URL, JSON, setTimeout) which exist in the MAIN world.
+
+// Fingerprint of a chapter list. The panel keeps the previous video's
+// fingerprint and refuses any read identical to it: during SPA navigation
+// the player switches first while the DOM still shows the old video, so
+// even player-verified reads can be stale. Shared by panel and page code.
+export function chapterKey(list) {
+  return (list || []).map((c) => `${c.t}:${c.title}`).join('|');
+}
 //
 // Runs in the page MAIN world (not the isolated content script) because
 // only there is the live player API callable: an isolated world cannot
@@ -13,6 +21,11 @@ export async function readChaptersMainWorld(args) {
   try {
     const wantId = String((args && args.videoId) || '');
     const maxT = Number((args && args.duration) || 0);
+    const prevVideoId = String((args && args.prevVideoId) || '');
+    const prevKey = String((args && args.prevKey) || '');
+    const isStaleEcho = (list) => Boolean(
+      prevVideoId && prevVideoId !== wantId && prevKey && key(list) === prevKey && list.length,
+    );
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     let pageId = '';
     try {
@@ -166,9 +179,18 @@ export async function readChaptersMainWorld(args) {
     if (liveResponse && wantId && liveId && liveId !== wantId) {
       return { videoId: pageId, wantId, chapters: [] };
     }
-    // DOM markers first, with confirmation: markers render progressively
+    // Structured live read first: the player-bar chapter map carries the
+    // COMPLETE list, while rendered DOM markers can be a virtualized subset.
+    // Returning DOM-only first is how lists came back short.
+    if (liveResponse && (!wantId || !liveId || liveId === wantId)) {
+      try {
+        scan(liveResponse, 0);
+      } catch (e) {}
+    }
+    // DOM markers next, with confirmation: markers render progressively
     // and can pause mid-render, so track the longest list and only trust it
-    // after repeats with no further growth.
+    // after repeats with no further growth. Everything unions into one
+    // deduped list, so partial sources complete each other.
     const key = (list) => (list || []).map((c) => `${c.t}:${c.title}`).join('|');
     let best = [];
     let streak = 0;
@@ -178,16 +200,20 @@ export async function readChaptersMainWorld(args) {
         if (readDomMarkers()) scopesSeen = true;
       } catch (e) {}
       const list = snapshot();
-      if (key(list) === key(best)) {
-        streak += 1;
-      } else if (list.length > best.length) {
-        best = list;
-        streak = 0;
-      } else {
-        streak = 0;
-      }
-      if (best.length >= 3 && streak >= 2) {
-        return { videoId: pageId, wantId, chapters: best.slice(0, 200) };
+      // A list identical to the previous video's is the old page still
+      // rendered, not the new video: ignore it and keep waiting.
+      if (!isStaleEcho(list)) {
+        if (key(list) === key(best)) {
+          streak += 1;
+        } else if (list.length > best.length) {
+          best = list;
+          streak = 0;
+        } else {
+          streak = 0;
+        }
+        if (best.length >= 3 && streak >= 2 && !isStaleEcho(best)) {
+          return { videoId: pageId, wantId, chapters: best.slice(0, 200) };
+        }
       }
       // No marker containers at all (embeds, music, shorts): nothing will
       // ever render, so stop after one confirmation read.
@@ -198,18 +224,11 @@ export async function readChaptersMainWorld(args) {
         } catch (e) {}
       }
     }
-    if (best.length >= 3) {
+    if (best.length >= 3 && !isStaleEcho(best)) {
       return { videoId: pageId, wantId, chapters: best.slice(0, 200) };
     }
-    // Structured fallback, live first (id already matched above), then the
-    // global page objects which can lag on navigation.
-    if (liveResponse && (!wantId || !liveId || liveId === wantId)) {
-      try {
-        scan(liveResponse, 0);
-      } catch (e) {}
-      const liveOnly = snapshot();
-      if (liveOnly.length) return { videoId: pageId, wantId, chapters: liveOnly };
-    }
+    // Structured fallback: the global page objects, which can lag on
+    // navigation behind the live player.
     const roots = [];
     try {
       if (window.ytInitialData) roots.push(window.ytInitialData);
@@ -231,6 +250,7 @@ export async function readChaptersMainWorld(args) {
     // they vary between visits and produced phantom chapter lists.
     // Structured marker renderers above are the only fallback source.
     const chapters = snapshot();
+    if (isStaleEcho(chapters)) return { videoId: pageId, wantId, chapters: [] };
     return { videoId: pageId, wantId, chapters };
   } catch (e) {
     return { videoId: '', wantId: '', chapters: [] };

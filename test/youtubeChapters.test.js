@@ -266,6 +266,24 @@ test('ad-length durations do not filter DOM markers', async () => {
   assert.equal(out.chapters.length, 8);
 });
 
+const fullEight = [
+  [0, 'One'], [60000, 'Two'], [120000, 'Three'], [180000, 'Four'],
+  [240000, 'Five'], [300000, 'Six'], [360000, 'Seven'], [420000, 'Eight'],
+];
+
+test('partial DOM plus complete player map union to the full list', async () => {
+  const partial = fullEight.slice(0, 5).map(([ms, title]) => ({
+    innerText: `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}\n${title}`,
+  }));
+  const out = await run({ videoId: 'd', duration: 900 }, {
+    href: 'https://www.youtube.com/watch?v=d',
+    liveResponse: RomansLive('d', fullEight),
+    markerReads: [partial, partial],
+  });
+  assert.equal(out.chapters.length, 8);
+  assert.equal(out.chapters[7].title, 'Eight');
+});
+
 test('serialized reader stays self-contained for executeScript', async () => {
   const src = readChaptersMainWorld.toString();
   for (const banned of ['require(', 'process.', 'module.', '__dirname']) {
