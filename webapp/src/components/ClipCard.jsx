@@ -286,15 +286,6 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
       {isRepost && clip.profiles?.handle && (
         <div className="repost-flag">↻ <Link to={`/u/${clip.profiles.handle}`} className="no-underline">{clip.profiles.handle} reposted</Link></div>
       )}
-      {isQuote && quoted && (
-        <Link to={postHref(quoted)} className="quote-embed no-underline">
-          <Avatar profile={quoted.profiles} size="dot" />
-          <div className="min-w-0">
-            <p className="quote-embed-title">{quoted.source_title || quoted.title || 'Quoted post'}</p>
-            {quoted.profiles?.handle && <p className="quote-embed-meta">@{quoted.profiles.handle}</p>}
-          </div>
-        </Link>
-      )}
       <div className="post-meta">
         {clip.community_slug && clip.community_name ? (
           <>
@@ -331,6 +322,16 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
               </div>
             )}
           </>
+        )}
+
+        {isQuote && quoted && (
+          <Link to={postHref(quoted)} className="quote-embed no-underline">
+            <Avatar profile={quoted.profiles} size="dot" />
+            <div className="min-w-0">
+              <p className="quote-embed-title">{quoted.source_title || quoted.title || 'Quoted post'}</p>
+              {quoted.profiles?.handle && <p className="quote-embed-meta">@{quoted.profiles.handle}</p>}
+            </div>
+          </Link>
         )}
 
         {audioUrl && (
