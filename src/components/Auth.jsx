@@ -34,6 +34,35 @@ export default function Auth() {
         });
       });
       const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      // Last resort when popups cannot load at all: run the same URL in a
+      // normal tab and watch for the callback navigation. The chromiumapp
+      // page itself never loads, but the tab URL still carries the tokens.
+      const launchInTab = (url) => new Promise((resolve, reject) => {
+        let tabId = null;
+        let done = false;
+        const cleanup = () => {
+          chrome.tabs.onUpdated.removeListener(onUpdate);
+          chrome.tabs.onRemoved.removeListener(onGone);
+        };
+        const finish = (fn, value) => {
+          if (done) return;
+          done = true;
+          cleanup();
+          if (tabId !== null) chrome.tabs.remove(tabId).catch(() => {});
+          fn(value);
+        };
+        const onUpdate = (updatedId, changeInfo) => {
+          if (updatedId !== tabId || !changeInfo.url) return;
+          if (changeInfo.url.startsWith(redirectUri)) finish(resolve, changeInfo.url);
+        };
+        const onGone = (removedId) => {
+          if (removedId === tabId) finish(reject, new Error('Google sign-in was cancelled before it completed.'));
+        };
+        chrome.tabs.create({ url, active: true }).then(
+          (tab) => { tabId = tab.id; },
+          (err) => finish(reject, err instanceof Error ? err : new Error('Could not open a sign-in tab.')),
+        );
+      });
       let redirectUrl;
       try {
         redirectUrl = await Promise.race([
@@ -42,10 +71,13 @@ export default function Auth() {
               return await launchOnce();
             } catch (first) {
               if (!/could not be loaded/i.test(first.message || '')) throw first;
-              // Transient load failure (VPN, ad-blocker, flaky network):
-              // one retry before giving up.
               await sleep(1500);
-              return await launchOnce();
+              try {
+                return await launchOnce();
+              } catch (second) {
+                if (!/could not be loaded/i.test(second.message || '')) throw second;
+                return await launchInTab(data.url);
+              }
             }
           })(),
           new Promise((_, reject) => {
@@ -57,7 +89,7 @@ export default function Auth() {
       } catch (err) {
         if (/could not be loaded/i.test(err.message || '')) {
           throw new Error(
-            `Google's sign-in page would not load inside the extension window. Turn off any VPN or ad-blocker for the sign-in and try again. (Callback in use: ${redirectUri})`
+            `Google's sign-in page would not load. Turn off any VPN or ad-blocker and try again. (Callback in use: ${redirectUri})`
           );
         }
         throw err;
