@@ -9,6 +9,7 @@ export function communityStyle(value = '') {
 }
 
 const COMMUNITY_PFPS = {
+  ai: '/pfps/ai.svg',
   technology: '/pfps/technology.svg',
   'media-literacy': '/pfps/media-literacy.svg',
   startups: '/pfps/startups.svg',

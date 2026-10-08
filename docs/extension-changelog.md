@@ -3213,3 +3213,9 @@ this changelog.
 - toggle_repost and create_quote_post RPCs: reposts reshare with attribution, quotes attach commentary plus the quoted post; takes lists exclude both types.
 - Clip cards gain Repost and Quote actions, repost flags, quoted embeds and a quote composer; feeds need no query changes.
 - Checks: root suite 72/72, webapp suite 21/21; both builds pass.
+### Review fixes: AI portrait, dialog nav guard (local)
+
+- c/AI gets its own portrait (spark mark, same style as the other communities).
+- Quote composer clicks can no longer trigger card navigation (textarea and dialog added to the nav guard).
+- RPC column parity machine-checked 17/17 on both writes; auth gate proven live.
+- Checks: root suite 75/75, webapp suite 24/24; both builds pass.

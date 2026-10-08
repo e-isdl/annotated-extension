@@ -144,7 +144,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   const cardAriaLabel = `Open post: ${String(commentary || clip.title || 'post').slice(0, 140)}`;
   const onCardClick = (event) => {
     const target = event.target;
-    if (target && target.closest && target.closest('.post-card-link, [data-no-nav], button, a, input, img, video, audio, [role="button"]')) return;
+    if (target && target.closest && target.closest('.post-card-link, [data-no-nav], button, a, input, textarea, select, img, video, audio, [role="button"], [role="dialog"]')) return;
     if (typeof window !== 'undefined' && window.getSelection && window.getSelection().toString()) return;
     if (isCardNavSuppressed()) return;
     navigate(href);
