@@ -3227,3 +3227,6 @@ this changelog.
 
 - Quote composer portals to the body with a light Twitter-weight backdrop instead of rendering trapped inside cards.
 - Quoted posts render whole (take, article, playable media) with no duplicated outer source.
+### Quotes reuse the feed card
+
+- Quote posts render the original through the same feed-post component with actions stripped, no separate gray card anywhere; feed and detail share the composition.

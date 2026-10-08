@@ -13,7 +13,7 @@ import { useToast } from './ToastProvider';
 import CommunityAvatar from './CommunityAvatar';
 import Avatar from './Avatar';
 import { postHref } from '../lib/links';
-import { toggleRepost, fetchQuotedPost, fetchRepostState, quotedImage } from '../lib/repost';
+import { toggleRepost, fetchQuotedPost, fetchRepostState } from '../lib/repost';
 import QuoteDialog from './QuoteDialog';
 import { registerMounted, touchMounted, unregisterMounted } from '../lib/feedPlayback';
 import { hasMoment } from '../lib/moment';
@@ -26,7 +26,7 @@ const H_TARGET = 400; // preferred X media height
 const W_MIN = 360; // minimum readable width, px
 const H_MAX = 560; // collapse height, px
 
-export default function ClipCard({ clip, autoPlayVideo = false }) {
+export default function ClipCard({ clip, autoPlayVideo = false, embedded = false }) {
   const navigate = useNavigate();
   const { push } = useToast();
   const annotation = clip.annotations?.[0];
@@ -217,6 +217,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   };
 
   useEffect(() => {
+    if (embedded) return undefined;
     let active = true;
     (async () => {
       try {
@@ -228,10 +229,10 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
       } catch { /* unknown state reads as not reposted */ }
     })();
     return () => { active = false; };
-  }, [clip.id]);
+  }, [clip.id, embedded]);
 
   useEffect(() => {
-    if (!isQuote) return undefined;
+    if (!isQuote || embedded) return undefined;
     let active = true;
     (async () => {
       try {
@@ -312,7 +313,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
 
   return (
     <article ref={cardRef} className="post-card post-card-linked" onClick={onCardClick}>
-      {isRepost && clip.profiles?.handle && (
+      {!embedded && isRepost && clip.profiles?.handle && (
         <div className="repost-flag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg> <Link to={`/u/${clip.profiles.handle}`} className="no-underline">{clip.profiles.handle} reposted</Link></div>
       )}
       <div className="post-meta">
@@ -353,8 +354,10 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
           </>
         )}
 
-        {isQuote && quoted && (
-          <QuotedCard post={quoted} />
+        {!embedded && isQuote && quoted && (
+          <div className="quote-nest">
+            <ClipCard clip={quoted} embedded />
+          </div>
         )}
 
         {!isQuote && audioUrl && (
@@ -525,6 +528,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
         )}
       </div>
 
+      {!embedded && (
       <div className="post-actions">
         <VoteButtons clipId={clip.id} score={score} setScore={setScore} />
         <Link to={`${href}#comments`} className="post-action no-underline">
@@ -555,7 +559,10 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
         </button>
       </div>
+      )}
+      {!embedded && (
       <Link to={href} className="post-card-link" aria-label={cardAriaLabel} draggable={false} onClick={onCardLinkClick} />
+      )}
       {quoteOpen && <QuoteDialog clip={clip} onClose={() => setQuoteOpen(false)} />}
     </article>
   );
@@ -563,63 +570,6 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
 
 function sourceDomain(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'source'; }
-}
-
-// The quoted post rendered whole inside a quote: their header, their take,
-// their media playable in place. Never nests: a quote of a quote still
-// renders one level. Media clicks never navigate.
-function QuotedCard({ post }) {
-  const [playing, setPlaying] = useState(false);
-  if (!post) return null;
-  const take = post?.annotation || post?.annotations?.[0]?.text_content;
-  const image = quotedImage(post);
-  const sourceTitle = post.source_title || post.title;
-  const isYt = post.source_type === 'youtube' && post.youtube_id;
-  const audioSrc = post.source_type === 'podcast' ? post.audio_url : null;
-  const playInline = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setPlaying(true);
-  };
-  return (
-    <Link to={postHref(post)} className="quote-card no-underline">
-      <div className="quote-card-head">
-        <Avatar profile={post.profiles} size="dot" />
-        <span className="quote-card-author">{post.profiles?.handle || 'anonymous'}</span>
-        {post.created_at && <span className="quote-card-time">· {timeAgo(post.created_at)}</span>}
-      </div>
-      {take && <p className="quote-card-take">{take}</p>}
-      {post.article_text && <p className="quote-card-article">{post.article_text}</p>}
-      {playing && isYt ? (
-        <div className="quote-card-player" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
-          <YouTubeClipPlayer videoId={post.youtube_id} startSec={post.start_sec} endSec={post.end_sec} autoplay positionKey={`quote-${post.id}`} onClose={() => setPlaying(false)} />
-        </div>
-      ) : image ? (
-        isYt ? (
-          <button type="button" className="quote-card-thumbbtn" onClick={playInline} aria-label="Play quoted video">
-            <img src={image} alt="" loading="lazy" className="quote-card-media" />
-            <span className="quote-card-play" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
-            </span>
-          </button>
-        ) : (
-          <img src={image} alt="" loading="lazy" className="quote-card-media" />
-        )
-      ) : null}
-      {audioSrc && !playing && (
-        <div className="quote-card-audio" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
-          <AudioPlayer src={audioSrc} compact />
-        </div>
-      )}
-      <div className="quote-card-source">
-        <span aria-hidden="true">↗</span>
-        <span className="quote-card-source-title">{sourceTitle || 'Quoted post'}</span>
-        {(post.source_domain || post.source_url) && (
-          <span className="quote-card-domain">{post.source_domain || sourceDomain(post.source_url)}</span>
-        )}
-      </div>
-    </Link>
-  );
 }
 
 function timeAgo(dateStr) {

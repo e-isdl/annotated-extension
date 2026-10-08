@@ -392,20 +392,10 @@ html[data-theme="terminal"] .annotation-lead-copy { font-size: 16px; }
 .quote-embed:hover { background: var(--surface-3); }
 .quote-embed-title { overflow: hidden; margin: 0; color: var(--text-primary); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .quote-embed-meta { margin: 2px 0 0; color: var(--text-muted); font-size: 11px; }
-.quote-card { display: block; margin: 4px 2px 12px; overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-2); text-decoration: none; transition: border-color .15s, background .15s; }
-.quote-card:hover { border-color: var(--border-strong); background: var(--surface-3); }
-.quote-card-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 0; }
-.quote-card-author { overflow: hidden; color: var(--text-secondary); font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-.quote-card-time { flex: none; color: var(--text-muted); font-size: 11px; }
-.quote-card-take { display: -webkit-box; overflow: hidden; margin: 8px 14px 0; color: var(--text-primary); font-size: 14px; line-height: 1.5; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
-.quote-card-article { display: -webkit-box; overflow: hidden; margin: 8px 14px 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; white-space: pre-wrap; -webkit-line-clamp: 5; -webkit-box-orient: vertical; }
-.quote-card-media { display: block; width: calc(100% - 28px); max-height: 280px; margin: 10px 14px 0; border-radius: 10px; object-fit: cover; background: var(--card); }
-.quote-card-thumbbtn { position: relative; display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; }
-.quote-card-thumbbtn .quote-card-media { width: calc(100% - 28px); }
-.quote-card-play { position: absolute; inset: 0; margin: auto; width: 48px; height: 48px; border-radius: 50%; background: rgba(0, 0, 0, .55); display: flex; align-items: center; justify-content: center; color: #fff; }
-.quote-card-thumbbtn:hover .quote-card-play { background: rgba(0, 0, 0, .7); }
-.quote-card-player { margin: 10px 14px 0; overflow: hidden; border-radius: 10px; }
-.quote-card-audio { padding: 4px 14px 0; }
+/* The quoted post is the same feed card, nested with no actions: no new
+   visual language, it merges into the parent post. */
+.quote-nest { margin: 4px 2px 12px; }
+.quote-nest .post-card { margin: 0; }
 .quote-card-source { display: flex; align-items: baseline; gap: 7px; min-width: 0; padding: 10px 14px 12px; color: var(--text-muted); font-size: 12px; }
 .quote-card-source-title { overflow: hidden; color: var(--text-secondary); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .quote-card-domain { flex: none; font-size: 11px; }

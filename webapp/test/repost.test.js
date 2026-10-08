@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { toggleRepost, createQuote, fetchQuotedPost, fetchRepostState, hrefForNewPost, quotedImage } from '../src/lib/repost.js';
+import { toggleRepost, createQuote, fetchQuotedPost, fetchRepostState, hrefForNewPost } from '../src/lib/repost.js';
 
 test('repost toggles through one atomic database function', async () => {
   let call;
@@ -46,18 +46,6 @@ test('repost state is false without a user, for demos, or on errors', async () =
   assert.equal(await fetchRepostState({}, 'demo-1', 'user-id'), false);
   const failing = { from: () => { throw new Error('down'); } };
   assert.equal(await fetchRepostState(failing, 'clip-id', 'user-id'), false);
-});
-
-test('quoted cards prefer video thumbnails, then source images, then nothing', () => {
-  assert.equal(
-    quotedImage({ source_type: 'youtube', youtube_id: 'abc', source_image_url: 'https://x/img.png' }),
-    'https://img.youtube.com/vi/abc/hqdefault.jpg',
-  );
-  assert.equal(quotedImage({ source_type: 'article', source_image_url: 'https://x/img.png' }), 'https://x/img.png');
-  assert.equal(quotedImage({ source_type: 'article', thumbnail: 'https://x/t.png' }), 'https://x/t.png');
-  assert.equal(quotedImage({ source_type: 'social', poster_url: 'https://x/p.png' }), 'https://x/p.png');
-  assert.equal(quotedImage({ source_type: 'text' }), null);
-  assert.equal(quotedImage(null), null);
 });
 
 test('new posts link to the posting profile when known', () => {

@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { deleteClip } from '../lib/api';
 import Avatar from '../components/Avatar';
+import ClipCard from '../components/ClipCard';
+import { fetchQuotedPost } from '../lib/repost';
 import CommunityAvatar from '../components/CommunityAvatar';
 import YouTubeClipPlayer from '../components/YouTubeClipPlayer';
 import ClipPlayer from '../components/ClipPlayer';
@@ -53,7 +55,22 @@ export default function ClipPage() {
   const [imageFailed, setImageFailed] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
   const [showEmbed, setShowEmbed] = useState(false);
+  const [quoted, setQuoted] = useState(null);
+  const isQuotePost = clip?.annotation_type === 'Quote' && clip?.parent_clip_id;
   const { push } = useToast();
+
+  useEffect(() => {
+    setQuoted(null);
+    if (!isQuotePost) return undefined;
+    let active = true;
+    (async () => {
+      try {
+        const row = await fetchQuotedPost(supabase, clip.parent_clip_id);
+        if (active) setQuoted(row);
+      } catch {}
+    })();
+    return () => { active = false; };
+  }, [clip?.id, clip?.parent_clip_id, clip?.annotation_type]);
 
   useEffect(() => {
     setShowEmbed(false);
@@ -312,6 +329,10 @@ export default function ClipPage() {
         />
       )}
 
+      {isQuotePost && quoted ? (
+        <ClipCard clip={quoted} embedded />
+      ) : (
+      <>
       {annotation?.audio_url && <div className="post-audio"><AudioPlayer src={annotation.audio_url} /></div>}
 
       {clip.source_type === 'text' && clip.article_text && (
@@ -430,6 +451,8 @@ export default function ClipPage() {
             </div>
           )}
         </section>
+      )}
+      </>
       )}
 
       <div className="detail-actions">
