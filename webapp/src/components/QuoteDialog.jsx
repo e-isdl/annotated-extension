@@ -69,6 +69,7 @@ export default function QuoteDialog({ clip, onClose }) {
           </div>
         </form>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
