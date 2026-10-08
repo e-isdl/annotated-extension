@@ -284,7 +284,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   return (
     <article ref={cardRef} className="post-card post-card-linked" onClick={onCardClick}>
       {isRepost && clip.profiles?.handle && (
-        <div className="repost-flag">↻ <Link to={`/u/${clip.profiles.handle}`} className="no-underline">{clip.profiles.handle} reposted</Link></div>
+        <div className="repost-flag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg> <Link to={`/u/${clip.profiles.handle}`} className="no-underline">{clip.profiles.handle} reposted</Link></div>
       )}
       <div className="post-meta">
         {clip.community_slug && clip.community_name ? (
@@ -511,10 +511,12 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
           <span>↗</span> <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span>
         </button>
         <button type="button" onClick={handleRepost} className={`post-action ${reposted ? 'post-action-saved' : ''}`} aria-pressed={reposted}>
-          <span>↻</span> <span aria-live="polite">{reposted ? 'Reposted' : 'Repost'}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>
+          <span aria-live="polite">{reposted ? 'Reposted' : 'Repost'}</span>
         </button>
         <button type="button" onClick={handleQuote} className="post-action">
-          <span>❝</span> Quote
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.5 6C6.5 6 4 8.5 4 11.5V18h7v-7H7.2c.2-1.6 1.4-2.9 3.1-3.2L10.5 6H9.5zm10 0c-3 0-5.5 2.5-5.5 5.5V18h7v-7h-3.8c.2-1.6 1.4-2.9 3.1-3.2L20.5 6h-1z" /></svg>
+          Quote
         </button>
         <button type="button" onClick={handleSave} className={`post-action post-action-last ${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}

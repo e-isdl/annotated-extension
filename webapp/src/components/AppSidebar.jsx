@@ -17,7 +17,6 @@ export default function AppSidebar() {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [communities, setCommunities] = useState([]);
-  const [popularCommunities, setPopularCommunities] = useState([]);
   const [failed, setFailed] = useState(false);
   const [draftCount, setDraftCount] = useState(0);
   const currentSort = new URLSearchParams(location.search).get('sort');
@@ -29,22 +28,13 @@ export default function AppSidebar() {
       const currentUser = await getCurrentUser();
       if (!active) return;
       setUser(currentUser);
-      const [{ data: allCommunities }, membershipResult, allMembershipsResult] = await Promise.all([
-        supabase.from('communities').select('id, slug, name').order('name'),
-        currentUser
-          ? supabase.from('community_members').select('created_at, community_id, communities(slug, name)').eq('user_id', currentUser.id).order('created_at', { ascending: false })
-          : Promise.resolve({ data: [], error: null }),
-        supabase.from('community_members').select('community_id'),
-      ]);
-      const memberRows = membershipResult.data || [];
-      const memberCounts = {};
-      (allMembershipsResult.data || []).forEach((row) => { memberCounts[row.community_id] = (memberCounts[row.community_id] || 0) + 1; });
+      const { data: membershipResult } = currentUser
+        ? await supabase.from('community_members').select('created_at, community_id, communities(slug, name)').eq('user_id', currentUser.id).order('created_at', { ascending: false })
+        : { data: [] };
       if (!active) return;
-      if (membershipResult.error || allMembershipsResult.error) setFailed(true);
-      const joined = memberRows.map((row) => row.communities).filter(Boolean);
+      if (!membershipResult) setFailed(true);
+      const joined = (membershipResult || []).map((row) => row.communities).filter(Boolean);
       setCommunities(joined);
-      const popular = [...(allCommunities || [])].sort((a, b) => (memberCounts[b.id] || 0) - (memberCounts[a.id] || 0)).slice(0, 6);
-      setPopularCommunities(popular);
     }
     loadCommunities();
     const loadDraftCount = async () => {
@@ -62,8 +52,7 @@ export default function AppSidebar() {
     return () => { active = false; subscription.unsubscribe(); window.removeEventListener('focus', onFocus); };
   }, []);
 
-  const displayedCommunities = user && communities.length ? communities : popularCommunities;
-  const label = user && communities.length ? (failed ? 'Communities' : 'Your communities') : 'Popular communities';
+  const displayedCommunities = user ? communities : [];
 
   return (
     <div className="sidebar-cell">
@@ -76,12 +65,13 @@ export default function AppSidebar() {
 
       <div className="sidebar-section border-t border-border-subtle pt-5">
         <div className="flex items-center justify-between mb-2">
-          <p className="sidebar-label mb-0">{label}</p>
+          <p className="sidebar-label mb-0">Your communities</p>
           <Link to="/explore" className="text-xs text-text-muted hover:text-accent-text">+</Link>
         </div>
         <nav className="flex flex-col gap-1">
           {displayedCommunities.map((community) => <Link key={community.slug} to={`/c/${community.slug}`} className="community-link"><CommunityAvatar slug={community.slug} name={community.name} /><span className="truncate">{community.name}</span></Link>)}
-          {user && !failed && communities.length === 0 && displayedCommunities.length === 0 && <p className="sidebar-empty">Explore communities and join one to pin it here.</p>}
+          {user && !failed && communities.length === 0 && <p className="sidebar-empty">Explore communities and join one to pin it here.</p>}
+          {!user && <p className="sidebar-empty">Sign in to pin your communities here.</p>}
         </nav>
       </div>
 
