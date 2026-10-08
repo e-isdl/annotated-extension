@@ -30,6 +30,7 @@ async function run(args, page) {
       ytInitialData: page.ytInitialData,
       ytInitialPlayerResponse: page.ytInitialPlayerResponse,
       ytplayer: page.ytplayer,
+      ytcfg: page.ytcfg,
     },
     document: {
       querySelector: (sel) => {
@@ -45,7 +46,10 @@ async function run(args, page) {
     JSON,
     setTimeout,
     clearTimeout,
+    encodeURIComponent,
+    AbortController,
   };
+  if (typeof page.fetchFn === 'function') sandbox.fetch = page.fetchFn;
   sandbox.window.location = { href: page.href };
   // The function reads window.location.href directly.
   const factory = vm.runInNewContext(`(${readChaptersMainWorld.toString()})`, sandbox);
@@ -318,6 +322,78 @@ test('partial DOM plus complete player map union to the full list', async () => 
   });
   assert.equal(out.chapters.length, 8);
   assert.equal(out.chapters[7].title, 'Eight');
+});
+
+const nextCfg = {
+  get: (k) => (k === 'INNERTUBE_CONTEXT' ? { client: { clientName: 'WEB' } } : 'TESTKEY'),
+};
+
+function nextBody(pairs) {
+  return {
+    contents: {
+      items: pairs.map(([ms, title]) => ({
+        chapterRenderer: { title: { simpleText: title }, timeRangeStartMillis: ms },
+      })),
+    },
+  };
+}
+
+const NEXT_FOUR = [[0, 'N1'], [60000, 'N2'], [120000, 'N3'], [180000, 'N4']];
+
+test('/next primary source wins without touching the DOM', async () => {
+  let domReads = 0;
+  const out = await run({ videoId: 'n', duration: 900 }, {
+    href: 'https://www.youtube.com/watch?v=n',
+    ytcfg: nextCfg,
+    fetchFn: async (url, init) => {
+      assert.ok(String(url).includes('/youtubei/v1/next'));
+      assert.ok(JSON.parse(init.body).videoId === 'n');
+      return { ok: true, json: async () => nextBody(NEXT_FOUR) };
+    },
+    markerReads: [[{ innerText: 'SHOULD NOT APPEAR' }]],
+  });
+  assert.equal(out.source, 'next');
+  assert.deepEqual(out.chapters.map((c) => c.title), ['N1', 'N2', 'N3', 'N4']);
+});
+
+test('/next failure falls through to the DOM path', async () => {
+  const out = await run({ videoId: 'd', duration: 900 }, {
+    href: 'https://www.youtube.com/watch?v=d',
+    ytcfg: nextCfg,
+    fetchFn: async () => { throw new Error('offline'); },
+    markerReads: [domEight, domEight],
+  });
+  assert.deepEqual(out.chapters.map((c) => c.title),
+    ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight']);
+});
+
+test('tainted mix with two old pairs is refused', async () => {
+  const prev = [[0, 'Old one'], [60000, 'Old two'], [180000, 'Old three']];
+  const prevKey = prev.map(([t, title]) => `${t / 1000}:${title}`).join('|');
+  const mixed = [
+    { innerText: '0:00\nOld one' },
+    { innerText: '1:00\nOld two' },
+    { innerText: '5:00\nBrand new' },
+    { innerText: '6:00\nAlso new' },
+  ];
+  const out = await run({ videoId: 'new', duration: 900, prevVideoId: 'old', prevKey }, {
+    href: 'https://www.youtube.com/watch?v=new',
+    markerReads: [mixed, mixed],
+  });
+  assert.deepEqual(out.chapters, []);
+});
+
+test('same-video rewatch serves despite matching fingerprint', async () => {
+  const eightKey = domEight.map((el) => {
+    const [time, title] = el.innerText.split('\n');
+    const [m, s] = time.split(':').map(Number);
+    return `${m * 60 + s}:${title}`;
+  }).join('|');
+  const out = await run({ videoId: 'd', duration: 900, prevVideoId: 'd', prevKey: eightKey }, {
+    href: 'https://www.youtube.com/watch?v=d',
+    markerReads: [domEight, domEight],
+  });
+  assert.equal(out.chapters.length, 8);
 });
 
 test('serialized reader stays self-contained for executeScript', async () => {

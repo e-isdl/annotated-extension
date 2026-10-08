@@ -3243,3 +3243,7 @@ this changelog.
 
 - Each source is collected separately and only non-stale complete sources union; sub-threshold reads never join; Sonnet reset bug fixed.
 - Checks: root suite 87/87; extension build passes.
+### Sonnet chapter architecture (local)
+
+- /next API bound to the video id is the primary source; live wait, per-return player re-checks, one source per read, id-gated globals, stale-echo taint detection.
+- Checks: root suite 91/91, webapp suite 24/24; both builds pass.

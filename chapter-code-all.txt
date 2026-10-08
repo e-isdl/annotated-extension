@@ -1,0 +1,557 @@
+===== content.js: helpers (isAdPlaying, getVideoDetails, getDurationFromPage) =====
+
+function isAdPlaying() {
+  const player = document.querySelector('.html5-video-player');
+  if (!player) return false;
+  return player.classList.contains('ad-showing') || player.classList.contains('ad-interrupting');
+}
+
+function getVideoDetails() {
+  try {
+    const live = document.querySelector('#movie_player')?.getPlayerResponse?.();
+    if (live?.videoDetails?.videoId) return live.videoDetails;
+  } catch (e) {}
+  return window.ytInitialPlayerResponse?.videoDetails || null;
+}
+
+function getDurationFromPage() {
+  const fromDetails = Math.floor(Number(getVideoDetails()?.lengthSeconds || 0));
+  if (fromDetails > 0) return fromDetails;
+
+  if (!isAdPlaying()) {
+    const durationEl = document.querySelector('.ytp-time-duration');
+    if (durationEl) {
+      const parts = durationEl.textContent.split(':').map(Number);
+      if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      if (parts.length === 2) return parts[0] * 60 + parts[1];
+      if (parts[0]) return parts[0];
+    }
+    const video = document.querySelector('video');
+    if (video && video.duration && isFinite(video.duration)) {
+      return Math.floor(video.duration);
+    }
+  }
+  return 0;
+}
+
+===== content.js: ytChapterSeconds, ytCleanChapters, ytDomChapters =====
+
+function ytChapterSeconds(text) {
+  const m = String(text || '').trim().match(/^(?:(\d+):)?([0-5]?\d):([0-5]\d)$/);
+  if (!m) return null;
+  return (Number(m[1] || 0) * 3600) + (Number(m[2]) * 60) + Number(m[3]);
+}
+
+function ytCleanChapters(items, maxT) {
+  if (!Array.isArray(items) || !items.length) return null;
+  const seen = new Set();
+  const good = [];
+  items.forEach((item) => {
+    const t = Math.round(Number(item && item.t));
+    const title = String((item && item.title) || '').trim().slice(0, 140);
+    if (!Number.isFinite(t) || t < 0 || !title || seen.has(t)) return;
+    // The duration cap only applies to sane feature-length values: during
+    // ads the reported duration can be the ad's length, which must never
+    // filter out the real chapters.
+    if (Number.isFinite(maxT) && maxT > 120 && t >= maxT) return;
+    seen.add(t);
+    good.push({ t, title });
+  });
+  good.sort((a, b) => a.t - b.t);
+  if (good.length < 3) return null;
+  return good;
+}
+
+function ytDomChapters() {
+  const items = [];
+  // Only the current video's own surfaces: its metadata/description and
+  // its player. A whole-document query also catches other videos' markers
+  // (up-next, hover cards, end screens). Markers for this video can live in
+  // either place, so both are read and merged.
+  const scopes = [
+    document.querySelector('ytd-watch-metadata'),
+    document.querySelector('#movie_player'),
+    document.querySelector('#description-inline-expander'),
+    document.querySelector('#description'),
+  ].filter(Boolean);
+  const roots = scopes.length ? scopes : [document];
+  roots.forEach((root) => {
+    root.querySelectorAll('ytd-macro-markers-list-item-renderer').forEach((el) => {
+      const lines = String(el.innerText || '').split('\n').map((s) => s.trim()).filter(Boolean);
+      if (!lines.length) return;
+      let t = null;
+      let ti = -1;
+      for (let i = 0; i < lines.length; i += 1) {
+        const s = ytChapterSeconds(lines[i]);
+        if (s !== null) { t = s; ti = i; break; }
+      }
+      if (t === null) return;
+      const title = lines.slice(ti + 1).filter((line) => ytChapterSeconds(line) === null).join(' ').trim().slice(0, 140)
+        || lines.slice(0, ti).join(' ').trim().slice(0, 140);
+      if (!title) return;
+      items.push({ t, title });
+    });
+  });
+  return items;
+}
+
+===== content.js: getYouTubeChapters, getYouTubeChaptersExpanded =====
+
+async function getYouTubeChapters() {
+  // getDurationFromPage prefers the real video length and reports 0 during
+  // ads, so an ad's short duration can never filter out real chapters.
+  const maxT = getDurationFromPage();
+  // Markers render progressively and can pause mid-render, so two identical
+  // reads are not proof of completeness. Track the longest list seen and
+  // only trust it after repeats with no further growth.
+  const key = (list) => (list || []).map((c) => `${c.t}:${c.title}`).join('|');
+  let best = [];
+  let streak = 0;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    let cleaned = null;
+    try { cleaned = ytCleanChapters(ytDomChapters(), maxT); } catch (e) {}
+    const list = cleaned || [];
+    if (key(list) === key(best)) {
+      streak += 1;
+    } else if (list.length > best.length) {
+      best = list;
+      streak = 0;
+    } else {
+      streak = 0;
+    }
+    if (best.length >= 3 && streak >= 2) return best.slice(0, 200);
+    if (attempt < 5) {
+      try { await new Promise((resolve) => setTimeout(resolve, 700)); } catch (e) {}
+    }
+  }
+  return best.slice(0, 200);
+}
+
+async function getYouTubeChaptersExpanded() {
+  let expandedHere = false;
+  try {
+    if (ytDomChapters().length >= 3) return null;
+    const more = [...document.querySelectorAll('tp-yt-paper-button#expand, #description-inline-expander tp-yt-paper-button, button#expand')]
+      .find((el) => {
+        try {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        } catch (e) { return false; }
+      });
+    if (!more) return null;
+    try { more.click(); } catch (e) { return null; }
+    expandedHere = true;
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    try {
+      const after = await getYouTubeChapters();
+      if (after.length) return after.slice(0, 200);
+    } catch (e) {}
+    return null;
+  } catch (e) {
+    return null;
+  } finally {
+    if (expandedHere) {
+      try {
+        const collapse = [...document.querySelectorAll('tp-yt-paper-button#collapse, button#collapse')]
+          .find((el) => {
+            try {
+              const r = el.getBoundingClientRect();
+              return r.width > 0 && r.height > 0;
+            } catch (e2) { return false; }
+          });
+        if (collapse) collapse.click();
+      } catch (e) {}
+    }
+  }
+}
+
+===== content.js: YT_CHAPTERS message handler =====
+
+if (message.type === 'YT_CHAPTERS') {
+      (async () => {
+        try {
+          // Tag the page's own video id so the panel can tell a mid-navigation
+          // (stale-DOM) answer apart from the requested video's chapters.
+          let pageVideoId = '';
+          try {
+            const u = new URL(location.href);
+            pageVideoId = u.searchParams.get('v') || ((u.pathname.match(/^\/shorts\/([^/?]+)/) || [])[1] || '');
+          } catch (e) {}
+          const wantId = String((message && message.videoId) || '');
+          // The URL updates before the page content does, so it cannot prove
+          // freshness. Only the live player can: if it is on another video,
+          // wait for the transition, then refuse rather than serve wrong data.
+          let liveId = currentPlayerVideoId();
+          if (wantId && liveId && liveId !== wantId) {
+            for (let i = 0; i < 8 && liveId !== wantId; i += 1) {
+              try { await new Promise((resolve) => setTimeout(resolve, 500)); } catch (e) {}
+              liveId = currentPlayerVideoId();
+            }
+          }
+          let chapters = [];
+          if (!wantId || !liveId || liveId === wantId) {
+            chapters = await getYouTubeChapters();
+            if (!chapters.length) {
+              chapters = (await getYouTubeChaptersExpanded()) || [];
+            }
+          }
+          sendResponse({ ok: true, chapters, videoId: pageVideoId, playerVideoId: liveId || undefined });
+        } catch (e) {
+          try { sendResponse({ ok: true, chapters: [] }); } catch (e2) {}
+        }
+      })();
+      return true;
+    }
+
+===== src/lib/youtubeChapters.js (FULL FILE: readChaptersMainWorld) =====
+
+// Chapter extraction for the YouTube clipper, kept here (dependency-free)
+// so it can be unit tested in Node. YouTubeClipper passes this function
+// reference straight to chrome.scripting.executeScript, so the body must
+// stay self-contained: no imports, no outer references, only page globals
+// (window, document, URL, JSON, setTimeout) which exist in the MAIN world.
+
+// Fingerprint of a chapter list. The panel keeps the previous video's
+// fingerprint and refuses any read identical to it: during SPA navigation
+// the player switches first while the DOM still shows the old video, so
+// even player-verified reads can be stale. Shared by panel and page code.
+export function chapterKey(list) {
+  return (list || []).map((c) => `${c.t}:${c.title}`).join('|');
+}
+//
+// Runs in the page MAIN world (not the isolated content script) because
+// only there is the live player API callable: an isolated world cannot
+// call page-defined functions, so any player check there silently fails.
+// Single pipeline: refuse on player mismatch, DOM markers with confirmation,
+// then structured player objects, then globals. No description scraping.
+export async function readChaptersMainWorld(args) {
+  try {
+    const wantId = String((args && args.videoId) || '');
+    const maxT = Number((args && args.duration) || 0);
+    const prevVideoId = String((args && args.prevVideoId) || '');
+    const prevKey = String((args && args.prevKey) || '');
+    const isStaleEcho = (list) => Boolean(
+      prevVideoId && prevVideoId !== wantId && prevKey && key(list) === prevKey && list.length,
+    );
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    let pageId = '';
+    try {
+      const u = new URL(window.location.href);
+      pageId = u.searchParams.get('v') || ((u.pathname.match(/^\/shorts\/([^/?]+)/) || [])[1] || '');
+    } catch (e) {}
+    const seen = new Set();
+    const out = [];
+    const visited = new Set();
+    const cleanTitle = (v) => {
+      if (!v) return '';
+      if (typeof v === 'string') return v.trim().slice(0, 140);
+      if (v.simpleText) return String(v.simpleText).trim().slice(0, 140);
+      if (Array.isArray(v.runs)) return v.runs.map((r) => r.text || '').join('').trim().slice(0, 140);
+      return '';
+    };
+    const chapSeconds = (text) => {
+      const m = String(text || '').trim().match(/^(?:(\d+):)?([0-5]?\d):([0-5]\d)$/);
+      if (!m) return null;
+      return (Number(m[1] || 0) * 3600) + (Number(m[2]) * 60) + Number(m[3]);
+    };
+    const parseT = (v) => {
+      if (typeof v === 'number' && isFinite(v) && v >= 0) return Math.floor(v);
+      return chapSeconds(v);
+    };
+    const push = (t, title) => {
+      t = Math.round(Number(t));
+      title = String(title || '').trim().slice(0, 140);
+      if (!Number.isFinite(t) || t < 0 || !title || seen.has(t)) return;
+      seen.add(t);
+      out.push({ t, title });
+    };
+    // DOM markers, scoped to the current video's own surfaces. A
+    // whole-document query also catches other videos' markers (up-next,
+    // hover cards, end screens); the player's own markers may live outside
+    // the description, so both are read and merged.
+    const readDomMarkers = () => {
+      let scopes = [];
+      try {
+        scopes = [
+          document.querySelector('ytd-watch-metadata'),
+          document.querySelector('#movie_player'),
+          document.querySelector('#description-inline-expander'),
+          document.querySelector('#description'),
+        ].filter(Boolean);
+      } catch (e) {
+        scopes = [];
+      }
+      if (!scopes.length) return false;
+      scopes.forEach((root) => {
+        let els = [];
+        try {
+          els = root.querySelectorAll('ytd-macro-markers-list-item-renderer');
+        } catch (e) {
+          els = [];
+        }
+        els.forEach((el) => {
+          const lines = String((el && el.innerText) || '').split('\n').map((s) => s.trim()).filter(Boolean);
+          if (!lines.length) return;
+          let t = null;
+          let ti = -1;
+          for (let i = 0; i < lines.length; i += 1) {
+            const s = chapSeconds(lines[i]);
+            if (s !== null) {
+              t = s;
+              ti = i;
+              break;
+            }
+          }
+          if (t === null) return;
+          const title = lines.slice(ti + 1).filter((line) => chapSeconds(line) === null).join(' ').trim().slice(0, 140)
+            || lines.slice(0, ti).join(' ').trim().slice(0, 140);
+          if (!title) return;
+          push(t, title);
+        });
+      });
+      return true;
+    };
+    const scan = (node, depth) => {
+      if (!node || depth > 12 || visited.has(node)) return;
+      if (typeof node !== 'object') return;
+      visited.add(node);
+      if (Array.isArray(node)) {
+        if (node.length > 400) return;
+        for (const item of node) {
+          if (item && typeof item === 'object') {
+            const cr = item.chapterRenderer;
+            if (cr) {
+              const title = cleanTitle(cr.title);
+              const t = cr.timeRangeStartMillis != null ? Number(cr.timeRangeStartMillis) / 1000 : null;
+              if (title && t != null) push(t, title);
+            }
+            // Player-bar chapter maps (multiMarkersPlayerBarRenderer) carry
+            // the current video's chapters in structured form.
+            const cmap = item.key === 'CHAPTER' && item.value && item.value.chaptersArray;
+            if (cmap && Array.isArray(cmap.chapters)) {
+              cmap.chapters.forEach((ch) => {
+                const ccr = ch && ch.chapterRenderer;
+                if (!ccr) return;
+                const title = cleanTitle(ccr.title);
+                const t = ccr.timeRangeStartMillis != null ? Number(ccr.timeRangeStartMillis) / 1000 : null;
+                if (title && t != null) push(t, title);
+              });
+            }
+            const mm = item.macroMarkersListItemRenderer;
+            if (mm) {
+              const title = cleanTitle(mm.title);
+              let t = mm.startTimeSeconds != null ? Number(mm.startTimeSeconds) : null;
+              if (t == null) t = parseT(cleanTitle(mm.timeDescription));
+              if (title && t != null) push(t, title);
+            }
+          }
+          scan(item, depth + 1);
+        }
+        return;
+      }
+      let keys = [];
+      try {
+        keys = Object.keys(node);
+      } catch (e) {
+        return;
+      }
+      if (keys.length > 400) return;
+      for (const k of keys) {
+        try {
+          scan(node[k], depth + 1);
+        } catch (e) {}
+      }
+    };
+    const snapshot = () => {
+      const sorted = out.slice().sort((a, b) => a.t - b.t);
+      // The duration cap only applies to sane feature-length values: during
+      // ads the reported duration can be the ad's length, which must never
+      // filter out the real chapters.
+      const inRange = sorted.filter((c, i) => (i === 0 || c.t > sorted[i - 1].t) && (!(maxT > 120) || c.t < maxT));
+      const list = inRange.slice(0, 200);
+      return list.length >= 3 ? list : [];
+    };
+    // The live player response is always the current video. A player on
+    // another video means mid-transition: refuse outright instead of
+    // serving possibly-stale data under the wanted id.
+    let liveResponse = null;
+    try {
+      liveResponse = document.querySelector('#movie_player') && document.querySelector('#movie_player').getPlayerResponse
+        ? document.querySelector('#movie_player').getPlayerResponse()
+        : null;
+    } catch (e) {
+      liveResponse = null;
+    }
+    const liveId = liveResponse && liveResponse.videoDetails ? String(liveResponse.videoDetails.videoId || '') : '';
+    if (liveResponse && wantId && liveId && liveId !== wantId) {
+      return { videoId: pageId, wantId, chapters: [] };
+    }
+    // Structured live read first: the player-bar chapter map carries the
+    // COMPLETE list, while rendered DOM markers can be a virtualized subset.
+    // Returning DOM-only first is how lists came back short.
+    if (liveResponse && (!wantId || !liveId || liveId === wantId)) {
+      try {
+        scan(liveResponse, 0);
+      } catch (e) {}
+    }
+    // DOM markers next, with confirmation: markers render progressively
+    // and can pause mid-render, so track the longest list and only trust it
+    // after repeats with no further growth. Everything unions into one
+    // deduped list, so partial sources complete each other.
+    const key = (list) => (list || []).map((c) => `${c.t}:${c.title}`).join('|');
+    let best = [];
+    let streak = 0;
+    let scopesSeen = false;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      try {
+        if (readDomMarkers()) scopesSeen = true;
+      } catch (e) {}
+      const list = snapshot();
+      // A list identical to the previous video's is the old page still
+      // rendered, not the new video: ignore it and keep waiting.
+      if (!isStaleEcho(list)) {
+        if (key(list) === key(best)) {
+          streak += 1;
+        } else if (list.length > best.length) {
+          best = list;
+          streak = 0;
+        } else {
+          streak = 0;
+        }
+        if (best.length >= 3 && streak >= 2 && !isStaleEcho(best)) {
+          return { videoId: pageId, wantId, chapters: best.slice(0, 200) };
+        }
+      }
+      // No marker containers at all (embeds, music, shorts): nothing will
+      // ever render, so stop after one confirmation read.
+      if (!scopesSeen && attempt >= 1) break;
+      if (attempt < 3) {
+        try {
+          await sleep(700);
+        } catch (e) {}
+      }
+    }
+    if (best.length >= 3 && !isStaleEcho(best)) {
+      return { videoId: pageId, wantId, chapters: best.slice(0, 200) };
+    }
+    // Structured fallback: the global page objects, which can lag on
+    // navigation behind the live player.
+    const roots = [];
+    try {
+      if (window.ytInitialData) roots.push(window.ytInitialData);
+    } catch (e) {}
+    try {
+      if (window.ytInitialPlayerResponse) roots.push(window.ytInitialPlayerResponse);
+    } catch (e) {}
+    try {
+      const raw = window.ytplayer && window.ytplayer.config && window.ytplayer.config.args
+        && window.ytplayer.config.args.player_response;
+      if (raw) roots.push(JSON.parse(raw));
+    } catch (e) {}
+    for (const r of roots) {
+      try {
+        scan(r, 0);
+      } catch (e) {}
+    }
+    // NOTE: shortDescription timestamp lines are deliberately NOT harvested:
+    // they vary between visits and produced phantom chapter lists.
+    // Structured marker renderers above are the only fallback source.
+    const chapters = snapshot();
+    if (isStaleEcho(chapters)) return { videoId: pageId, wantId, chapters: [] };
+    return { videoId: pageId, wantId, chapters };
+  } catch (e) {
+    return { videoId: '', wantId: '', chapters: [] };
+  }
+}
+
+
+===== YouTubeClipper.jsx: loadChapters (exact) =====
+
+const loadChapters = async (forId) => {
+    const videoId = forId || activeVideoRef.current;
+    if (!videoId) return;
+    const cached = chapterCacheRef.current.get(videoId);
+    if (cached) {
+      chaptersForRef.current = videoId;
+      setChapters(cached);
+      return;
+    }
+    // Ignore results that arrive after the user has moved to another video.
+    const still = () => activeVideoRef.current === videoId;
+    // The page side binds its answer to the live player; only accept answers
+    // whose page AND player both agree with the wanted video.
+    const accepted = (r) => r && r.ok && Array.isArray(r.chapters) && r.chapters.length
+      && (!r.videoId || r.videoId === videoId)
+      && (!r.playerVideoId || r.playerVideoId === videoId);
+    setChaptersLoading(true);
+    try {
+      const tab = await getActiveTab();
+      if (!tab) return;
+      let res = await sendToActiveTab({ type: 'YT_CHAPTERS', videoId });
+      if (!res) {
+        // Content script not there yet: inject it once, then ask again.
+        // (Injecting on every call stacked duplicate message listeners.)
+        try {
+          await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
+        } catch (e) {}
+        res = await sendToActiveTab({ type: 'YT_CHAPTERS', videoId });
+      }
+      if (accepted(res)) {
+        chapterCacheRef.current.set(videoId, res.chapters);
+        if (still()) {
+          chaptersForRef.current = videoId;
+          setChapters(res.chapters);
+        }
+        return;
+      }
+      if (res && res.ok && Array.isArray(res.chapters) && res.chapters.length) {
+        // The tab answered for another video (SPA navigation race). Retry
+        // briefly for the new page; never cache another video's chapters
+        // under this id.
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 700));
+          if (!still()) return;
+          let retry = null;
+          try { retry = await sendToActiveTab({ type: 'YT_CHAPTERS', videoId }); } catch (e) { retry = null; }
+          if (accepted(retry)) {
+            chapterCacheRef.current.set(videoId, retry.chapters);
+            if (still()) {
+              chaptersForRef.current = videoId;
+              setChapters(retry.chapters);
+            }
+            return;
+          }
+        }
+        return;
+      }
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 500));
+        if (!still()) return;
+        let out = null;
+        try {
+          const [injection] = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            world: 'MAIN',
+            func: readChaptersMainWorld,
+            args: [{ videoId, duration: tlDuration() }],
+          });
+          out = injection?.result || null;
+        } catch (e) {
+          out = null;
+        }
+        if (!out) continue;
+        if (out.videoId && out.videoId !== videoId) continue;
+        if (Array.isArray(out.chapters) && out.chapters.length) {
+          chapterCacheRef.current.set(videoId, out.chapters);
+          if (still()) {
+            chaptersForRef.current = videoId;
+            setChapters(out.chapters);
+          }
+          return;
+        }
+      }
+    } catch (e) {
+    } finally {
+      if (still()) setChaptersLoading(false);
+    }
+  };

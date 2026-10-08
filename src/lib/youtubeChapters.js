@@ -24,9 +24,14 @@ export async function readChaptersMainWorld(args) {
     const prevVideoId = String((args && args.prevVideoId) || '');
     const prevKey = String((args && args.prevKey) || '');
     const key = (list) => (list || []).map((c) => `${c.t}:${c.title}`).join('|');
-    const isStaleEcho = (list) => Boolean(
-      prevVideoId && prevVideoId !== wantId && prevKey && key(list) === prevKey && list.length,
-    );
+    const isStaleEcho = (list) => {
+      if (!(prevVideoId && prevVideoId !== wantId && prevKey && list.length)) return false;
+      if (key(list) === prevKey) return true;
+      // A half-replaced DOM mixes old and new items: two or more identical
+      // (time, title) pairs from the previous video means the list is tainted.
+      const prev = new Set(prevKey.split('|'));
+      return list.filter((c) => prev.has(`${c.t}:${c.title}`)).length >= 2;
+    };
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     let pageId = '';
     try {
@@ -165,6 +170,52 @@ export async function readChaptersMainWorld(args) {
       const list = inRange.slice(0, 200);
       return list.length >= 3 ? list : [];
     };
+    // PRIMARY SOURCE: YouTube's own /next data for exactly this video id.
+    // It is complete (rendered DOM markers are lazy and can be a truncated
+    // subset) and bound to wantId by the request itself, so it can be neither
+    // stale nor a mix of two videos. Everything below is the fallback.
+    if (wantId) {
+      try {
+        const cfg = window.ytcfg && typeof window.ytcfg.get === 'function' ? window.ytcfg : null;
+        const ctx = cfg ? cfg.get('INNERTUBE_CONTEXT') : null;
+        const apiKey = cfg ? cfg.get('INNERTUBE_API_KEY') : '';
+        if (ctx && typeof fetch === 'function') {
+          const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+          const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
+          let data = null;
+          try {
+            const res = await fetch(`/youtubei/v1/next?prettyPrint=false${apiKey ? `&key=${encodeURIComponent(apiKey)}` : ''}`, {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ context: ctx, videoId: wantId }),
+              signal: ctrl ? ctrl.signal : undefined,
+            });
+            if (res && res.ok) data = await res.json();
+          } finally {
+            if (timer) clearTimeout(timer);
+          }
+          if (data) {
+            out.length = 0;
+            seen.clear();
+            visited.clear();
+            scan(data, 0);
+            // No duration cap here: the panel's duration can lag, and a
+            // video-bound response cannot contain out-of-range chapters.
+            const savedMax = maxT;
+            maxT = 0;
+            const fromNext = snapshot();
+            maxT = savedMax;
+            if (fromNext.length >= 3) {
+              return { videoId: pageId, wantId, playerVideoId: wantId, source: 'next', chapters: fromNext };
+            }
+          }
+        }
+      } catch (e) {}
+      out.length = 0;
+      seen.clear();
+      visited.clear();
+    }
     // Bind to the LIVE PLAYER, not the URL. Wait (bounded) until the player
     // is actually on the wanted video; refuse if it never gets there.
     const readLive = () => {
@@ -198,42 +249,66 @@ export async function readChaptersMainWorld(args) {
       if (wantId && again !== wantId) return empty(again);
       return { videoId: pageId, wantId, playerVideoId: again, chapters };
     };
-    // Each source is collected separately, then only the trustworthy ones
-    // union. Sharing one accumulator lets a stale source poison a fresh one,
-    // which is exactly how phantom lists used to appear.
-    const reset = () => {
-      out.length = 0;
-      seen.clear();
-      visited.clear();
-    };
-    // Structured live read: the player-bar chapter map carries the COMPLETE
-    // list. The live id already matched above, so this source is trusted.
+    // Structured live read first. One source per read: if it is complete,
+    // return it without unioning DOM markers into it.
     if (live.resp) {
       try {
         scan(live.resp, 0);
       } catch (e) {}
     }
-    const liveList = snapshot();
-    reset();
-    // DOM markers: scoped to the current video's own surfaces, so up-next,
-    // hover cards and end screens for other videos stay out. Confirm with a
-    // second read: the DOM can still show the old video right after the
-    // player matches, so a stale or shifting list is never served alone.
-    readDomMarkers();
-    let domList = [];
     {
-      const s1 = snapshot();
-      if (s1.length >= 3 && !isStaleEcho(s1)) {
-        await sleep(700);
-        readDomMarkers();
-        const s2 = snapshot();
-        if (s2.length >= 3 && !isStaleEcho(s2)) domList = s2;
+      const s0 = snapshot();
+      if (s0.length >= 3) return finish(s0);
+    }
+    // DOM markers next, with confirmation: markers render progressively
+    // and can pause mid-render, so track the longest list and only trust it
+    // after repeats with no further growth.
+    const key2 = (list) => (list || []).map((c) => `${c.t}:${c.title}`).join('|');
+    let best = [];
+    let streak = 0;
+    let scopesSeen = false;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      // Each attempt is a pure snapshot of the DOM right now. Never carry
+      // items over from an earlier attempt: that merges the old video's
+      // markers with the new video's.
+      out.length = 0;
+      seen.clear();
+      try {
+        if (readDomMarkers()) scopesSeen = true;
+      } catch (e) {}
+      const list = snapshot();
+      if (isStaleEcho(list)) {
+        best = [];
+        streak = 0;
+      } else {
+        // Latest read wins; a changing list (still rendering, or still
+        // swapping videos) resets the streak. Trust only repeats.
+        if (key2(list) === key2(best)) {
+          streak += 1;
+        } else {
+          best = list;
+          streak = 0;
+        }
+        if (best.length >= 3 && streak >= 2) return finish(best.slice(0, 200));
+      }
+      // No marker containers at all (embeds, music, shorts): nothing will
+      // ever render, so stop after one confirmation read.
+      if (!scopesSeen && attempt >= 1) break;
+      if (attempt < 4) {
+        try {
+          await sleep(700);
+        } catch (e) {}
       }
     }
-    reset();
-    // Structured fallback: the global page objects, which can lag on
-    // navigation behind the live player, so each root is used ONLY if it
-    // names the wanted video.
+    if (best.length >= 3 && !isStaleEcho(best)) {
+      return finish(best.slice(0, 200));
+    }
+    // Structured fallback. The page globals are set at first page load and lag
+    // after SPA navigation, so each root is used ONLY if it names the wanted
+    // video. Start clean: never union a partial DOM list with global data.
+    out.length = 0;
+    seen.clear();
+    visited.clear();
     const idOk = (id) => !wantId || String(id || '') === wantId;
     const roots = [];
     try {
@@ -260,20 +335,8 @@ export async function readChaptersMainWorld(args) {
     // NOTE: shortDescription timestamp lines are deliberately NOT harvested:
     // they vary between visits and produced phantom chapter lists.
     // Structured marker renderers above are the only fallback source.
-    let globList = snapshot();
-    if (isStaleEcho(globList)) globList = [];
-    reset();
-    // Union only trustworthy candidates, deduped by timestamp. A stale
-    // source is excluded, never merged.
-    const merged = new Map();
-    for (const candidate of [liveList, domList, globList]) {
-      if (!candidate.length || isStaleEcho(candidate)) continue;
-      for (const c of candidate) {
-        if (!merged.has(c.t)) merged.set(c.t, c);
-      }
-    }
-    const chapters = [...merged.values()].sort((a, b) => a.t - b.t).slice(0, 200);
-    if (chapters.length < 3 || isStaleEcho(chapters)) return finish([]);
+    const chapters = snapshot();
+    if (isStaleEcho(chapters)) return finish([]);
     return finish(chapters);
   } catch (e) {
     return { videoId: '', wantId: '', chapters: [] };
