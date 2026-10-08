@@ -78,14 +78,14 @@ test('live player wins over stale globals for the wanted video', () => {
   assert.deepEqual(out.chapters.map((c) => c.title), ['Intro', 'Middle', 'End']);
 });
 
-test('stale live player falls back to globals', () => {
+test('stale live player refuses instead of serving globals', () => {
   const out = run({ videoId: 'BBB', duration: 400 }, {
     href: 'https://www.youtube.com/watch?v=BBB',
     live: true,
     player: { getPlayerResponse: () => RomansLive('AAA', VID_A) },
     ytInitialData: globalsFor('BBB', VID_B),
   });
-  assert.deepEqual(out.chapters.map((c) => c.title), ['Intro', 'Middle', 'End']);
+  assert.deepEqual(out.chapters, []);
 });
 
 test('globals alone still work without any player', () => {

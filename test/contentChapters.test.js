@@ -43,16 +43,19 @@ const markerEl = (t, title) => ({ innerText: `${fmtTime(t)}\n${title}` });
 // Loads content.js with a stub page. markerReads is the list of marker
 // arrays returned by successive chapter queries (last one repeats),
 // letting tests simulate progressive renders.
-function loadPage({ markerReads, sidebarMarkers = [], adPlaying = false, videoDuration = 0 }) {
+function makeStubs({ markerReads, sidebarMarkers = [], adPlaying = false, videoDuration = 0, live }) {
   let calls = 0;
   const pick = () => markerReads[Math.min(calls++, markerReads.length - 1)];
   const metadataScope = { querySelectorAll: () => pick() };
   const playerScope = {
     querySelectorAll: () => [],
     classList: { contains: (name) => adPlaying && name.indexOf('ad-') === 0 },
-    getPlayerResponse: undefined,
+    getPlayerResponse: live == null
+      ? undefined
+      : () => ({ videoDetails: { videoId: typeof live === 'object' ? live.id : live } }),
   };
   const pageUrl = 'https://www.youtube.com/watch?v=vid1';
+  let onMessage = null;
   const sandbox = {
     document: {
       title: 'Test video - YouTube',
@@ -74,7 +77,10 @@ function loadPage({ markerReads, sidebarMarkers = [], adPlaying = false, videoDu
     location: { href: pageUrl, search: '?v=vid1' },
     chrome: {
       runtime: {
-        onMessage: { removeListener: () => {}, addListener: () => {} },
+        onMessage: {
+          removeListener: () => {},
+          addListener: (fn) => { onMessage = fn; },
+        },
         sendMessage: () => ({ catch: () => {} }),
       },
     },
@@ -83,11 +89,37 @@ function loadPage({ markerReads, sidebarMarkers = [], adPlaying = false, videoDu
     URL,
     URLSearchParams,
   };
+  return { sandbox, getListener: () => onMessage };
+}
+
+function loadPage(opts) {
+  const { sandbox } = makeStubs(opts);
   vm.createContext(sandbox);
   vm.runInContext(chapterCode, sandbox);
   return {
     // JSON round-trip: values built inside vm carry the vm realm's prototypes.
     chapters: async () => JSON.parse(JSON.stringify(await vm.runInContext('getYouTubeChapters()', sandbox))),
+  };
+}
+
+// Full content script load: dispatches real YT_CHAPTERS messages at the
+// registered listener, proving the player binding end to end.
+function loadHandlerPage(opts) {
+  const { sandbox, getListener } = makeStubs(opts);
+  vm.createContext(sandbox);
+  vm.runInContext(source, sandbox);
+  return {
+    ask: async (message) => {
+      const listener = getListener();
+      assert.ok(listener, 'message listener registered');
+      let responded = null;
+      listener(message, {}, (payload) => { responded = payload; });
+      for (let i = 0; i < 240 && responded === null; i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      assert.ok(responded !== null, 'handler answered');
+      return JSON.parse(JSON.stringify(responded));
+    },
   };
 }
 
@@ -146,4 +178,36 @@ test('real durations still cap over-long entries', async () => {
   const page = loadPage({ markerReads: [items], adPlaying: false, videoDuration: 500 });
   const out = await page.chapters();
   assert.deepEqual(titles(out), ['A', 'B', 'C']);
+});
+
+test('stale player refuses even when the DOM is full of markers', async () => {
+  // Page URL already shows B with B markers rendered, but the player is
+  // still on A: the page is mid-transition, so the answer must be empty.
+  const page = loadHandlerPage({ markerReads: [eight], live: 'videoA' });
+  const out = await page.ask({ type: 'YT_CHAPTERS', videoId: 'vid1' });
+  assert.deepEqual(out.chapters, []);
+  assert.equal(out.playerVideoId, 'videoA');
+});
+
+test('matching player returns the markers with both ids tagged', async () => {
+  const page = loadHandlerPage({ markerReads: [eight], live: 'vid1' });
+  const out = await page.ask({ type: 'YT_CHAPTERS', videoId: 'vid1' });
+  assert.equal(out.chapters.length, 8);
+  assert.equal(out.videoId, 'vid1');
+  assert.equal(out.playerVideoId, 'vid1');
+});
+
+test('player catching up mid-wait still resolves', async () => {
+  const live = { id: 'videoA' };
+  const page = loadHandlerPage({ markerReads: [eight], live });
+  setTimeout(() => { live.id = 'vid1'; }, 300);
+  const out = await page.ask({ type: 'YT_CHAPTERS', videoId: 'vid1' });
+  assert.equal(out.chapters.length, 8);
+  assert.equal(out.playerVideoId, 'vid1');
+});
+
+test('no player API falls back to the plain DOM read', async () => {
+  const page = loadHandlerPage({ markerReads: [eight], live: null });
+  const out = await page.ask({ type: 'YT_CHAPTERS', videoId: 'vid1' });
+  assert.equal(out.chapters.length, 8);
 });

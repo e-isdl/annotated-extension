@@ -786,6 +786,19 @@ function ytCleanChapters(items, maxT) {
   return good;
 }
 
+// The video the actual player is on. Empty when the player API is
+// unreachable; callers must treat empty as "cannot verify", never as proof.
+function currentPlayerVideoId() {
+  try {
+    const player = document.querySelector('#movie_player');
+    const details = player && player.getPlayerResponse ? player.getPlayerResponse().videoDetails : null;
+    const id = details && details.videoId;
+    return id ? String(id) : '';
+  } catch (e) {
+    return '';
+  }
+}
+
 function ytDomChapters() {
   const items = [];
   // Only the current video's own surfaces: its metadata/description and
@@ -1151,11 +1164,25 @@ async function getYouTubeChaptersExpanded() {
             const u = new URL(location.href);
             pageVideoId = u.searchParams.get('v') || ((u.pathname.match(/^\/shorts\/([^/?]+)/) || [])[1] || '');
           } catch (e) {}
-          let chapters = await getYouTubeChapters();
-          if (!chapters.length) {
-            chapters = (await getYouTubeChaptersExpanded()) || [];
+          const wantId = String((message && message.videoId) || '');
+          // The URL updates before the page content does, so it cannot prove
+          // freshness. Only the live player can: if it is on another video,
+          // wait for the transition, then refuse rather than serve wrong data.
+          let liveId = currentPlayerVideoId();
+          if (wantId && liveId && liveId !== wantId) {
+            for (let i = 0; i < 8 && liveId !== wantId; i += 1) {
+              try { await new Promise((resolve) => setTimeout(resolve, 500)); } catch (e) {}
+              liveId = currentPlayerVideoId();
+            }
           }
-          sendResponse({ ok: true, chapters, videoId: pageVideoId });
+          let chapters = [];
+          if (!wantId || !liveId || liveId === wantId) {
+            chapters = await getYouTubeChapters();
+            if (!chapters.length) {
+              chapters = (await getYouTubeChaptersExpanded()) || [];
+            }
+          }
+          sendResponse({ ok: true, chapters, videoId: pageVideoId, playerVideoId: liveId || undefined });
         } catch (e) {
           try { sendResponse({ ok: true, chapters: [] }); } catch (e2) {}
         }

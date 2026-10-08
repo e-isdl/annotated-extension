@@ -90,6 +90,11 @@ export function readChaptersMainWorld(args) {
         : null;
     } catch (e) { liveResponse = null; }
     const liveId = liveResponse && liveResponse.videoDetails ? String(liveResponse.videoDetails.videoId || '') : '';
+    // A live player on another video means mid-transition: refuse outright
+    // instead of serving possibly-stale globals under the wanted id.
+    if (liveResponse && wantId && liveId && liveId !== wantId) {
+      return { videoId: pageId, wantId, chapters: [] };
+    }
     const snapshot = () => {
       const sorted = out.slice().sort((a, b) => a.t - b.t);
       // The duration cap only applies to sane feature-length values: during

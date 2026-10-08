@@ -470,45 +470,49 @@ export default function YouTubeClipper({
     }
     // Ignore results that arrive after the user has moved to another video.
     const still = () => activeVideoRef.current === videoId;
+    // The page side binds its answer to the live player; only accept answers
+    // whose page AND player both agree with the wanted video.
+    const accepted = (r) => r && r.ok && Array.isArray(r.chapters) && r.chapters.length
+      && (!r.videoId || r.videoId === videoId)
+      && (!r.playerVideoId || r.playerVideoId === videoId);
     setChaptersLoading(true);
     try {
       const tab = await getActiveTab();
       if (!tab) return;
-      let res = await sendToActiveTab({ type: 'YT_CHAPTERS' });
+      let res = await sendToActiveTab({ type: 'YT_CHAPTERS', videoId });
       if (!res) {
         // Content script not there yet: inject it once, then ask again.
         // (Injecting on every call stacked duplicate message listeners.)
         try {
           await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
         } catch (e) {}
-        res = await sendToActiveTab({ type: 'YT_CHAPTERS' });
+        res = await sendToActiveTab({ type: 'YT_CHAPTERS', videoId });
       }
-      if (res && res.ok && Array.isArray(res.chapters) && res.chapters.length) {
-        if (res.videoId && res.videoId !== videoId) {
-          // The tab answered from the previous video's DOM (SPA navigation
-          // race). Retry briefly for the new page; never cache another
-          // video's chapters under this id.
-          for (let attempt = 0; attempt < 3; attempt += 1) {
-            await new Promise((resolve) => setTimeout(resolve, 700));
-            if (!still()) return;
-            let retry = null;
-            try { retry = await sendToActiveTab({ type: 'YT_CHAPTERS' }); } catch (e) { retry = null; }
-            if (retry && retry.ok && Array.isArray(retry.chapters) && retry.chapters.length
-              && (!retry.videoId || retry.videoId === videoId)) {
-              chapterCacheRef.current.set(videoId, retry.chapters);
-              if (still()) {
-                chaptersForRef.current = videoId;
-                setChapters(retry.chapters);
-              }
-              return;
-            }
-          }
-          return;
-        }
+      if (accepted(res)) {
         chapterCacheRef.current.set(videoId, res.chapters);
         if (still()) {
           chaptersForRef.current = videoId;
           setChapters(res.chapters);
+        }
+        return;
+      }
+      if (res && res.ok && Array.isArray(res.chapters) && res.chapters.length) {
+        // The tab answered for another video (SPA navigation race). Retry
+        // briefly for the new page; never cache another video's chapters
+        // under this id.
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 700));
+          if (!still()) return;
+          let retry = null;
+          try { retry = await sendToActiveTab({ type: 'YT_CHAPTERS', videoId }); } catch (e) { retry = null; }
+          if (accepted(retry)) {
+            chapterCacheRef.current.set(videoId, retry.chapters);
+            if (still()) {
+              chaptersForRef.current = videoId;
+              setChapters(retry.chapters);
+            }
+            return;
+          }
         }
         return;
       }

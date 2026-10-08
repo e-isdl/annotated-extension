@@ -3231,3 +3231,7 @@ this changelog.
 
 - Quote posts render the original through the same feed-post component with actions stripped, no separate gray card anywhere; feed and detail share the composition.
 ### Quoted nest: border hint, 40 percent smaller
+### Player-bound chapter reads (local)
+
+- Chapter answers wait for the live player to match the wanted video and refuse otherwise; MAIN reader refuses on live mismatch too.
+- Checks: root suite 79/79 with handler-level refusal tests; extension build passes.
