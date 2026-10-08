@@ -52,6 +52,8 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   const [reposted, setReposted] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [quoted, setQuoted] = useState(null);
+  const [repostMenuOpen, setRepostMenuOpen] = useState(false);
+  const repostWrapRef = useRef(null);
   const isRepost = clip.annotation_type === 'Repost';
   const isQuote = clip.annotation_type === 'Quote' && clip.parent_clip_id;
   const [imageFailed, setImageFailed] = useState(false);
@@ -243,6 +245,7 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   const handleRepost = async (event) => {
     event.preventDefault();
     event.stopPropagation();
+    setRepostMenuOpen(false);
     const user = await getCurrentUser();
     if (!user) { push('Sign in to repost.', 'info'); return; }
     if (String(clip.id).startsWith('demo-')) { push('Demo posts live outside the database.', 'info'); return; }
@@ -261,10 +264,36 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
   const handleQuote = async (event) => {
     event.preventDefault();
     event.stopPropagation();
+    setRepostMenuOpen(false);
     const user = await getCurrentUser();
     if (!user) { push('Sign in to quote posts.', 'info'); return; }
     if (String(clip.id).startsWith('demo-')) { push('Demo posts live outside the database.', 'info'); return; }
     setQuoteOpen(true);
+  };
+
+  // Repost menu (Repost / Quote) closes on outside click or Escape,
+  // same pattern as the word-clip info popover.
+  useEffect(() => {
+    if (!repostMenuOpen) return undefined;
+    const onDown = (e) => {
+      if (!repostWrapRef.current || !repostWrapRef.current.contains(e.target)) setRepostMenuOpen(false);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setRepostMenuOpen(false); };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [repostMenuOpen]);
+
+  const openRepostMenu = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const user = await getCurrentUser();
+    if (!user) { push('Sign in to repost.', 'info'); return; }
+    if (String(clip.id).startsWith('demo-')) { push('Demo posts live outside the database.', 'info'); return; }
+    setRepostMenuOpen((open) => !open);
   };
 
   const handleSave = async (event) => {
@@ -504,14 +533,24 @@ export default function ClipCard({ clip, autoPlayVideo = false }) {
         <button type="button" onClick={handleShare} className="post-action">
           <span>↗</span> <span aria-live="polite">{shared ? 'Copied' : 'Share'}</span>
         </button>
-        <button type="button" onClick={handleRepost} className={`post-action ${reposted ? 'post-action-saved' : ''}`} aria-pressed={reposted}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>
-          <span aria-live="polite">{reposted ? 'Reposted' : 'Repost'}</span>
-        </button>
-        <button type="button" onClick={handleQuote} className="post-action">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.5 6C6.5 6 4 8.5 4 11.5V18h7v-7H7.2c.2-1.6 1.4-2.9 3.1-3.2L10.5 6H9.5zm10 0c-3 0-5.5 2.5-5.5 5.5V18h7v-7h-3.8c.2-1.6 1.4-2.9 3.1-3.2L20.5 6h-1z" /></svg>
-          Quote
-        </button>
+        <span className="repost-menu-wrap" ref={repostWrapRef}>
+          <button type="button" onClick={openRepostMenu} className={`post-action ${reposted ? 'post-action-saved' : ''}`} aria-pressed={reposted} aria-expanded={repostMenuOpen} aria-haspopup="menu">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>
+            <span aria-live="polite">{reposted ? 'Reposted' : 'Repost'}</span>
+          </button>
+          {repostMenuOpen && (
+            <span className="repost-menu" role="menu" aria-label="Repost options">
+              <button type="button" role="menuitem" className="repost-menu-item" onClick={handleRepost}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>
+                {reposted ? 'Undo repost' : 'Repost'}
+              </button>
+              <button type="button" role="menuitem" className="repost-menu-item" onClick={handleQuote}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.5 6C6.5 6 4 8.5 4 11.5V18h7v-7H7.2c.2-1.6 1.4-2.9 3.1-3.2L10.5 6H9.5zm10 0c-3 0-5.5 2.5-5.5 5.5V18h7v-7h-3.8c.2-1.6 1.4-2.9 3.1-3.2L20.5 6h-1z" /></svg>
+                Quote
+              </button>
+            </span>
+          )}
+        </span>
         <button type="button" onClick={handleSave} className={`post-action post-action-last ${saved ? 'post-action-saved' : ''}`}>
           <span>{saved ? '★' : '☆'}</span> {saved ? 'Saved' : 'Save'}
         </button>
@@ -527,12 +566,21 @@ function sourceDomain(url) {
 }
 
 // The quoted post rendered whole inside a quote: their header, their take,
-// their media still. Never nests: a quote of a quote still renders one level.
+// their media playable in place. Never nests: a quote of a quote still
+// renders one level. Media clicks never navigate.
 function QuotedCard({ post }) {
+  const [playing, setPlaying] = useState(false);
   if (!post) return null;
-  const take = post.annotation || post.annotations?.[0]?.text_content;
+  const take = post?.annotation || post?.annotations?.[0]?.text_content;
   const image = quotedImage(post);
   const sourceTitle = post.source_title || post.title;
+  const isYt = post.source_type === 'youtube' && post.youtube_id;
+  const audioSrc = post.source_type === 'podcast' ? post.audio_url : null;
+  const playInline = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setPlaying(true);
+  };
   return (
     <Link to={postHref(post)} className="quote-card no-underline">
       <div className="quote-card-head">
@@ -541,7 +589,27 @@ function QuotedCard({ post }) {
         {post.created_at && <span className="quote-card-time">· {timeAgo(post.created_at)}</span>}
       </div>
       {take && <p className="quote-card-take">{take}</p>}
-      {image && <img src={image} alt="" loading="lazy" className="quote-card-media" />}
+      {playing && isYt ? (
+        <div className="quote-card-player" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
+          <YouTubeClipPlayer videoId={post.youtube_id} startSec={post.start_sec} endSec={post.end_sec} autoplay positionKey={`quote-${post.id}`} onClose={() => setPlaying(false)} />
+        </div>
+      ) : image ? (
+        isYt ? (
+          <button type="button" className="quote-card-thumbbtn" onClick={playInline} aria-label="Play quoted video">
+            <img src={image} alt="" loading="lazy" className="quote-card-media" />
+            <span className="quote-card-play" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>
+            </span>
+          </button>
+        ) : (
+          <img src={image} alt="" loading="lazy" className="quote-card-media" />
+        )
+      ) : null}
+      {audioSrc && !playing && (
+        <div className="quote-card-audio" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
+          <AudioPlayer src={audioSrc} compact />
+        </div>
+      )}
       <div className="quote-card-source">
         <span aria-hidden="true">↗</span>
         <span className="quote-card-source-title">{sourceTitle || 'Quoted post'}</span>

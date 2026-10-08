@@ -36,7 +36,7 @@ export function quotedImage(post) {
   if (post.source_type === 'youtube' && post.youtube_id) {
     return `https://img.youtube.com/vi/${post.youtube_id}/hqdefault.jpg`;
   }
-  return post.source_image_url || post.thumbnail || null;
+  return post.source_image_url || post.thumbnail || post.poster_url || null;
 }
 
 // Whether this user already reshared this post. Never throws: unknown

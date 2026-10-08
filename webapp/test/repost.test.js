@@ -55,6 +55,7 @@ test('quoted cards prefer video thumbnails, then source images, then nothing', (
   );
   assert.equal(quotedImage({ source_type: 'article', source_image_url: 'https://x/img.png' }), 'https://x/img.png');
   assert.equal(quotedImage({ source_type: 'article', thumbnail: 'https://x/t.png' }), 'https://x/t.png');
+  assert.equal(quotedImage({ source_type: 'social', poster_url: 'https://x/p.png' }), 'https://x/p.png');
   assert.equal(quotedImage({ source_type: 'text' }), null);
   assert.equal(quotedImage(null), null);
 });
