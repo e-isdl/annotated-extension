@@ -129,10 +129,42 @@ function tweetPosterFromPage() {
 }
 
 function metaImageUrl() {
-  const raw = document.querySelector('meta[property="og:image"]')?.content ||
-              document.querySelector('meta[name="twitter:image"]')?.content ||
-              document.querySelector('link[rel="image_src"]')?.href || '';
-  if (!raw || raw.startsWith('data:')) return '';
+  // Twitter-style: never give up on an image. Card tags first (they are the
+  // large summary image), then structured fallbacks, then the first real
+  // content image in the article body as a last resort.
+  const candidates = [];
+  try {
+    candidates.push(document.querySelector('meta[name="twitter:image"]')?.content || '');
+    candidates.push(document.querySelector('meta[property="og:image"]')?.content || '');
+    candidates.push(document.querySelector('meta[itemprop="image"]')?.content || '');
+    candidates.push(document.querySelector('link[rel="image_src"]')?.href || '');
+  } catch (e) {}
+  for (const raw of candidates) {
+    const abs = absolutizeImageUrl(raw);
+    if (abs) return abs;
+  }
+  try {
+    const article = document.querySelector('article') || document.querySelector('main') || document.body;
+    const imgs = article ? article.querySelectorAll('img') : [];
+    for (const img of imgs) {
+      const src = img.currentSrc || img.src || '';
+      if (!src || src.startsWith('data:')) continue;
+      let wide = 0;
+      try {
+        const rect = img.getBoundingClientRect ? img.getBoundingClientRect() : null;
+        wide = rect ? rect.width : Number(img.naturalWidth || img.width || 0);
+      } catch (e) {}
+      if (wide >= 200) {
+        const abs = absolutizeImageUrl(src);
+        if (abs) return abs;
+      }
+    }
+  } catch (e) {}
+  return '';
+}
+
+function absolutizeImageUrl(raw) {
+  if (!raw || String(raw).startsWith('data:')) return '';
   try {
     const abs = new URL(raw, window.location.href).href;
     return /^https?:\/\//.test(abs) ? abs : '';

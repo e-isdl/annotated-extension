@@ -3251,3 +3251,6 @@ this changelog.
 
 - Whole-word matching plus plural folding (robot/robots); sentence snap button moves the clip window to the current match sentence; match context line under search.
 - Checks: root suite 98/98; extension build passes.
+### Article images hunt harder (local)
+
+- Scraper tries card tags in size order, then the first real content image; covered by 5 new tests.
