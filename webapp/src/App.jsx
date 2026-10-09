@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import ThemeFlyer from './components/ThemeFlyer';
+// ThemeFlyer parked for a while: buddy is themes-only, no extension flight.
+// import ThemeFlyer from './components/ThemeFlyer';
 import AppSidebar from './components/AppSidebar';
 import RightRail from './components/RightRail';
 import Feed from './pages/Feed';
@@ -36,7 +37,7 @@ export default function App() {
           <Navbar />
           <AppShell />
           <MobileNav />
-          <ThemeFlyer />
+          {/* <ThemeFlyer /> parked: buddy is themes-only for now */}
         </div>
       </ToastProvider>
     </BrowserRouter>
