@@ -65,6 +65,14 @@ export default function StoryPage() {
               <Link to="/" className="btn-primary">Open the feed</Link>
               <a className="btn-ghost" href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
             </div>
+            <dl className="story-facts">
+              <div><dt>90<span>s</span></dt><dd>Max clip length, video and audio</dd></div>
+              <div><dt>240<span>p</span></dt><dd>Recorded video, under the cap</dd></div>
+              <div><dt>200<span>w</span></dt><dd>Article quote budget</dd></div>
+              <div><dt>4</dt><dd>Clippers: video, article, X, audio</dd></div>
+              <div><dt>7</dt><dd>Themes, light to terminal</dd></div>
+              <div><dt>X<span>+</span>G</dt><dd>Sign-in only, no passwords</dd></div>
+            </dl>
           </div>
         </header>
 

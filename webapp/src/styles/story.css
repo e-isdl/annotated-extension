@@ -24,13 +24,18 @@
 .app-shell:has(.story-page) .app-main { width: 100%; max-width: none; }
 .story-wrap { max-width: 1180px; margin: 0 auto; padding: 0 32px 120px; }
 
-.story-hero { max-width: 880px; min-height: calc(100dvh - 220px); display: flex; flex-direction: column; justify-content: center; padding: 48px 0; }
+.story-hero { max-width: 880px; min-height: 0; padding: 56px 0 8px; }
 .story-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent-text); }
 .story-hero h1 { font-size: clamp(38px, 3.6vw, 56px); line-height: 1.04; letter-spacing: -0.02em; font-weight: 800; margin: 16px 0 18px; }
 .story-hero h1 em { font-style: italic; color: var(--accent-text); }
 .story-sub { font-size: 18px; line-height: 1.55; color: var(--text-secondary); max-width: 34rem; }
 .story-cta-row { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
 .story-page .btn-ghost { border: 1px solid var(--border-strong); color: var(--text-primary); }
+.story-facts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+.story-facts div { min-width: 0; }
+.story-facts dt { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
+.story-facts dt span { color: var(--accent-text); }
+.story-facts dd { margin: 4px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
 .story-section { padding: 88px 0 8px; }
 .story-section h2 { font-size: clamp(30px, 3vw, 44px); letter-spacing: -0.015em; font-weight: 800; line-height: 1.05; max-width: 20ch; }
 .story-lede { margin-top: 12px; font-size: 17px; color: var(--text-secondary); max-width: 62ch; line-height: 1.6; }
@@ -72,6 +77,7 @@
   .story-stats { grid-template-columns: 1fr; }
   .story-bento { grid-template-columns: 1fr; }
   .story-rule { grid-template-columns: 1fr; gap: 4px; }
+  .story-facts { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 767px) {
   .story-wrap { padding: 0 20px 88px; }
