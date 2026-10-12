@@ -32,7 +32,7 @@ const SPEC = [
   ['02', 'File-a-claim button', 'Clearly visible on every annotation page.'],
   ['03', 'Every clip links its source', 'Text, audio, and video open the original URL.'],
   ['04', '90 seconds, 240p video', 'Clips capped at 90s and downscaled under 480p.'],
-  ['05', 'X or Google sign-in only', 'No email or password flow anywhere.'],
+  ['05', 'Google sign-in only', 'No email or password flow anywhere.'],
   ['06', 'Social feed, text and audio takes', 'Follow, comment, write or record commentary.'],
 ];
 
@@ -71,7 +71,7 @@ export default function StoryPage() {
               <div><dt>200<span>w</span></dt><dd>Article quote budget</dd></div>
               <div><dt>4</dt><dd>Clippers: video, article, X, audio</dd></div>
               <div><dt>7</dt><dd>Themes, light to terminal</dd></div>
-              <div><dt>X<span>+</span>G</dt><dd>Sign-in only, no passwords</dd></div>
+              <div><dt>Google</dt><dd>Only sign-in, no passwords</dd></div>
             </dl>
           </div>
         </header>
