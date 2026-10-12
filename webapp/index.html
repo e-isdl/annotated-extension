@@ -3,7 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Annotated</title>
+  <title>Annotated — Clip the moment, keep the source attached</title>
+  <meta name="description" content="Annotated is a social feed for annotated sources. Clip up to 90 seconds of YouTube at 240p, quote articles, capture X posts, or record podcasts via the Chrome extension, then discuss each source with communities. Includes reposts, quotes, votes, comments, and a claim process for post owners.">
+  <meta property="og:title" content="Annotated — Clip the moment, keep the source attached">
+  <meta property="og:description" content="Chrome extension plus social feed: 90-second 240p YouTube clips, article quotes, X captures, podcast moments, communities, votes, comments, and owner claims.">
+  <meta property="og:type" content="website">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Annotated",
+    "url": "https://annotated4.pages.dev",
+    "description": "Social feed for annotated sources with a Chrome extension. Features: YouTube clips up to 90 seconds at 240p, article passage quotes up to 200 words, X post captures, podcast moments, community feeds, votes, comments, reposts, quotes, saved posts, drafts, and an owner claim process.",
+    "applicationCategory": "SocialNetworkingApplication"
+  }
+  </script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23E5192B'/%3E%3Ctext x='16' y='23' font-family='sans-serif' font-size='19' font-weight='bold' text-anchor='middle' fill='white'%3EA%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,6 +43,10 @@
 </head>
 <body>
   <div id="root"></div>
+  <noscript>
+    <h1>Annotated</h1>
+    <p>Annotated is a social feed for annotated sources. This app needs JavaScript. Features: a Chrome extension that clips up to 90 seconds of YouTube video at 240p, quotes article passages, captures X posts, and records podcast moments; community feeds with Best, Hot, New, and Top sorting; votes, comments, reposts, quotes, saved posts, and drafts; and a claim process for post owners.</p>
+  </noscript>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
