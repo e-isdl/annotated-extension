@@ -31,6 +31,8 @@
 .story-sub { font-size: 18px; line-height: 1.55; color: var(--text-secondary); max-width: 34rem; }
 .story-cta-row { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
 .story-page .btn-ghost { border: 1px solid var(--border-strong); color: var(--text-primary); }
+.story-demo-link { align-self: center; color: var(--text-secondary); font-size: 14px; font-weight: 650; text-decoration: none; white-space: nowrap; }
+.story-demo-link:hover { color: var(--accent-text); text-decoration: underline; }
 .story-facts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
 .story-facts div { min-width: 0; }
 .story-facts dt { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }

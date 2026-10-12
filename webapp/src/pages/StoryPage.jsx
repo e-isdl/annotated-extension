@@ -64,6 +64,7 @@ export default function StoryPage() {
             <div className="story-cta-row">
               <Link to="/" className="btn-primary">Open the feed</Link>
               <a className="btn-ghost" href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
+              <a className="story-demo-link" href="https://x.com/IDahal40393/status/2108908105593708587" target="_blank" rel="noopener noreferrer">Watch demo ↗</a>
             </div>
             <dl className="story-facts">
               <div><dt>90<span>s</span></dt><dd>Max clip length, video and audio</dd></div>
@@ -139,6 +140,7 @@ export default function StoryPage() {
           <p>Annotated keeps the source, the exact moment, and your point of view attached. The next reader gets context, not just content.</p>
           <div className="story-cta-row">
             <Link to="/" className="btn-primary">Open the feed</Link>
+            <a className="story-demo-link" href="https://x.com/IDahal40393/status/2108908105593708587" target="_blank" rel="noopener noreferrer">Watch demo ↗</a>
           </div>
           <div className="story-foot">
             <span>Annotated · Chrome extension + social feed</span>
