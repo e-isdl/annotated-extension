@@ -343,6 +343,17 @@ export default function ClipCreator({ pageInfo, session }) {
     stage('creating');
     const sourceUrl = clipData.source_url;
     const sourceDomain = sourceUrl ? new URL(sourceUrl).hostname.replace(/^www\./, '') : null;
+    // Server fallback: if the DOM scrape missed the image (stale content
+    // script, lazy meta tags), unfurl the URL so feed cards still get a photo.
+    let thumbnail = clipData.thumbnail || null;
+    if (clipData.source_type === 'article' && !thumbnail && sourceUrl && /^https?:\/\//.test(sourceUrl)) {
+      try {
+        const { data, error } = await supabase.functions.invoke('unfurl', { body: { url: sourceUrl } });
+        if (!error && typeof data?.image === 'string' && /^https?:\/\//.test(data.image)) {
+          thumbnail = data.image;
+        }
+      } catch {}
+    }
     const clip = await createExtensionPost(supabase, {
       community_id: communityId || null,
       title: clipData.title,
@@ -351,7 +362,7 @@ export default function ClipCreator({ pageInfo, session }) {
       source_domain: sourceDomain,
       source_title: clipData.title,
       author: clipData.author || null,
-      thumbnail: clipData.thumbnail || null,
+      thumbnail,
       youtube_id: clipData.youtube_id || null,
       source_audio_url: clipData.source_type === 'podcast' ? clipData.audio_url : null,
       transcript: currentTranscript || null,
