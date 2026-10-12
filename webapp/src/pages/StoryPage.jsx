@@ -45,6 +45,14 @@ const CLIPPERS = [
 
 export default function StoryPage() {
   const root = useReveal();
+  // This page is dark, always. Take over the document theme while mounted
+  // and hand the previous value back on unmount. Stored preference untouched.
+  useEffect(() => {
+    const doc = document.documentElement;
+    const previous = doc.dataset.theme;
+    doc.dataset.theme = 'dark';
+    return () => { doc.dataset.theme = previous || 'light'; };
+  }, []);
   return (
     <div ref={root} className="story-page" data-theme="dark">
       <div className="story-wrap">
