@@ -31,26 +31,61 @@ Deno.serve(async (req: Request) => {
   if (isPrivateHost(target.hostname)) {
     return json({ error: "That host is not allowed." }, 400);
   }
-  try {
-    const resolved = await Deno.resolveDns(target.hostname, "A");
-    if ((resolved || []).some((ip) => isPrivateIp(ip))) {
-      return json({ error: "That host is not allowed." }, 400);
+  async function hostAllowed(hostname: string): Promise<boolean> {
+    if (isPrivateHost(hostname)) return false;
+    try {
+      const resolved = await Deno.resolveDns(hostname, "A");
+      if ((resolved || []).some((ip) => isPrivateIp(ip))) return false;
+    } catch {
+      // DNS failure surfaces as a fetch failure below; keep going.
     }
-  } catch {
-    // DNS failure surfaces as a fetch failure below; keep going.
+    return true;
+  }
+  if (!(await hostAllowed(target.hostname))) {
+    return json({ error: "That host is not allowed." }, 400);
   }
 
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 9000);
-  try {
-    const res = await fetch(target.href, {
+  async function fetchValidated(start: URL): Promise<Response> {
+    let current = start;
+    for (let hop = 0; hop < 4; hop++) {
+      const res = await fetch(current.href, {
+        signal: ctrl.signal,
+        redirect: "manual",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; AnnotatedBot/1.0; +https://annotated4.pages.dev)",
+          Accept: "text/html,application/xhtml+xml",
+        },
+      });
+      if (![301, 302, 303, 307, 308].includes(res.status)) return res;
+      const location = res.headers.get("location");
+      if (!location) return res;
+      let next: URL;
+      try {
+        next = new URL(location, current.href);
+      } catch {
+        return res;
+      }
+      if (next.protocol !== "http:" && next.protocol !== "https:") return res;
+      if (!(await hostAllowed(next.hostname))) {
+        throw new Error("blocked-host");
+      }
+      current = next;
+      target = current;
+    }
+    return fetch(current.href, {
       signal: ctrl.signal,
-      redirect: "follow",
+      redirect: "manual",
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; AnnotatedBot/1.0; +https://annotated4.pages.dev)",
         Accept: "text/html,application/xhtml+xml",
       },
     });
+  }
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 9000);
+  try {
+    const res = await fetchValidated(target);
     if (!res.ok) return json({ error: `Source returned ${res.status}.` }, 502);
     const contentType = res.headers.get("content-type") || "";
     if (!/text\/html/i.test(contentType)) return json({ error: "Not an article page." }, 422);
@@ -103,6 +138,9 @@ Deno.serve(async (req: Request) => {
     ]);
     return json({ image, title, description });
   } catch (e) {
+    if (e instanceof Error && e.message === "blocked-host") {
+      return json({ error: "That host is not allowed." }, 400);
+    }
     const message = e instanceof Error && e.name === "AbortError"
       ? "Source took too long to respond."
       : "Could not read that page.";
