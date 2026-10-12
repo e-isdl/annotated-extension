@@ -23,6 +23,7 @@ import DraftEditPage from './pages/DraftEditPage';
 import CommunityPage from './pages/CommunityPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ClaimPage from './pages/ClaimPage';
+import StoryPage from './pages/StoryPage';
 import SourcePage from './pages/SourcePage';
 import MobileNav from './components/MobileNav';
 import { supabase } from './lib/supabase';
@@ -56,9 +57,11 @@ function AppShell() {
   const isRailPage = location.pathname === '/explore' || location.pathname === '/saved' || location.pathname.startsWith('/u/');
   const hasRightRail = isFeedSurface || isRailPage || location.pathname.startsWith('/post/') || location.pathname.startsWith('/clip/') || location.pathname.startsWith('/@');
 
+  const isStory = location.pathname === '/story';
+
   return (
     <div className={`app-shell ${hasRightRail ? '' : 'app-shell-focused'}`}>
-      <AppSidebar />
+      {!isStory && <AppSidebar />}
       <main className="app-main">
         <Routes>
           <Route path="/" element={<Feed />} />
@@ -89,6 +92,7 @@ function AppShell() {
           <Route path="/drafts/:id" element={<DraftEditPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/claims/:id" element={<ClaimPage />} />
+          <Route path="/story" element={<StoryPage />} />
           <Route path="/source/:domain" element={<SourcePage />} />
           <Route path="/c" element={<ExplorePage />} />
           <Route path="/c/:slug" element={<CommunityPage />} />
