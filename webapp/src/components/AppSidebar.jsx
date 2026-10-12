@@ -28,13 +28,36 @@ export default function AppSidebar() {
       const currentUser = await getCurrentUser();
       if (!active) return;
       setUser(currentUser);
-      const { data: membershipResult } = currentUser
-        ? await supabase.from('community_members').select('created_at, community_id, communities(slug, name)').eq('user_id', currentUser.id).order('created_at', { ascending: false })
-        : { data: [] };
-      if (!active) return;
-      if (!membershipResult) setFailed(true);
-      const joined = (membershipResult || []).map((row) => row.communities).filter(Boolean);
-      setCommunities(joined);
+      if (currentUser) {
+        const { data: membershipResult } = await supabase.from('community_members').select('created_at, community_id, communities(slug, name)').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+        if (!active) return;
+        if (!membershipResult) setFailed(true);
+        const joined = (membershipResult || []).map((row) => row.communities).filter(Boolean);
+        setCommunities(joined);
+        return;
+      }
+      // Signed out: show popular communities so the rail never sits empty.
+      try {
+        const [{ data: allCommunities }, { data: posts }] = await Promise.all([
+          supabase.from('communities').select('id, slug, name').order('name'),
+          supabase.from('clips').select('community_id'),
+        ]);
+        if (!active) return;
+        if (!allCommunities) {
+          setFailed(true);
+          return;
+        }
+        const counts = {};
+        for (const post of posts || []) {
+          if (post.community_id) counts[post.community_id] = (counts[post.community_id] || 0) + 1;
+        }
+        const ranked = [...allCommunities].sort(
+          (a, b) => (counts[b.id] || 0) - (counts[a.id] || 0) || String(a.name).localeCompare(String(b.name)),
+        );
+        setCommunities(ranked.slice(0, 5).map(({ slug, name }) => ({ slug, name })));
+      } catch {
+        if (active) setFailed(true);
+      }
     }
     loadCommunities();
     const loadDraftCount = async () => {
@@ -52,7 +75,7 @@ export default function AppSidebar() {
     return () => { active = false; subscription.unsubscribe(); window.removeEventListener('focus', onFocus); };
   }, []);
 
-  const displayedCommunities = user ? communities : [];
+  const displayedCommunities = communities;
 
   return (
     <div className="sidebar-cell">
@@ -65,13 +88,13 @@ export default function AppSidebar() {
 
       <div className="sidebar-section border-t border-border-subtle pt-5">
         <div className="flex items-center justify-between mb-2">
-          <p className="sidebar-label mb-0">Your communities</p>
+          <p className="sidebar-label mb-0">{user ? 'Your communities' : 'Popular communities'}</p>
           <Link to="/explore" className="text-xs text-text-muted hover:text-accent-text">+</Link>
         </div>
         <nav className="flex flex-col gap-1">
           {displayedCommunities.map((community) => <Link key={community.slug} to={`/c/${community.slug}`} className="community-link"><CommunityAvatar slug={community.slug} name={community.name} /><span className="truncate">{community.name}</span></Link>)}
           {user && !failed && communities.length === 0 && <p className="sidebar-empty">Explore communities and join one to pin it here.</p>}
-          {!user && <p className="sidebar-empty">Sign in to pin your communities here.</p>}
+          {!user && !failed && communities.length === 0 && <p className="sidebar-empty">Explore the most active communities.</p>}
         </nav>
       </div>
 
