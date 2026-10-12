@@ -254,7 +254,7 @@ export default function ClipPage() {
   const isX = isXPostUrl(clip.source_url);
   const hasMedia = (clip.media_kind === 'loop' || clip.media_kind === 'clip') && Boolean(clip.media_url);
   const posterHandle = isX ? (matchStatusUrl(clip.source_url)?.handle || String(clip.author || '').replace(/^@/, '')) : '';
-  const hasSourceImage = !isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && Boolean(clip.source_image_url || clip.thumbnail);
+  const hasSourceImage = !isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && Boolean(clip.source_image_url || clip.thumbnail);
   const uploadStale = Boolean(clip.video_status === 'uploading' && clip.created_at && (Date.now() - new Date(clip.created_at).getTime() > 20 * 60 * 1000));
   const stillUploading = clip.video_status === 'uploading' && !uploadStale;
 
@@ -432,7 +432,7 @@ export default function ClipPage() {
         {hasSourceImage && imageFailed && (
           <div className="source-text-placeholder">The image for this source could not be loaded.</div>
         )}
-        {!isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.source_image_url && !clip.thumbnail && (
+        {!isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && !clip.source_image_url && !clip.thumbnail && (
           <div className="source-text-placeholder">This post is anchored to a source conversation. Open the original or expand the context below.</div>
         )}
       </section>}
