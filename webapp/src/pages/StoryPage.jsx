@@ -60,7 +60,7 @@ export default function StoryPage() {
           <div>
             <p className="story-eyebrow">The Annotated story</p>
             <h1>Point at the exact <em>moment</em> you mean.</h1>
-            <p className="story-sub">A sidebar clipper plus a social feed. Capture the sentence, scene, or second — then say why it matters.</p>
+            <p className="story-sub">A sidebar clipper plus a social feed. Capture the sentence, scene, or second. Then say why it matters.</p>
             <div className="story-cta-row">
               <Link to="/" className="btn-primary">Open the feed</Link>
               <a className="btn-ghost" href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
@@ -128,7 +128,7 @@ export default function StoryPage() {
 
         <section className="story-close">
           <h2>A link without the why is just another tab.</h2>
-          <p>Annotated keeps the source, the exact moment, and your point of view attached — so the next reader gets context, not just content.</p>
+          <p>Annotated keeps the source, the exact moment, and your point of view attached. The next reader gets context, not just content.</p>
           <div className="story-cta-row">
             <Link to="/" className="btn-primary">Open the feed</Link>
           </div>
