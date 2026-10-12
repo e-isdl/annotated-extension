@@ -30,6 +30,7 @@ export default function CreatePage() {
   const [duplicateClips, setDuplicateClips] = useState([]);
   const [draftId, setDraftId] = useState(null);
   const [draftStatus, setDraftStatus] = useState('');
+  const [unfurl, setUnfurl] = useState({ image: '', title: '', description: '', loading: false });
   const draftTimer = useRef(null);
   const draftIdRef = useRef(null);
   draftIdRef.current = draftId || draftIdRef.current;
@@ -79,6 +80,37 @@ export default function CreatePage() {
     return () => { active = false; };
   }, [form.url, selectedCommunity?.id, needsSource]);
 
+  // Article thumbnails: unfurl the source URL so feed cards get a photo just
+  // like extension clips. Debounced; never blocks publishing on failure.
+  useEffect(() => {
+    let active = true;
+    const url = form.url.trim();
+    if (mode === 'text' || sourceType !== 'article' || !isValidUrl(url)) {
+      setUnfurl({ image: '', title: '', description: '', loading: false });
+      return undefined;
+    }
+    setUnfurl((current) => ({ ...current, loading: true }));
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('unfurl', { body: { url } });
+        if (!active) return;
+        if (error || data?.error) {
+          setUnfurl({ image: '', title: '', description: '', loading: false });
+          return;
+        }
+        setUnfurl({
+          image: typeof data?.image === 'string' && /^https?:\/\//.test(data.image) ? data.image : '',
+          title: typeof data?.title === 'string' ? data.title.slice(0, 180) : '',
+          description: typeof data?.description === 'string' ? data.description.slice(0, 300) : '',
+          loading: false,
+        });
+      } catch {
+        if (active) setUnfurl({ image: '', title: '', description: '', loading: false });
+      }
+    }, 600);
+    return () => { active = false; clearTimeout(timer); };
+  }, [form.url, mode, sourceType]);
+
   function chooseMode(nextMode) {
     setMode(nextMode);
     if (nextMode === 'text') update('url', '');
@@ -98,8 +130,8 @@ export default function CreatePage() {
     return {
       kind: form.type,
       source_url: url,
-      title: form.title.trim() || null,
-      thumbnail_url: null,
+      title: form.title.trim() || unfurl.title || null,
+      thumbnail_url: sourceType === 'article' ? (unfurl.image || null) : null,
       community_id: selectedCommunity?.id || null,
       payload: {
         commentary: form.commentary.trim(),
@@ -186,6 +218,8 @@ export default function CreatePage() {
         end_sec: mode === 'moment' ? endSec : null,
         slug: generateSlug(title),
         annotation: needsSource ? commentary : title,
+        thumbnail: sourceType === 'article' ? (unfurl.image || null) : null,
+        source_image_url: sourceType === 'article' ? (unfurl.image || null) : null,
       });
       navigate(postHref({ ...clip, community_slug: selectedCommunity?.slug }));
       if (draftIdRef.current) { try { await deleteDraft(supabase, draftIdRef.current); } catch {} }
@@ -234,6 +268,13 @@ export default function CreatePage() {
           {needsSource && <label className="form-label">Source URL
             <input className="input" value={form.url} onChange={(event) => update('url', event.target.value)} placeholder="https://..." inputMode="url" required />
             {form.url && <span className="field-hint">Detected as {sourceType} · {domain}</span>}
+            {sourceType === 'article' && unfurl.loading && <span className="field-hint">Fetching article preview…</span>}
+            {sourceType === 'article' && !unfurl.loading && unfurl.image && (
+              <span className="field-hint unfurl-preview">
+                <img src={unfurl.image} alt="" className="unfurl-thumb" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                Article image found — it will show in the feed.
+              </span>
+            )}
             {duplicateClips.length > 0 && <span className="duplicate-note">This source already has {duplicateClips.length} discussion{duplicateClips.length === 1 ? '' : 's'} in this community. You can still add a distinct annotation.</span>}
           </label>}
 
@@ -268,7 +309,7 @@ export default function CreatePage() {
             <p className="post-meta">{selectedCommunity ? <span className="community-pill"><CommunityAvatar slug={selectedCommunity.slug} name={selectedCommunity.name} /> c/{selectedCommunity.name}</span> : <span>Post</span>}<span>• just now</span></p>
             <h2 className="post-annotation-preview">{needsSource ? (form.commentary || 'Your point of view will be the center of the post.') : (form.title || 'Your title will be the headline of the post.')}</h2>
             {!needsSource && form.quote && <p className="post-text-body">{form.quote}</p>}
-            {mode !== 'text' && <div className="source-preview source-preview-preview"><div className="source-preview-copy"><div className="source-label">↗ {form.url ? domain : 'your source'}</div><p className="source-title">{form.title || 'Your source title will appear here'}</p><p className="source-quote">{form.quote ? `“${form.quote}”` : 'Add a quote or source context so people know what you are discussing.'}</p></div></div>}
+            {mode !== 'text' && <div className="source-preview source-preview-preview"><div className="source-preview-copy"><div className="source-label">↗ {form.url ? domain : 'your source'}</div><p className="source-title">{form.title || unfurl.title || 'Your source title will appear here'}</p><p className="source-quote">{form.quote ? `“${form.quote}”` : 'Add a quote or source context so people know what you are discussing.'}</p></div>{sourceType === 'article' && unfurl.image && <img src={unfurl.image} alt="" className="source-preview-image" loading="lazy" />}</div>}
             {mode === 'moment' && hasMoment(form.startSec, form.endSec) && <div className="post-timestamp-row"><span className="timestamp">{formatTime(form.startSec)}</span><span className="text-text-muted text-xs">→</span><span className="timestamp">{formatTime(form.endSec)}</span></div>}
             <div className="post-actions"><span className="post-action">▲ 0</span><span className="post-action">▱ 0 comments</span><span className="post-action">↗ Share</span></div>
           </div>

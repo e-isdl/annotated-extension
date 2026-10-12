@@ -134,10 +134,19 @@ function metaImageUrl() {
   // content image in the article body as a last resort.
   const candidates = [];
   try {
-    candidates.push(document.querySelector('meta[name="twitter:image"]')?.content || '');
-    candidates.push(document.querySelector('meta[property="og:image"]')?.content || '');
-    candidates.push(document.querySelector('meta[itemprop="image"]')?.content || '');
-    candidates.push(document.querySelector('link[rel="image_src"]')?.href || '');
+    const pickMeta = (sel) => {
+      try { return document.querySelector(sel)?.content || ''; } catch (e) { return ''; }
+    };
+    // twitter:image appears as name= on most sites, property= on a few.
+    candidates.push(pickMeta('meta[name="twitter:image"]'));
+    candidates.push(pickMeta('meta[property="twitter:image"]'));
+    // og:image appears as property= on most sites, name= on a few.
+    candidates.push(pickMeta('meta[property="og:image"]'));
+    candidates.push(pickMeta('meta[name="og:image"]'));
+    candidates.push(pickMeta('meta[property="og:image:secure_url"]'));
+    candidates.push(pickMeta('meta[name="og:image:secure_url"]'));
+    candidates.push(pickMeta('meta[itemprop="image"]'));
+    try { candidates.push(document.querySelector('link[rel="image_src"]')?.href || ''); } catch (e) {}
   } catch (e) {}
   for (const raw of candidates) {
     const abs = absolutizeImageUrl(raw);
@@ -147,20 +156,42 @@ function metaImageUrl() {
     const article = document.querySelector('article') || document.querySelector('main') || document.body;
     const imgs = article ? article.querySelectorAll('img') : [];
     for (const img of imgs) {
-      const src = img.currentSrc || img.src || '';
-      if (!src || src.startsWith('data:')) continue;
+      const src = img.currentSrc || img.src || img.getAttribute?.('data-src') || img.getAttribute?.('data-original') || firstSrcsetUrl(img.getAttribute?.('srcset')) || '';
+      if (!src || String(src).startsWith('data:') || String(src).startsWith('blob:')) continue;
       let wide = 0;
+      let natural = 0;
       try {
         const rect = img.getBoundingClientRect ? img.getBoundingClientRect() : null;
-        wide = rect ? rect.width : Number(img.naturalWidth || img.width || 0);
+        wide = rect ? Number(rect.width || 0) : 0;
+        natural = Number(img.naturalWidth || img.width || 0);
       } catch (e) {}
-      if (wide >= 200) {
+      if (wide >= 200 || natural >= 200) {
+        const abs = absolutizeImageUrl(src);
+        if (abs) return abs;
+      }
+      // Lazy images below the fold can report 0x0 before layout: still take
+      // an obvious content photo over returning no thumbnail at all.
+      if (!wide && !natural && looksLikeContentImage(src)) {
         const abs = absolutizeImageUrl(src);
         if (abs) return abs;
       }
     }
   } catch (e) {}
   return '';
+}
+
+function firstSrcsetUrl(srcset) {
+  try {
+    const first = String(srcset || '').split(',')[0] || '';
+    return first.trim().split(/\s+/)[0] || '';
+  } catch (e) { return ''; }
+}
+
+function looksLikeContentImage(src) {
+  const s = String(src || '');
+  if (!s || s.startsWith('data:') || s.startsWith('blob:')) return false;
+  if (/(icon|logo|avatar|sprite|pixel|1x1|transparent|placeholder|favicon)/i.test(s)) return false;
+  return /\.(jpe?g|png|webp|gif)(\?|#|$)/i.test(s) || /(media|images|static|cdn|assets|uploads|prod)/i.test(s);
 }
 
 function absolutizeImageUrl(raw) {

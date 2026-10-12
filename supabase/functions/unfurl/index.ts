@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
       for (const re of patterns) {
         const m = head.match(re);
         if (m && m[1]) {
-          const abs = absolutize(m[1].trim(), target);
+          const abs = absolutize(decodeEntities(m[1].trim()), target);
           if (abs) return abs;
         }
       }
@@ -73,9 +73,16 @@ Deno.serve(async (req: Request) => {
     const image = pick([
       /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
       /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i,
+      /<meta[^>]+property=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']twitter:image["']/i,
       /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
       /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
+      /<meta[^>]+name=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']og:image["']/i,
+      /<meta[^>]+property=["']og:image:secure_url["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image:secure_url["']/i,
       /<meta[^>]+itemprop=["']image["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+content=["']([^"']+)["'][^>]+itemprop=["']image["']/i,
     ]);
     const text = (patterns: RegExp[]): string => {
       for (const re of patterns) {
@@ -113,6 +120,15 @@ function absolutize(raw: string, base: URL): string {
   } catch {
     return "";
   }
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 }
 
 function isPrivateHost(host: string): boolean {

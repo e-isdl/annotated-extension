@@ -109,9 +109,9 @@ export default function Leaderboard() {
                 </div>
               </div>
 
-              {clip.thumbnail && (
+              {(clip.source_image_url || clip.thumbnail) && (
                 <img
-                  src={clip.thumbnail}
+                  src={clip.source_image_url || clip.thumbnail}
                   alt=""
                   className="w-16 h-10 object-cover rounded shrink-0 opacity-80"
                 />

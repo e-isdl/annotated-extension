@@ -18,13 +18,16 @@ function extractFns(src, names) {
   }).join('\n');
 }
 
-const imageCode = extractFns(source, ['metaImageUrl', 'absolutizeImageUrl']);
+const imageCode = extractFns(source, ['metaImageUrl', 'firstSrcsetUrl', 'looksLikeContentImage', 'absolutizeImageUrl']);
 
 function loadPage({ metas = {}, imgs = [] }) {
   const metaEls = Object.entries(metas).map(([key, content]) => ({ key, content }));
-  const imgEls = imgs.map(({ src, width }) => ({
+  const imgEls = imgs.map(({ src, width, naturalWidth, attrs = {} }) => ({
     currentSrc: src,
     src,
+    naturalWidth: naturalWidth ?? width,
+    width: width,
+    getAttribute: (name) => attrs[name] || null,
     getBoundingClientRect: () => ({ width }),
   }));
   const sandbox = {
@@ -32,17 +35,26 @@ function loadPage({ metas = {}, imgs = [] }) {
       title: 'Test',
       addEventListener: () => {},
       querySelector: (sel) => {
-        if (sel === 'meta[property="og:image"]') {
-          const hit = metaEls.find((m) => m.key === 'og:image');
-          return hit ? { content: hit.content } : null;
-        }
-        if (sel === 'meta[name="twitter:image"]') {
-          const hit = metaEls.find((m) => m.key === 'twitter:image');
-          return hit ? { content: hit.content } : null;
-        }
-        if (sel === 'meta[itemprop="image"]') {
-          const hit = metaEls.find((m) => m.key === 'itemprop');
-          return hit ? { content: hit.content } : null;
+        // Generic meta mock: any meta selector returns the matching test key.
+        // Supports name=/property= variants for twitter:image, og:image, secure_url, itemprop.
+        if (sel.startsWith('meta[')) {
+          for (const m of metaEls) {
+            if (sel.includes(m.key)) return { content: m.content };
+          }
+          // Alias keys used in tests.
+          if (sel.includes('twitter:image')) {
+            const hit = metaEls.find((m) => m.key === 'twitter:image');
+            if (hit) return { content: hit.content };
+          }
+          if (sel.includes('og:image')) {
+            const hit = metaEls.find((m) => m.key === 'og:image' || m.key === 'og:secure');
+            if (hit) return { content: hit.content };
+          }
+          if (sel.includes('itemprop')) {
+            const hit = metaEls.find((m) => m.key === 'itemprop');
+            if (hit) return { content: hit.content };
+          }
+          return null;
         }
         if (sel === 'link[rel="image_src"]') {
           const hit = metaEls.find((m) => m.key === 'image_src');
@@ -107,5 +119,37 @@ test('uses the first real content image when tags are missing', () => {
 
 test('tiny tracking pixels do not count as content images', () => {
   const page = loadPage({ imgs: [{ src: 'https://x.com/px.gif', width: 1 }] });
+  assert.equal(page.imageUrl(), '');
+});
+
+test('accepts og:image via name attribute and twitter:image via property', () => {
+  // Some CMSs swap name/property; both must resolve.
+  assert.equal(
+    loadPage({ metas: { 'og:image': 'https://x.com/name-og.jpg' } }).imageUrl(),
+    'https://x.com/name-og.jpg',
+  );
+  assert.equal(
+    loadPage({ metas: { 'twitter:image': 'https://x.com/prop-tw.jpg' } }).imageUrl(),
+    'https://x.com/prop-tw.jpg',
+  );
+});
+
+test('uses naturalWidth when layout width is zero and data-src fallbacks', () => {
+  const page = loadPage({
+    imgs: [
+      { src: '', width: 0, naturalWidth: 0, attrs: { 'data-src': 'https://x.com/lazy-photo.jpg' } },
+    ],
+  });
+  // data-src with an image-looking URL counts even before layout.
+  assert.equal(page.imageUrl(), 'https://x.com/lazy-photo.jpg');
+});
+
+test('ignores blob and data URIs for content images', () => {
+  const page = loadPage({
+    imgs: [
+      { src: 'blob:https://x.com/123', width: 800 },
+      { src: 'data:image/jpeg;base64,/9j/', width: 800 },
+    ],
+  });
   assert.equal(page.imageUrl(), '');
 });

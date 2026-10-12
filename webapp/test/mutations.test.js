@@ -10,11 +10,14 @@ test('post creation goes through one atomic database function with source and an
     source_type: 'article', source_domain: 'example.com', source_title: 'Source title',
     annotation_type: 'Explainer', article_text: 'A quote', start_sec: null, end_sec: null,
     slug: 'new-post', annotation: 'Here is why this matters.',
+    thumbnail: 'https://example.com/img.jpg', source_image_url: 'https://example.com/img.jpg',
   });
   assert.deepEqual(result, { id: 'clip-id', slug: 'new-post' });
   assert.equal(call[0], 'create_annotated_post');
   assert.equal(call[1].p_annotation, 'Here is why this matters.');
   assert.equal(call[1].p_community_id, 'community-id');
+  assert.equal(call[1].p_thumbnail, 'https://example.com/img.jpg');
+  assert.equal(call[1].p_source_image_url, 'https://example.com/img.jpg');
 });
 
 test('post creation surfaces database errors without claiming success', async () => {

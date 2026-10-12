@@ -12,6 +12,8 @@ export async function createAnnotatedPost(client, payload) {
     p_end_sec: payload.end_sec,
     p_slug: payload.slug,
     p_annotation: payload.annotation,
+    p_thumbnail: payload.thumbnail ?? payload.source_image_url ?? null,
+    p_source_image_url: payload.source_image_url ?? payload.thumbnail ?? null,
   });
   if (error) throw error;
   return data;
