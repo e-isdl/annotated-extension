@@ -60,3 +60,14 @@ test('keeps the known duration when only a timestamp param changes', () => {
   assert.equal(merged.data.duration, 300);
   assert.equal(merged.url, 'https://www.youtube.com/watch?v=abc123');
 });
+
+test('keeps a known article image when a thin poll reports none', () => {
+  const url = 'https://edition.cnn.com/2026/10/11/entertainment/russell-brand-career-profile-intl-scli';
+  const prev = { url, type: 'article', data: { title: 'T', selectedText: 'quote', ogImage: 'https://media.cnn.com/x.jpg' } };
+  const next = { url, type: 'article', data: { title: 'T', selectedText: '', author: '' } };
+
+  const merged = mergePageInfo(prev, next);
+
+  assert.equal(merged.data.ogImage, 'https://media.cnn.com/x.jpg');
+  assert.equal(merged.data.selectedText, 'quote');
+});
