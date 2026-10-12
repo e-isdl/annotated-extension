@@ -58,9 +58,6 @@ export default function StoryPage() {
               <a className="btn-ghost" href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
             </div>
           </div>
-          <figure className="story-shot reveal">
-            <img src="/story/feed.png" alt="The Annotated feed with podcast, X post, and YouTube takes" loading="eager" />
-          </figure>
         </header>
 
         <section className="story-section" id="spec">
@@ -102,16 +99,21 @@ export default function StoryPage() {
         <section className="story-section" id="feed">
           <h2>A feed built for discussion.</h2>
           <div className="story-bento reveal">
-            <figure className="story-cell tall">
-              <img src="/story/clip.png" alt="An annotation page with quote, votes, and comments" loading="lazy" />
-            </figure>
             <div className="story-cell tint">
               <div className="t">Takes rail and threads</div>
               <div className="d">Every other take on the same source sits one click away, with threaded follow-ups.</div>
             </div>
             <div className="story-cell">
               <div className="t">Communities, drafts, reposts</div>
-              <div className="d">Topic hubs, autosaved drafts, quotes, saves, and four feed sorts: Best, Hot, New, Top.</div>
+              <div className="d">Topic hubs, autosaved drafts, quotes, saves, and follows.</div>
+            </div>
+            <div className="story-cell">
+              <div className="t">Four sorts, demo feed</div>
+              <div className="d">Best, Hot, New, and Top, with an editorial demo until the community takes over.</div>
+            </div>
+            <div className="story-cell">
+              <div className="t">Seven themes, claims with reply</div>
+              <div className="d">From newsprint light to terminal. Owners reply to claims by email.</div>
             </div>
           </div>
         </section>
