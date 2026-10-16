@@ -195,6 +195,8 @@ export default function ClipPage() {
             .order('score', { ascending: false })
             .limit(5);
           setActivePost({ id: clipData.id, takes: others || [] });
+        } else {
+          setActivePost(null);
         }
       }
       setLoading(false);

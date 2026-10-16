@@ -18,7 +18,11 @@ export default function RightRail() {
   const location = useLocation();
   const { push } = useToast();
   const [takes, setTakes] = useState([]);
-  useEffect(() => subscribeActivePost((active) => setTakes(active?.takes || [])), []);
+  const [postActive, setPostActive] = useState(false);
+  useEffect(() => subscribeActivePost((active) => {
+    setPostActive(Boolean(active));
+    setTakes(active?.takes || []);
+  }), []);
   const postRef = location.pathname.match(/^\/(?:post|clip)\/([^/]+)/)?.[1] || location.pathname.match(/^\/@[^/]+\/post\/([^/?#]+)/)?.[1] || null;
   const communitySlug = location.pathname.match(/^\/c\/([^/?#]+)/)?.[1] || null;
   const profileHandle = location.pathname.match(/^\/u\/([^/?#]+)/)?.[1] || null;
@@ -203,23 +207,27 @@ export default function RightRail() {
         </Link>
       ) : null}
 
-      {takes.length > 0 && (
+      {postActive && (
         <section className="rail-card takes-card">
           <div className="takes-head">
             <h2 className="rail-heading">Other takes on this source</h2>
             <span className="takes-count">{takes.length}</span>
           </div>
-          <div className="takes-list">
-            {takes.map((take, i) => (
-              <Link key={take.id} to={postHref(take)} className="take-item no-underline">
-                <span className="take-rank">{i + 1}</span>
-                <span className="take-body">
-                  <span className="take-title">{take.title || 'Untitled take'}</span>
-                  <span className="take-meta"><span>@{take.profiles?.handle}</span><span className="take-votes">{take.score || 0} votes</span></span>
-                </span>
-              </Link>
-            ))}
-          </div>
+          {takes.length > 0 ? (
+            <div className="takes-list">
+              {takes.map((take, i) => (
+                <Link key={take.id} to={postHref(take)} className="take-item no-underline">
+                  <span className="take-rank">{i + 1}</span>
+                  <span className="take-body">
+                    <span className="take-title">{take.title || 'Untitled take'}</span>
+                    <span className="take-meta"><span>@{take.profiles?.handle}</span><span className="take-votes">{take.score || 0} votes</span></span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="takes-empty">No other takes yet. Be the first to add one.</p>
+          )}
         </section>
       )}
 
