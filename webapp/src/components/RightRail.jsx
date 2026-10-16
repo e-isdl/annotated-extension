@@ -208,10 +208,10 @@ export default function RightRail() {
       ) : null}
 
       {postActive && (
-        <section className="rail-card takes-card">
+        <section className={`rail-card takes-card${takes.length ? '' : ' takes-card-empty'}`}>
           <div className="takes-head">
-            <h2 className="rail-heading">Other takes on this source</h2>
-            <span className="takes-count">{takes.length}</span>
+            <h2 className="rail-heading">Other takes</h2>
+            {takes.length > 0 && <span className="takes-count">{takes.length}</span>}
           </div>
           {takes.length > 0 ? (
             <div className="takes-list">
@@ -226,7 +226,10 @@ export default function RightRail() {
               ))}
             </div>
           ) : (
-            <p className="takes-empty">No other takes yet. Be the first to add one.</p>
+            <>
+              <p className="takes-empty">No takes on this source yet.</p>
+              <Link to="/create" className="takes-cta no-underline">+ Add your take</Link>
+            </>
           )}
         </section>
       )}
