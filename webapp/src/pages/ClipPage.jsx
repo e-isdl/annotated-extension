@@ -27,6 +27,13 @@ import { setActivePost } from '../lib/activePost';
 
 const MEDIA_FRAME = /youtube\.com\/embed|youtube-nocookie\.com\/embed|platform\.twitter\.com|twimg\.com/;
 
+// Same recorded-media sizing formula as the feed cards (ClipCard): preferred
+// height, minimum readable width, maximum height. Keeps the detail page media
+// at the exact footprint users see in the feed.
+const MEDIA_TARGET_H = 400;
+const MEDIA_MIN_W = 360;
+const MEDIA_MAX_H = 560;
+
 export default function ClipPage() {
   const routeParams = useParams();
   const id = routeParams.id || routeParams.post || routeParams.slug;
@@ -55,6 +62,7 @@ export default function ClipPage() {
   const [imageFailed, setImageFailed] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
   const [showEmbed, setShowEmbed] = useState(false);
+  const [mediaNatural, setMediaNatural] = useState(null);
   const [quoted, setQuoted] = useState(null);
   const isQuotePost = clip?.annotation_type === 'Quote' && clip?.parent_clip_id;
   const { push } = useToast();
@@ -257,6 +265,14 @@ export default function ClipPage() {
   const hasSourceImage = !isX && clip.source_type !== 'youtube' && clip.source_type !== 'podcast' && !clip.article_text && Boolean(clip.source_image_url || clip.thumbnail);
   const uploadStale = Boolean(clip.video_status === 'uploading' && clip.created_at && (Date.now() - new Date(clip.created_at).getTime() > 20 * 60 * 1000));
   const stillUploading = clip.video_status === 'uploading' && !uploadStale;
+  const natW = Number(clip.media_w) || mediaNatural?.w || 0;
+  const natH = Number(clip.media_h) || mediaNatural?.h || 0;
+  const mediaRatio = natW > 0 && natH > 0 ? natW / natH : 0;
+  const mediaWr = mediaRatio > 0 ? Math.min(Math.max(MEDIA_TARGET_H * mediaRatio, MEDIA_MIN_W), natW) : 0;
+  const mediaHr = mediaRatio > 0 ? mediaWr / mediaRatio : 0;
+  const mediaStyle = mediaWr > 0
+    ? { width: `min(100%, ${Math.round(mediaWr)}px)`, height: 'auto', maxHeight: `${MEDIA_MAX_H}px`, objectFit: 'contain', margin: '0 auto' }
+    : { height: 'auto', maxHeight: `${MEDIA_MAX_H}px`, objectFit: 'contain', margin: '0 auto' };
 
   return (
     <article className="detail-page real-detail-page">
@@ -352,13 +368,28 @@ export default function ClipPage() {
         </div>}
         {isX && (hasMedia ? (
           <div className="source-media source-media-x">
-            <LoopPlayer
-              src={clip.media_url}
-              poster={clip.poster_url || clip.thumbnail}
-              label={clip.media_kind === 'loop' ? 'Recorded loop, silent' : 'Recorded video, silent'}
-              loop={clip.media_kind === 'loop'}
-              controls={clip.media_kind === 'clip'}
-            />
+            <div className="xmedia-wrap">
+              <LoopPlayer
+                src={clip.media_url}
+                poster={clip.poster_url || clip.thumbnail}
+                label={clip.media_kind === 'loop' ? 'Recorded loop, silent' : 'Recorded video, silent'}
+                loop={clip.media_kind === 'loop'}
+                controls={clip.media_kind === 'clip'}
+                videoStyle={mediaStyle}
+                videoWidth={mediaWr > 0 ? Math.round(mediaWr) : undefined}
+                videoHeight={mediaHr > 0 ? Math.round(Math.min(mediaHr, MEDIA_MAX_H)) : undefined}
+                onMetadata={(event) => {
+                  const video = event.currentTarget;
+                  if (video.videoWidth && video.videoHeight) {
+                    setMediaNatural((current) => (
+                      current && current.w === video.videoWidth && current.h === video.videoHeight
+                        ? current
+                        : { w: video.videoWidth, h: video.videoHeight }
+                    ));
+                  }
+                }}
+              />
+            </div>
             <a href={clip.source_url} target="_blank" rel="noopener noreferrer" className="x-original-link">
               ↗ view original on x
             </a>
