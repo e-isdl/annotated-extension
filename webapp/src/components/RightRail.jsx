@@ -226,10 +226,7 @@ export default function RightRail() {
               ))}
             </div>
           ) : (
-            <>
-              <p className="takes-empty">No takes on this source yet.</p>
-              <Link to="/create" className="takes-cta no-underline">+ Add your take</Link>
-            </>
+            <p className="takes-empty">No takes on this source yet.</p>
           )}
         </section>
       )}
