@@ -361,10 +361,10 @@ export default function ClipPage() {
         )}
         {!isX && clip.source_type !== 'youtube' && <div className="source-post-header">
           <div>
-            <p className="source-post-domain">{clip.source_domain || sourceDomain(clip.source_url)}</p>
+            {clip.source_type !== 'podcast' && <p className="source-post-domain">{clip.source_domain || sourceDomain(clip.source_url)}</p>}
           {(clip.source_title || clip.title) && (clip.source_title || clip.title) !== (annotation?.text_content || clip.title) && <p className="source-post-caption">{clip.source_title || clip.title}</p>}
           </div>
-          <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>
+          {clip.source_type !== 'podcast' && <span className={`badge badge-${clip.source_type}`}>{clip.source_type}</span>}
         </div>}
         {isX && (hasMedia ? (
           <div className="source-media source-media-x">

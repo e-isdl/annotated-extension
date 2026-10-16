@@ -65,7 +65,7 @@ export default function PodcastEpisode({ clip, layout = 'feed' }) {
         )}
         <div className="podcast-main">
           <p className="podcast-title" title={title}>{title}</p>
-          <p className="podcast-show">Spotify</p>
+          {!detail && <p className="podcast-show">Spotify</p>}
           <AudioPlayer src={src} compact={!detail} bars={detail ? 96 : 48} durationHint={duration} accent={SPOTIFY_GREEN} />
         </div>
       </div>
