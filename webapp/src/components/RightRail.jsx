@@ -28,6 +28,7 @@ export default function RightRail() {
   const profileHandle = location.pathname.match(/^\/u\/([^/?#]+)/)?.[1] || null;
   const isExplore = location.pathname === '/explore';
   const isSaved = location.pathname === '/saved';
+  const isFeedPage = ['/', '/popular', '/latest'].includes(location.pathname);
   const isProfile = Boolean(profileHandle);
   const showDiscovery = !postRef && !communitySlug && !isExplore && !isProfile && ['/', '/popular', '/latest', '/for-you', '/saved'].includes(location.pathname);
   const [railCommunity, setRailCommunity] = useState(null);
@@ -309,15 +310,19 @@ export default function RightRail() {
           )}
         </>
       )}
-      <footer className="rail-footer">
-        {!postRef && (
-          <span className="rail-get-extension">
-            <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
-            <span className="rail-footer-updated">Extension updated October 9, 1:30 AM</span>
-          </span>
-        )}
-        <a href="https://github.com/e-isdl/annotated-extension/releases" data-github-link target="_blank" rel="noopener noreferrer">GitHub ↗</a>
-      </footer>
+      {(!postRef || isFeedPage) && (
+        <footer className="rail-footer">
+          {!postRef && (
+            <span className="rail-get-extension">
+              <a href="https://github.com/e-isdl/annotated-extension/releases/latest" target="_blank" rel="noopener noreferrer">Get the extension</a>
+              <span className="rail-footer-updated">Extension updated October 9, 1:30 AM</span>
+            </span>
+          )}
+          {isFeedPage && (
+            <a href="https://github.com/e-isdl/annotated-extension/releases" data-github-link target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+          )}
+        </footer>
+      )}
     </aside>
     </div>
   );
